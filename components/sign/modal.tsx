@@ -107,33 +107,33 @@ function ProfileForm({ className }: React.ComponentProps<"form">) {
 
       {/* 模式一：一键登录（Google / Github） */}
       <div className="flex flex-col gap-3">
-        {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && (
-          <Button
-            variant="outline"
-            className="w-full flex items-center gap-2"
-            onClick={() => {
+      {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && (
+        <Button
+          variant="outline"
+          className="w-full flex items-center gap-2"
+          onClick={() => {
               setSignupRoleCookie(role);
-              signIn("google");
-            }}
-          >
-            <SiGoogle className="w-4 h-4" />
-            {t("sign_modal.google_sign_in")}
-          </Button>
-        )}
+            signIn("google");
+          }}
+        >
+          <SiGoogle className="w-4 h-4" />
+          {t("sign_modal.google_sign_in")}
+        </Button>
+      )}
 
-        {process.env.NEXT_PUBLIC_AUTH_GITHUB_ENABLED === "true" && (
-          <Button
-            variant="outline"
-            className="w-full flex items-center gap-2"
-            onClick={() => {
+      {process.env.NEXT_PUBLIC_AUTH_GITHUB_ENABLED === "true" && (
+        <Button
+          variant="outline"
+          className="w-full flex items-center gap-2"
+          onClick={() => {
               setSignupRoleCookie(role);
-              signIn("github");
-            }}
-          >
-            <SiGithub className="w-4 h-4" />
-            {t("sign_modal.github_sign_in")}
-          </Button>
-        )}
+            signIn("github");
+          }}
+        >
+          <SiGithub className="w-4 h-4" />
+          {t("sign_modal.github_sign_in")}
+        </Button>
+      )}
       </div>
 
       {/* 模式二：账号密码登录（目前仅 UI，后端 Credentials Provider 需要单独接入） */}

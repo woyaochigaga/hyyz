@@ -1,6 +1,7 @@
 import { getUserEmail, getUserUuid } from "@/services/user";
 import { insertOrder, updateOrderSession } from "@/models/order";
 import { respData, respErr } from "@/lib/resp";
+import { logApi } from "@/lib/api-log";
 
 import { Order } from "@/types/order";
 import Stripe from "stripe";
@@ -8,6 +9,8 @@ import { findUserByUuid } from "@/models/user";
 import { getSnowId } from "@/lib/hash";
 
 export async function POST(req: Request) {
+  const apiName = "checkout";
+
   try {
     let {
       credits,
@@ -20,6 +23,15 @@ export async function POST(req: Request) {
       cancel_url,
     } = await req.json();
 
+    logApi(apiName, "request-body", {
+      credits,
+      currency,
+      amount,
+      interval,
+      product_id,
+      valid_months,
+    });
+
     if (!cancel_url) {
       cancel_url = `${
         process.env.NEXT_PUBLIC_PAY_CANCEL_URL ||
@@ -28,10 +40,12 @@ export async function POST(req: Request) {
     }
 
     if (!amount || !interval || !currency || !product_id) {
+      logApi(apiName, "invalid-params");
       return respErr("invalid params");
     }
 
     if (!["year", "month", "one-time"].includes(interval)) {
+      logApi(apiName, "invalid-interval", { interval });
       return respErr("invalid interval");
     }
 
@@ -46,6 +60,7 @@ export async function POST(req: Request) {
     }
 
     const user_uuid = await getUserUuid();
+    logApi(apiName, "got-user-uuid", { user_uuid: !!user_uuid ? "exists" : "" });
     if (!user_uuid) {
       return respErr("no auth, please sign-in");
     }
@@ -58,10 +73,12 @@ export async function POST(req: Request) {
       }
     }
     if (!user_email) {
+      logApi(apiName, "invalid-user-email");
       return respErr("invalid user");
     }
 
     const order_no = getSnowId();
+    logApi(apiName, "generated-order-no", { order_no });
 
     const currentDate = new Date();
     const created_at = currentDate.toISOString();
@@ -100,6 +117,7 @@ export async function POST(req: Request) {
       valid_months: valid_months,
     };
     await insertOrder(order);
+    logApi(apiName, "insert-order-ok", { order_no });
 
     const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY || "");
 
@@ -159,17 +177,20 @@ export async function POST(req: Request) {
     const order_detail = JSON.stringify(options);
 
     const session = await stripe.checkout.sessions.create(options);
-
     const stripe_session_id = session.id;
-    await updateOrderSession(order_no, stripe_session_id, order_detail);
+    logApi(apiName, "stripe-session-created", { stripe_session_id });
 
+    await updateOrderSession(order_no, stripe_session_id, order_detail);
+    logApi(apiName, "update-order-session-ok", { order_no });
+
+    logApi(apiName, "success");
     return respData({
       public_key: process.env.STRIPE_PUBLIC_KEY,
       order_no: order_no,
       session_id: stripe_session_id,
     });
   } catch (e: any) {
-    console.log("checkout failed: ", e);
+    logApi(apiName, "error", { error: String(e) });
     return respErr("checkout failed: " + e.message);
   }
 }

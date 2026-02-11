@@ -20,27 +20,33 @@ export default function ({
   return (
     <nav
       className={cn(
-        "flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1",
+        "flex flex-col gap-1",
         className
       )}
       {...props}
     >
-      {items.map((item, index) => (
-        <Link
-          key={index}
-          href={item.url || ""}
-          className={cn(
-            buttonVariants({ variant: "ghost" }),
-            item.is_active
-              ? "bg-muted/50 text-primary hover:bg-muted hover:text-primary"
-              : "hover:bg-transparent hover:underline",
-            "justify-start"
-          )}
-        >
-          {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
-          {item.title}
-        </Link>
-      ))}
+      {items.map((item, index) => {
+        const href = item.url || "";
+        const isActive =
+          item.is_active || (href && pathname && pathname.startsWith(href));
+
+        return (
+          <Link
+            key={index}
+            href={href}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+              "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+              isActive && "bg-muted text-primary font-medium",
+              className
+            )}
+          >
+            {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
+            <span className="truncate">{item.title}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

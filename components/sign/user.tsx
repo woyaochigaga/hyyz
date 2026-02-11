@@ -51,10 +51,10 @@ export default function ({ user }: { user: User }) {
                 rel="noreferrer"
                 className="flex w-full justify-center"
               >
-                {t("user.admin_system")}
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {t("user.admin_system")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
           </>
         )}
 
