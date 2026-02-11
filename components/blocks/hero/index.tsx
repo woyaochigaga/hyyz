@@ -1,12 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import HappyUsers from "./happy-users";
-import HeroBg from "./bg";
 import { Hero as HeroType } from "@/types/blocks/hero";
 import Icon from "@/components/icon";
+import CloudInkIcon from "@/components/icon/cloud-ink";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-export default function Hero({ hero }: { hero: HeroType }) {
+export default function Hero({
+  hero,
+  sectionClassName,
+}: {
+  hero: HeroType;
+  sectionClassName?: string;
+}) {
   if (hero.disabled) {
     return null;
   }
@@ -19,9 +25,25 @@ export default function Hero({ hero }: { hero: HeroType }) {
 
   return (
     <>
-      <HeroBg />
-      <section className="py-24">
-        <div className="container">
+      <section
+        className={cn(
+          "relative overflow-hidden py-24 text-white",
+          sectionClassName
+        )}
+      >
+        <div
+          className="hero-bg-slideshow pointer-events-none"
+          aria-hidden="true"
+        >
+          <div className="hero-bg-slide hero-bg-slide-1" />
+          <div className="hero-bg-slide hero-bg-slide-2" />
+          <div className="hero-bg-slide hero-bg-slide-3" />
+          <div className="hero-bg-slide hero-bg-slide-4" />
+          <div className="hero-bg-slide hero-bg-slide-5" />
+          <div className="hero-bg-overlay" />
+        </div>
+
+        <div className="relative mx-auto w-full px-4 md:max-w-7xl">
           {hero.show_badge && (
             <div className="flex items-center justify-center mb-8">
               <img
@@ -31,35 +53,25 @@ export default function Hero({ hero }: { hero: HeroType }) {
               />
             </div>
           )}
-          <div className="text-center">
-            {hero.announcement && (
-              <a
-                href={hero.announcement.url}
-                className="mx-auto mb-3 inline-flex items-center gap-3 rounded-full border px-2 py-1 text-sm"
-              >
-                {hero.announcement.label && (
-                  <Badge>{hero.announcement.label}</Badge>
-                )}
-                {hero.announcement.title}
-              </a>
-            )}
-
+          <div className="mx-auto flex min-h-[420px] max-w-5xl flex-col items-center justify-center gap-6 px-4 text-center lg:min-h-[520px]">
             {texts && texts.length > 1 ? (
-              <h1 className="mx-auto mb-3 mt-4 max-w-3xl text-balance text-4xl font-bold lg:mb-7 lg:text-7xl">
+              <h1 className="hero-title mx-auto text-balance text-4xl font-semibold tracking-[0.18em] lg:text-6xl">
                 {texts[0]}
-                <span className="bg-gradient-to-r from-primary via-primary to-primary bg-clip-text text-transparent">
-                  {highlightText}
-                </span>
+                <span
+                  className="ink-highlight-img mt-[-0.7rem] mr-[-1.2rem]"
+                  role="img"
+                  aria-label={highlightText || "highlight"}
+                />
                 {texts[1]}
               </h1>
             ) : (
-              <h1 className="mx-auto mb-3 mt-4 max-w-3xl text-balance text-4xl font-bold lg:mb-7 lg:text-7xl">
+              <h1 className="hero-title mx-auto text-balance text-5xl font-semibold tracking-[0.18em] lg:text-6xl">
                 {hero.title}
               </h1>
             )}
 
             <p
-              className="m mx-auto max-w-3xl text-muted-foreground lg:text-xl"
+              className="hero-subtitle m mx-auto max-w-3xl text-slate-100/90 lg:text-xl"
               dangerouslySetInnerHTML={{ __html: hero.description || "" }}
             />
             {hero.buttons && (
@@ -79,7 +91,7 @@ export default function Hero({ hero }: { hero: HeroType }) {
                       >
                         {item.title}
                         {item.icon && (
-                          <Icon name={item.icon} className="ml-1" />
+                          <CloudInkIcon className="ml-1.5" />
                         )}
                       </Button>
                     </Link>
@@ -87,12 +99,16 @@ export default function Hero({ hero }: { hero: HeroType }) {
                 })}
               </div>
             )}
-            {hero.tip && (
-              <p className="mt-8 text-md text-muted-foreground">{hero.tip}</p>
-            )}
-            {hero.show_happy_users && <HappyUsers />}
           </div>
         </div>
+
+        {hero.hero_footer && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center px-4">
+            <p className="hero-footer-text max-w-4xl text-center">
+              {hero.hero_footer}
+            </p>
+          </div>
+        )}
       </section>
     </>
   );

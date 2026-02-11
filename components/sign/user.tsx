@@ -35,17 +35,28 @@ export default function ({ user }: { user: User }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem className="flex justify-center cursor-pointer">
-          <Link href="/my-orders">{t("user.user_center")}</Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem className="flex justify-center cursor-pointer">
-          <Link href="/admin/users" target="_blank">
-            {t("user.admin_system")}
+        <DropdownMenuItem className="cursor-pointer" asChild>
+          <Link href="/my-orders" className="flex w-full justify-center">
+            {t("user.user_center")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+
+        {user.role === "admin" && (
+          <>
+            <DropdownMenuItem className="cursor-pointer" asChild>
+              <Link
+                href="/admin/users"
+                target="_blank"
+                rel="noreferrer"
+                className="flex w-full justify-center"
+              >
+                {t("user.admin_system")}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
 
         <DropdownMenuItem
           className="flex justify-center cursor-pointer"

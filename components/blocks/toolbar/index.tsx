@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Button as ButtonType } from "@/types/blocks/base";
 import Icon from "@/components/icon";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 
 export default function Toolbar({ items }: { items?: ButtonType[] }) {
+
   return (
     <div className="flex space-x-4 mb-8">
       {items?.map((item, idx) => (
@@ -12,6 +13,7 @@ export default function Toolbar({ items }: { items?: ButtonType[] }) {
           variant={item.variant}
           size="sm"
           className={item.className}
+          asChild
         >
           <Link
             href={item.url || ""}

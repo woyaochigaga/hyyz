@@ -22,7 +22,7 @@ export default async function AdminLayout({
 
   const sidebar: Sidebar = {
     brand: {
-      title: "ShipAny",
+      title: "hyyz",
       logo: {
         src: "/logo.png",
         alt: "ShipAny",

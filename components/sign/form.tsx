@@ -15,12 +15,20 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import * as React from "react";
 
 export default function SignForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const t = useTranslations();
+  const [role, setRole] = React.useState<"user" | "artisan">("user");
+
+  const setSignupRoleCookie = (nextRole: "user" | "artisan") => {
+    // keep it short-lived; only needed during the OAuth redirect roundtrip
+    document.cookie = `signup_role=${nextRole}; path=/; max-age=600; samesite=lax`;
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -35,11 +43,31 @@ export default function SignForm({
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
+            <div className="grid gap-2">
+              <Label>身份选择</Label>
+              <RadioGroup
+                value={role}
+                onValueChange={(v) => setRole(v as "user" | "artisan")}
+                className="flex gap-4 justify-center"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="user" id="role-user" />
+                  <Label htmlFor="role-user">普通用户</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="artisan" id="role-artisan" />
+                  <Label htmlFor="role-artisan">匠人</Label>
+                </div>
+              </RadioGroup>
+            </div>
             <div className="flex flex-col gap-4">
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => signIn("google")}
+                onClick={() => {
+                  setSignupRoleCookie(role);
+                  signIn("google");
+                }}
               >
                 <SiGoogle className="w-4 h-4" />
                 {t("sign_modal.google_sign_in")}
@@ -47,7 +75,10 @@ export default function SignForm({
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => signIn("github")}
+                onClick={() => {
+                  setSignupRoleCookie(role);
+                  signIn("github");
+                }}
               >
                 <SiGithub className="w-4 h-4" />
                 {t("sign_modal.github_sign_in")}

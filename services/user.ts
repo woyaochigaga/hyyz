@@ -25,6 +25,7 @@ export async function saveUser(user: User) {
       user.id = existUser.id;
       user.uuid = existUser.uuid;
       user.created_at = existUser.created_at;
+      user.role = existUser.role;
     }
 
     return user;

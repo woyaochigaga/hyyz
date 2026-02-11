@@ -8,6 +8,17 @@ import { getClientIp } from "@/lib/ip";
 import { getIsoTimestr } from "@/lib/time";
 import { getUuid } from "@/lib/hash";
 import { saveUser } from "@/services/user";
+import { cookies } from "next/headers";
+
+function getSignupRoleFromCookie(): User["role"] {
+  try {
+    const role = cookies().get("signup_role")?.value;
+    if (role === "user" || role === "artisan") return role;
+  } catch {
+    // ignore
+  }
+  return "user";
+}
 
 let providers: Provider[] = [];
 
@@ -158,6 +169,7 @@ export const authOptions: NextAuthConfig = {
             signin_openid: account.providerAccountId,
             created_at: getIsoTimestr(),
             signin_ip: await getClientIp(),
+            role: getSignupRoleFromCookie(),
           };
 
           try {
@@ -169,6 +181,7 @@ export const authOptions: NextAuthConfig = {
               nickname: savedUser.nickname,
               avatar_url: savedUser.avatar_url,
               created_at: savedUser.created_at,
+              role: savedUser.role,
             };
           } catch (e) {
             console.error("save user failed:", e);

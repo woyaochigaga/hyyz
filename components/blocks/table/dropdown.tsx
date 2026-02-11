@@ -35,13 +35,14 @@ export default function ({ items }: { items: NavItem[] }) {
       <DropdownMenuContent align="end" className="w-[160px]">
         {items.map((item) => {
           return (
-            <DropdownMenuItem key={item.title}>
+            <DropdownMenuItem key={item.title} asChild>
               <Link
-                href={item.url || ""}
+                href={item.url || "#"}
                 target={item.target || "_self"}
-                className="flex items-center gap-2"
+                rel={item.target === "_blank" ? "noreferrer" : undefined}
+                className="flex w-full items-center gap-2"
               >
-                {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
+                {item.icon && <Icon name={item.icon} className="h-4 w-4" />}
                 {item.title}
               </Link>
             </DropdownMenuItem>

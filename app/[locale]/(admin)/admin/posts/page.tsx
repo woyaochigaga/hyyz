@@ -6,7 +6,11 @@ import { Table as TableSlotType } from "@/types/slots/table";
 import { getAllPosts } from "@/models/post";
 import moment from "moment";
 
-export default async function () {
+export default async function ({
+  params: { locale },
+}: {
+  params: { locale: string };
+}) {
   const posts = await getAllPosts();
 
   const table: TableSlotType = {
@@ -16,7 +20,7 @@ export default async function () {
         {
           title: "Add Post",
           icon: "RiAddLine",
-          url: "/admin/posts/add",
+          url: `/${locale}/admin/posts/add`,
         },
       ],
     },
@@ -50,17 +54,20 @@ export default async function () {
       },
       {
         callback: (item: Post) => {
+          const locale = item.locale || "zh";
+          const slug = item.slug || "";
+
           const items: NavItem[] = [
             {
               title: "Edit",
               icon: "RiEditLine",
-              url: `/admin/posts/${item.uuid}/edit`,
+              url: `/${locale}/admin/posts/${item.uuid}/edit`,
             },
             {
               title: "View",
               icon: "RiEyeLine",
-              url: `/${item.locale}/posts/${item.slug}`,
-              target: "_blank",
+              url: `/${locale}/posts/${encodeURIComponent(slug)}`,
+              target: "_self",
             },
           ];
 

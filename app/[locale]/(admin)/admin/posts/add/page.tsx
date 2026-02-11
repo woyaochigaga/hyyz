@@ -9,6 +9,12 @@ import { getIsoTimestr } from "@/lib/time";
 import { getUserInfo } from "@/services/user";
 import { getUuid } from "@/lib/hash";
 
+function isValidSlug(slug: string) {
+  // Keep it URL-safe and single-segment. (No spaces, no slashes/backslashes)
+  // Allow letters/numbers and separators like "-" "_" "," "." for flexibility.
+  return /^[a-z0-9][a-z0-9._,-]*$/i.test(slug) && !slug.includes("/") && !slug.includes("\\");
+}
+
 export default async function () {
   const user = await getUserInfo();
   if (!user || !user.uuid) {
@@ -121,6 +127,12 @@ export default async function () {
           !locale.trim()
         ) {
           throw new Error("invalid form data");
+        }
+
+        if (!isValidSlug(slug)) {
+          throw new Error(
+            "invalid slug: only letters/numbers and . _ - , are allowed, and it cannot contain / or \\"
+          );
         }
 
         const existPost = await findPostBySlug(slug, locale);

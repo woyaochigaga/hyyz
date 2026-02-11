@@ -20,9 +20,12 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { SiGithub, SiGmail, SiGoogle } from "react-icons/si";
+import { SiGithub, SiGoogle } from "react-icons/si";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
 import { useAppContext } from "@/contexts/app";
@@ -74,47 +77,88 @@ export default function SignModal() {
 
 function ProfileForm({ className }: React.ComponentProps<"form">) {
   const t = useTranslations();
+  const [role, setRole] = React.useState<"user" | "artisan">("user");
+
+  const setSignupRoleCookie = (nextRole: "user" | "artisan") => {
+    // 与页面版登录保持一致：仅在登录这一小段时间内生效
+    document.cookie = `signup_role=${nextRole}; path=/; max-age=600; samesite=lax`;
+  };
 
   return (
-    <div className={cn("grid items-start gap-4", className)}>
-      {/* <div className="grid gap-2">
-        <Label htmlFor="email">{t("sign_modal.email_title")}</Label>
-        <Input type="email" id="email" placeholder="xxx@xxx.com" />
-      </div>
+    <div className={cn("grid items-start gap-6", className)}>
+      {/* 身份选择：普通用户 / 匠人 */}
       <div className="grid gap-2">
-        <Label htmlFor="password">{t("sign_modal.password_title")}</Label>
-        <Input id="password" type="password" />
+        <Label>身份选择</Label>
+        <RadioGroup
+          value={role}
+          onValueChange={(v) => setRole(v as "user" | "artisan")}
+          className="flex gap-4 justify-center"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="user" id="role-user-modal" />
+            <Label htmlFor="role-user-modal">普通用户</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="artisan" id="role-artisan-modal" />
+            <Label htmlFor="role-artisan-modal">匠人</Label>
+          </div>
+        </RadioGroup>
       </div>
-      <Button type="submit" className="w-full flex items-center gap-2">
-        <SiGmail className="w-4 h-4" />
-        {t("sign_modal.email_sign_in")}
-      </Button> */}
 
-      {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && (
-        <Button
-          variant="outline"
-          className="w-full flex items-center gap-2"
-          onClick={() => {
-            signIn("google");
-          }}
-        >
-          <SiGoogle className="w-4 h-4" />
-          {t("sign_modal.google_sign_in")}
-        </Button>
-      )}
+      {/* 模式一：一键登录（Google / Github） */}
+      <div className="flex flex-col gap-3">
+        {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && (
+          <Button
+            variant="outline"
+            className="w-full flex items-center gap-2"
+            onClick={() => {
+              setSignupRoleCookie(role);
+              signIn("google");
+            }}
+          >
+            <SiGoogle className="w-4 h-4" />
+            {t("sign_modal.google_sign_in")}
+          </Button>
+        )}
 
-      {process.env.NEXT_PUBLIC_AUTH_GITHUB_ENABLED === "true" && (
-        <Button
-          variant="outline"
-          className="w-full flex items-center gap-2"
-          onClick={() => {
-            signIn("github");
-          }}
-        >
-          <SiGithub className="w-4 h-4" />
-          {t("sign_modal.github_sign_in")}
+        {process.env.NEXT_PUBLIC_AUTH_GITHUB_ENABLED === "true" && (
+          <Button
+            variant="outline"
+            className="w-full flex items-center gap-2"
+            onClick={() => {
+              setSignupRoleCookie(role);
+              signIn("github");
+            }}
+          >
+            <SiGithub className="w-4 h-4" />
+            {t("sign_modal.github_sign_in")}
+          </Button>
+        )}
+      </div>
+
+      {/* 模式二：账号密码登录（目前仅 UI，后端 Credentials Provider 需要单独接入） */}
+      <div className="relative text-center text-xs text-muted-foreground">
+        <span className="px-2 bg-background">或使用账号密码登录</span>
+      </div>
+
+      <div className="grid gap-3">
+        <div className="grid gap-2">
+          <Label htmlFor="modal-email">邮箱</Label>
+          <Input
+            id="modal-email"
+            type="email"
+            placeholder="you@example.com"
+            disabled
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="modal-password">密码</Label>
+          <Input id="modal-password" type="password" disabled />
+        </div>
+        <Button className="w-full" disabled>
+          账号密码登录暂未开通
         </Button>
-      )}
+      </div>
     </div>
   );
 }

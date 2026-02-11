@@ -3,11 +3,11 @@ import { Pathnames } from "next-intl/routing";
 export const locales = ["en", "zh"];
 
 export const localeNames: any = {
-  en: "English",
   zh: "中文",
+  en: "English",
 };
 
-export const defaultLocale = "en";
+export const defaultLocale = "zh";
 
 export const localePrefix = "as-needed";
 
@@ -16,6 +16,10 @@ export const localeDetection =
 
 export const pathnames = {
   en: {
+    "privacy-policy": "/privacy-policy",
+    "terms-of-service": "/terms-of-service",
+  },
+  zh: {
     "privacy-policy": "/privacy-policy",
     "terms-of-service": "/terms-of-service",
   },

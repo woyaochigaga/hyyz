@@ -34,7 +34,7 @@ import ThemeToggle from "@/components/theme/toggle";
 import { useAppContext } from "@/contexts/app";
 import { cn } from "@/lib/utils";
 
-export default function Header({ header }: { header: HeaderType }) {
+export default function HomeHeader({ header }: { header: HeaderType }) {
   const { theme } = useAppContext();
   if (header.disabled) {
     return null;
@@ -66,7 +66,7 @@ export default function Header({ header }: { header: HeaderType }) {
                 </span>
               )}
             </a>
-            <div className="flex items-center">
+            {/* <div className="flex items-center">
               <NavigationMenu className="hero-nav">
                 <NavigationMenuList className="hero-nav-list">
                   {header.nav?.items?.map((item, i) => {
@@ -147,7 +147,7 @@ export default function Header({ header }: { header: HeaderType }) {
                   })}
                 </NavigationMenuList>
               </NavigationMenu>
-            </div>
+            </div> */}
           </div>
           <div className="shrink-0 flex gap-2 items-center">
             {header.show_locale && <LocaleToggle />}

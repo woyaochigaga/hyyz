@@ -1,14 +1,18 @@
+"use client";
+
 import { Footer as FooterType } from "@/types/blocks/footer";
 import Icon from "@/components/icon";
+import { useAppContext } from "@/contexts/app";
 
 export default function Footer({ footer }: { footer: FooterType }) {
+  const { theme } = useAppContext();
   if (footer.disabled) {
     return null;
   }
 
   return (
-    <section id={footer.name} className="py-16">
-      <div className="max-w-7xl mx-auto px-8">
+    <section id={footer.name} className="py-16 px-1 w-full">
+      <div className="mx-auto w-full px-4 lg:px-8">
         <footer>
           <div className="flex flex-col items-center justify-between gap-10 text-center lg:flex-row lg:text-left">
             <div className="flex w-full max-w-96 shrink flex-col items-center justify-between gap-6 lg:items-start">
@@ -17,7 +21,11 @@ export default function Footer({ footer }: { footer: FooterType }) {
                   <div className="flex items-center justify-center gap-2 lg:justify-start">
                     {footer.brand.logo && (
                       <img
-                        src={footer.brand.logo.src}
+                        src={
+                          theme === "dark"
+                            ? "/logo-black.png"
+                            : footer.brand.logo.src
+                        }
                         alt={footer.brand.logo.alt || footer.brand.title}
                         className="h-11"
                       />
@@ -72,11 +80,11 @@ export default function Footer({ footer }: { footer: FooterType }) {
                 {footer.copyright}
                 {process.env.NEXT_PUBLIC_SHOW_POWERED_BY === "false" ? null : (
                   <a
-                    href="https://shipany.ai"
+                    href="/"
                     target="_blank"
                     className="px-2 text-primary"
                   >
-                    build with ShipAny
+                    Hangyi Cloud Expo
                   </a>
                 )}
               </p>

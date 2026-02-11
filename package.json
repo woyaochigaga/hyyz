@@ -10,6 +10,7 @@
     "start": "NODE_NO_WARNINGS=1 next start",
     "lint": "next lint",
     "analyze": "ANALYZE=true pnpm build",
+    "db:migrate": "psql \"$SUPABASE_URL\" -v ON_ERROR_STOP=1 -f data/install.sql",
     "cf:build": "npx @cloudflare/next-on-pages",
     "cf:preview": "pnpm cf:build && wrangler pages dev",
     "cf:deploy": "pnpm cf:build && wrangler pages deploy"

@@ -6,6 +6,7 @@ export interface Announcement {
   label?: string;
   url?: string;
   target?: string;
+  hero_footer?: string;
 }
 
 export interface Hero {
@@ -20,4 +21,5 @@ export interface Hero {
   tip?: string;
   show_happy_users?: boolean;
   show_badge?: boolean;
+  hero_footer?: string;
 }

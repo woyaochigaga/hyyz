@@ -3,10 +3,10 @@
   "theme": "light",
   "header": {
     "brand": {
-      "title": "ShipAny",
+      "title": "Hangyi Cloud Expo",
       "logo": {
         "src": "/logo.png",
-        "alt": "ShipAny"
+        "alt": "Hangyi Cloud Expo"
       },
       "url": "/"
     },
@@ -59,15 +59,15 @@
     "show_locale": true
   },
   "hero": {
-    "title": "Ship Any AI Startups in hours, not days",
-    "highlight_text": "Ship Any",
-    "description": "ShipAny is a NextJS boilerplate for building AI SaaS startups.<br/>Ship Fast with a variety of templates and components.",
+    "title": "Explore Hangzhou Handicrafts from Anywhere",
+    "highlight_text": "Hangyi Cloud Expo",
+    "description": "Hangyi Cloud Expo is an online exhibition platform dedicated to handicrafts from Hangzhou.<br/>Discover, appreciate, and collect original works from local artisans.",
     "announcement": {
       "label": "2025",
       "title": "🎉 Happy New Year",
       "url": "/#pricing"
     },
-    "tip": "🎁 50% off before 2025",
+    "tip": "🎁 Free online visit for a limited time in 2025",
     "buttons": [
       {
         "title": "Get Started",
@@ -88,7 +88,7 @@
     "show_badge": false
   },
   "branding": {
-    "title": "ShipAny is built on the shoulders of giants",
+    "title": "Hangyi Cloud Expo brings Hangzhou craftsmanship to the world",
     "items": [
       {
         "title": "Next.js",
@@ -129,55 +129,55 @@
   },
   "introduce": {
     "name": "introduce",
-    "title": "What is ShipAny",
+    "title": "What is Hangyi Cloud Expo",
     "label": "Introduce",
-    "description": "ShipAny is a NextJS boilerplate for building AI SaaS startups. Built in a variety of templates and components.",
+    "description": "Hangyi Cloud Expo is an online platform focused on showcasing handicrafts from Hangzhou, connecting artisans, collectors, and visitors.",
     "image": {
       "src": "/imgs/features/1.png"
     },
     "items": [
       {
-        "title": "Ready-to-use Templates",
-        "description": "Choose from dozens of production-ready AI SaaS templates to quickly start your project.",
+        "title": "Diverse Hangzhou Crafts",
+        "description": "From silk and tea ware to woodwork and lacquer, discover a wide range of original works created by local artisans.",
         "icon": "RiNextjsFill"
       },
       {
-        "title": "Infrastructure Setup",
-        "description": "Get instant access to scalable infrastructure with best practices built-in.",
+        "title": "Immersive Online Exhibitions",
+        "description": "Enjoy curated galleries and close-up details that make you feel like walking inside a physical exhibition hall.",
         "icon": "RiDatabase2Line"
       },
       {
-        "title": "Quick Deployment",
-        "description": "Deploy your AI SaaS application to production in hours, not days.",
+        "title": "Easy Collection & Enquiry",
+        "description": "Save your favorite pieces and easily get in touch with artisans for customization, purchase, or offline visits.",
         "icon": "RiCloudyFill"
       }
     ]
   },
   "benefit": {
     "name": "benefit",
-    "title": "Why Choose ShipAny",
+    "title": "Why Choose Hangyi Cloud Expo",
     "label": "Benefits",
-    "description": "Get everything you need to launch your AI startup - from ready-to-use templates to technical support.",
+    "description": "A one-stop way to understand Hangzhou handicrafts, from artworks to artisan stories, and feel the culture of the city.",
     "items": [
       {
-        "title": "Complete Framework",
-        "description": "Built on Next.js with authentication, payments, and AI integration - everything works out of the box.",
+        "title": "Hub for Local Artisans",
+        "description": "Gather outstanding artisans from Hangzhou and present their works in one place, making it easy to discover and compare.",
         "icon": "RiNextjsFill",
         "image": {
           "src": "/imgs/features/2.png"
         }
       },
       {
-        "title": "Rich Templates Library",
-        "description": "Choose from various AI SaaS templates to kickstart your project - chatbots, image generation, and more.",
+        "title": "High-quality Presentation",
+        "description": "Carefully curated contents and photos ensure every piece is presented beautifully and professionally.",
         "icon": "RiClapperboardAiLine",
         "image": {
           "src": "/imgs/features/3.png"
         }
       },
       {
-        "title": "Technical Guidance",
-        "description": "Get dedicated support and join our developer community to ensure your successful launch.",
+        "title": "Stories Behind Crafts",
+        "description": "Not only showing the works, but also telling the heritage, inspiration, and everyday life behind each piece and artisan.",
         "icon": "RiCodeFill",
         "image": {
           "src": "/imgs/features/4.png"
@@ -187,8 +187,8 @@
   },
   "usage": {
     "name": "usage",
-    "title": "How to Launch with ShipAny",
-    "description": "Get your AI SaaS startup running in three simple steps:",
+    "title": "How to Explore Hangzhou Crafts with Hangyi Cloud Expo",
+    "description": "Follow three simple steps to walk into the world of Hangzhou handicrafts:",
     "image": {
       "src": "/imgs/features/1.png"
     },
@@ -196,29 +196,29 @@
     "text_align": "center",
     "items": [
       {
-        "title": "Get ShipAny",
-        "description": "Buy ShipAny with a one-time payment. Check your email for the code and documentation.",
+        "title": "Browse Themed Exhibitions",
+        "description": "Visit the homepage and browse curated sections by theme, material, or craft type.",
         "image": {
           "src": "/imgs/features/5.png"
         }
       },
       {
-        "title": "Start Your Project",
-        "description": "Read the documentation and clone the code of ShipAny. Start building your AI SaaS startup.",
+        "title": "Save Your Favorites",
+        "description": "Add the pieces you love to your favorites list to review and compare later.",
         "image": {
           "src": "/imgs/features/6.png"
         }
       },
       {
-        "title": "Customize Your Project",
-        "description": "Modify the template with your data and contents. Specific AI functionality needs.",
+        "title": "Contact Artisans",
+        "description": "Use the contact information provided to talk with artisans for customization, purchase, or offline visits.",
         "image": {
           "src": "/imgs/features/7.png"
         }
       },
       {
-        "title": "Deploy to Production",
-        "description": "Deploy your project to production with a few steps and start serving customers immediately.",
+        "title": "Step into Hangzhou",
+        "description": "Follow recommended routes and maps to visit studios and shops in Hangzhou’s streets and alleys.",
         "image": {
           "src": "/imgs/features/8.png"
         }
@@ -227,122 +227,122 @@
   },
   "feature": {
     "name": "feature",
-    "title": "Key Features of ShipAny",
-    "description": "Everything you need to launch your AI SaaS startup quickly and efficiently.",
+    "title": "Key Features of Hangyi Cloud Expo",
+    "description": "Core capabilities to help you better discover, understand, and collect Hangzhou handicrafts.",
     "items": [
       {
-        "title": "Next.js Boilerplate",
-        "description": "Production-ready Next.js templates with SEO-friendly structure and i18n support.",
+        "title": "Multi-dimensional Categories",
+        "description": "Browse works by craft, material, theme, and price to quickly find what you like.",
         "icon": "RiNextjsFill"
       },
       {
-        "title": "Authentication & Payments",
-        "description": "Integrated Google OAuth, one-tap login, and Stripe payment processing.",
+        "title": "Artisan Profiles & Stories",
+        "description": "Each artisan has a dedicated profile with their story, creations, and studio information.",
         "icon": "RiKey2Fill"
       },
       {
-        "title": "Data Infrastructure",
-        "description": "Built-in Supabase integration for reliable and scalable data storage.",
+        "title": "HD Galleries & Close-ups",
+        "description": "Multiple HD photos reveal textures, details, and craftsmanship traces.",
         "icon": "RiDatabase2Line"
       },
       {
-        "title": "One-Click Deployment",
-        "description": "Seamless deployment to Vercel or Cloudflare with automated setup.",
+        "title": "Curated Themed Exhibitions",
+        "description": "Online exhibitions curated around festivals, city memories, and intangible heritage crafts.",
         "icon": "RiCloudy2Fill"
       },
       {
-        "title": "Business Analytics",
-        "description": "Integrated Google Analytics and Search Console for tracking growth.",
+        "title": "Recommendation & Favorites",
+        "description": "Smart recommendations based on your preferences and simple management of your favorite pieces.",
         "icon": "RiBarChart2Line"
       },
       {
-        "title": "AI-Ready Infrastructure",
-        "description": "Pre-configured AI integration with built-in credits system and API sales.",
+        "title": "Multi-language Friendly",
+        "description": "Supports both Chinese and English to help visitors from all over the world understand Hangzhou crafts.",
         "icon": "RiRobot2Line"
       }
     ]
   },
   "showcase": {
     "name": "showcase",
-    "title": "AI SaaS Startups built with ShipAny",
-    "description": "Easy to use and fast to ship.",
+    "title": "Selected Hangzhou Handicraft Pieces",
+    "description": "Craft stories from the West Lake, the Grand Canal, and old streets.",
     "items": [
       {
-        "title": "ThinkAny",
-        "description": "AI Search Engine",
-        "url": "https://thinkany.ai",
+        "title": "West Lake Silk Hand Fan",
+        "description": "Hand-painted silk folding fan themed around the four seasons of West Lake.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/7.png"
         }
       },
       {
-        "title": "HeyBeauty",
-        "description": "AI Virtual Try On",
-        "url": "https://heybeauty.ai",
+        "title": "Longjing Tea Gift Set",
+        "description": "A handcrafted bamboo woven gift set inspired by Longjing tea culture.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/5.png"
         }
       },
       {
-        "title": "AI Wallpaper",
-        "description": "AI Wallpaper Generator",
-        "url": "https://aiwallpaper.shop",
+        "title": "Jiangnan Wood Carving",
+        "description": "Wooden ornaments inspired by Jiangnan roofs and window frames.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/1.png"
         }
       },
       {
-        "title": "AI Cover",
-        "description": "AI Cover Generator",
-        "url": "https://aicover.design",
+        "title": "Song-style Celadon Tea Set",
+        "description": "A tea set inheriting the glaze and forms of Southern Song official kilns.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/2.png"
         }
       },
       {
-        "title": "GPTs Works",
-        "description": "GPTs Directory",
-        "url": "https://gpts.works",
+        "title": "Hangzhou Textile & Embroidery Bag",
+        "description": "Handmade bags embroidered with elements of West Lake and the canal.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/3.png"
         }
       },
       {
-        "title": "Melodisco",
-        "description": "AI Music Player",
-        "url": "https://melodis.co",
+        "title": "Handmade Sachets & Incense",
+        "description": "Traditional fragrance recipes in modern sachet and incense designs.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/4.png"
         }
       },
       {
-        "title": "Pagen",
-        "description": "AI Landing Page Generator",
-        "url": "https://pagen.so",
+        "title": "Woodblock Print of Gongchen Bridge",
+        "description": "Woodblock prints themed around Gongchen Bridge and the Grand Canal.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/6.png"
         }
       },
       {
-        "title": "SoraFM",
-        "description": "AI Video Generator",
-        "url": "https://sorafm.trys.ai",
+        "title": "Handcrafted Silver Jewelry",
+        "description": "Silver pieces that blend Jiangnan floral and bird motifs.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/8.png"
         }
       },
       {
-        "title": "PodLM",
-        "description": "AI Podcast Generator",
-        "url": "https://podlm.ai",
+        "title": "Hangzhou Memory Notebook",
+        "description": "Hand-bound notebooks themed around old streets, bridges, and daily scenes.",
+        "url": "/#showcase",
         "target": "_blank",
         "image": {
           "src": "/imgs/showcases/9.png"
@@ -353,46 +353,43 @@
   "stats": {
     "name": "stats",
     "label": "Stats",
-    "title": "People Love ShipAny",
-    "description": "for it's easy to use and fast to ship.",
+    "title": "People Love Hangyi Cloud Expo",
+    "description": "for its warmth, craftsmanship, and stories of Hangzhou.",
     "icon": "FaRegHeart",
     "items": [
       {
-        "title": "Trusted by",
+        "title": "Artisans",
         "label": "99+",
-        "description": "Customers"
+        "description": "artists"
       },
       {
-        "title": "Built in",
+        "title": "Curated Pieces",
         "label": "20+",
-        "description": "Components"
+        "description": "works"
       },
       {
-        "title": "Ship Fast in",
+        "title": "Average Visit Time",
         "label": "5",
-        "description": "Minutes"
+        "description": "minutes/visit"
       }
     ]
   },
   "pricing": {
     "name": "pricing",
-    "label": "Pricing",
-    "title": "Pricing",
-    "description": "Get all features of ShipAny, Ship your AI SaaS startups fast.",
+    "label": "Services",
+    "title": "Services & Partnership",
+    "description": "Service plans for artisans, studios, and institutions to run online exhibitions and promotion.",
     "groups": [],
     "items": [
       {
-        "title": "Starter",
-        "description": "Get started with your first SaaS startup.",
+        "title": "Individual Artisan",
+        "description": "Best for independent artisans to start online showcasing.",
         "features_title": "Includes",
         "features": [
-          "100 credits, valid for 1 month",
-          "NextJS boilerplate",
-          "SEO-friendly structure",
-          "Payment with Stripe",
-          "Data storage with Supabase",
-          "Google Oauth & One-Tap Login",
-          "i18n support"
+          "Personal profile and artwork gallery",
+          "Basic photo and text introduction for works",
+          "Basic support for search and categorization",
+          "Priority entry to festival & themed exhibitions"
         ],
         "interval": "one-time",
         "amount": 9900,
@@ -402,31 +399,28 @@
         "original_price": "$199",
         "unit": "USD",
         "is_featured": false,
-        "tip": "Pay once. Build unlimited projects!",
+        "tip": "One-time setup, long-term presence.",
         "button": {
           "title": "Get ShipAny",
           "url": "/#pricing",
           "icon": "RiFlashlightFill"
         },
         "product_id": "starter",
-        "product_name": "ShipAny Boilerplate Starter",
+        "product_name": "Hangyi Cloud Expo Individual Artisan",
         "credits": 100,
         "valid_months": 1
       },
       {
-        "title": "Standard",
-        "description": "Ship Fast with your SaaS Startups.",
+        "title": "Studios & Boutiques",
+        "description": "For studios and small brands with physical spaces.",
         "label": "Popular",
-        "features_title": "Everything in Starter, plus",
+        "features_title": "Everything in Individual Artisan, plus",
         "features": [
-          "200 credits, valid for 3 month",
-          "Deploy with Vercel or Cloudflare",
-          "Generation of Privacy & Terms",
-          "Google Analytics Integration",
-          "Google Search Console Integration",
-          "Discord community",
-          "Technical support for your first ship",
-          "Lifetime updates"
+          "Multi-member and multi-series management",
+          "Display of offline shop or studio information",
+          "Homepage features and curated exhibition spots",
+          "Joint promotion for events and markets",
+          "Basic statistics and visitor analytics"
         ],
         "interval": "one-time",
         "amount": 19900,
@@ -436,29 +430,27 @@
         "original_price": "$299",
         "unit": "USD",
         "is_featured": true,
-        "tip": "Pay once. Build unlimited projects!",
+        "tip": "Boost brand exposure and connection with the city.",
         "button": {
           "title": "Get ShipAny",
           "url": "/#pricing",
           "icon": "RiFlashlightFill"
         },
         "product_id": "standard",
-        "product_name": "ShipAny Boilerplate Standard",
+        "product_name": "Hangyi Cloud Expo Studios & Boutiques",
         "credits": 200,
         "valid_months": 3
       },
       {
-        "title": "Premium",
-        "description": "Ship Any AI SaaS Startups.",
-        "features_title": "Everything in Standard, plus",
+        "title": "Institutions & City Partners",
+        "description": "For cultural & tourism institutions, parks, and city branding projects.",
+        "features_title": "Everything in Studios & Boutiques, plus",
         "features": [
-          "300 credits, valid for 1 year",
-          "Business Functions with AI",
-          "User Center",
-          "Credits System",
-          "API Sales for your SaaS",
-          "Admin System",
-          "Priority Technical Support"
+          "Custom themed online exhibitions and curation",
+          "Multi-city or multi-park joint exhibition areas",
+          "Integrated promotion strategy across channels",
+          "In-depth analytics and operation insights",
+          "Dedicated account and project support"
         ],
         "interval": "one-time",
         "amount": 29900,
@@ -468,14 +460,14 @@
         "original_price": "$399",
         "unit": "USD",
         "is_featured": false,
-        "tip": "Pay once. Build unlimited projects!",
+        "tip": "Co-create the city image of Hangzhou handicrafts.",
         "button": {
           "title": "Get ShipAny",
           "url": "/#pricing",
           "icon": "RiFlashlightFill"
         },
         "product_id": "premium",
-        "product_name": "ShipAny Boilerplate Premium",
+        "product_name": "Hangyi Cloud Expo Institutions & City Partners",
         "credits": 300,
         "valid_months": 12
       }
@@ -484,14 +476,14 @@
   "testimonial": {
     "name": "testimonial",
     "label": "Testimonial",
-    "title": "What Users Say About ShipAny",
-    "description": "Hear from developers and founders who launched their AI startups with ShipAny.",
+    "title": "What People Say About Hangyi Cloud Expo",
+    "description": "Voices from artisans, studios, and visitors.",
     "icon": "GoThumbsup",
     "items": [
       {
         "title": "David Chen",
         "label": "Founder of AIWallpaper.shop",
-        "description": "ShipAny saved us months of development time. We launched our AI wallpaper business in just 2 days and got our first paying customer within a week!",
+        "description": "My works used to be only in a small shop. With Hangyi Cloud Expo, visitors from other cities can now find me online and reach out, and my works are seen by many more people.",
         "image": {
           "src": "/imgs/users/1.png"
         }
@@ -499,7 +491,7 @@
       {
         "title": "Rachel Kim",
         "label": "CTO at HeyBeauty.ai",
-        "description": "The pre-built AI infrastructure is a game-changer. We didn't have to worry about architecture - just focused on our AI beauty tech and went live fast.",
+        "description": "The platform presents our sachets and incense with great details. Many visitors first learn about our craft online and then come to the studio, which converts very well.",
         "image": {
           "src": "/imgs/users/2.png"
         }
@@ -507,7 +499,7 @@
       {
         "title": "Marcus Thompson",
         "label": "Solo Developer",
-        "description": "As a solo developer, ShipAny gave me everything I needed - auth, payments, AI integration, and beautiful UI. Launched my SaaS in a weekend!",
+        "description": "Before my trip, I planned by browsing Hangyi Cloud Expo and saving favorite works. When I arrived, I simply followed the suggested routes to visit studios — super convenient.",
         "image": {
           "src": "/imgs/users/3.png"
         }
@@ -515,7 +507,7 @@
       {
         "title": "Sofia Garcia",
         "label": "CEO of Melodisco",
-        "description": "The templates are production-ready and highly customizable. We built our AI music platform in hours instead of months. Incredible time-to-market!",
+        "description": "We built collaborations with several Hangzhou artisans through Hangyi Cloud Expo and brought their works to overseas markets. The bilingual support helps us a lot.",
         "image": {
           "src": "/imgs/users/4.png"
         }
@@ -523,7 +515,7 @@
       {
         "title": "James Wilson",
         "label": "Tech Lead at GPTs.works",
-        "description": "ShipAny's infrastructure is rock-solid. We scaled from 0 to 10k users without touching the backend. Best investment for our AI startup.",
+        "description": "Hangyi Cloud Expo helps us systematically present the brands and makers in our space and brings us more online bookings and inquiries.",
         "image": {
           "src": "/imgs/users/5.png"
         }
@@ -531,7 +523,7 @@
       {
         "title": "Anna Zhang",
         "label": "Startup Founder",
-        "description": "From idea to launch in 3 days! ShipAny's templates and deployment tools made it possible to test our AI business concept incredibly fast.",
+        "description": "I’m usually busy at work, and it’s hard to search for all the interesting craft shops one by one. Now I can slowly browse on my phone and visit a few studios on weekends — it adds so much ritual to life.",
         "image": {
           "src": "/imgs/users/6.png"
         }
@@ -572,18 +564,18 @@
   },
   "cta": {
     "name": "cta",
-    "title": "Ship your first AI SaaS Startup",
-    "description": "Start from here, ship with ShipAny.",
+    "title": "Enter the Cloud Exhibition of Hangzhou Handicrafts",
+    "description": "Start here and meet artisans and their stories.",
     "buttons": [
       {
-        "title": "Get ShipAny",
-        "url": "https://shipany.ai",
+        "title": "Visit Exhibition",
+        "url": "/",
         "target": "_blank",
         "icon": "GoArrowUpRight"
       },
       {
-        "title": "Read Document",
-        "url": "https://docs.shipany.ai",
+        "title": "Apply as an Artisan",
+        "url": "/#pricing",
         "target": "_blank",
         "variant": "outline"
       }
