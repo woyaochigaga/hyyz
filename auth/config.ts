@@ -8,6 +8,8 @@ import { getClientIp } from "@/lib/ip";
 import { getIsoTimestr } from "@/lib/time";
 import { getUuid } from "@/lib/hash";
 import { saveUser } from "@/services/user";
+import { findUserByEmail } from "@/models/user";
+import { verifyPassword } from "@/lib/password";
 import { cookies } from "next/headers";
 
 function getSignupRoleFromCookie(): User["role"] {
@@ -86,6 +88,45 @@ if (
   );
 }
 
+// Email & Password (Credentials) Auth
+providers.push(
+  CredentialsProvider({
+    id: "credentials-login",
+    name: "credentials-login",
+    credentials: {
+      email: { label: "Email", type: "email" },
+      password: { label: "Password", type: "password" },
+    },
+    async authorize(credentials) {
+      if (!credentials?.email || !credentials.password) {
+        return null;
+      }
+
+      const email = credentials.email as string;
+      const password = credentials.password as string;
+
+      const user = await findUserByEmail(email);
+      if (!user || !user.password_hash) {
+        return null;
+      }
+
+      const ok = verifyPassword(password, user.password_hash);
+      if (!ok) {
+        return null;
+      }
+
+      return {
+        id: user.uuid,
+        email: user.email,
+        name: user.nickname,
+        image: user.avatar_url,
+        role: user.role,
+        created_at: user.created_at,
+      } as any;
+    },
+  })
+);
+
 // Google Auth
 if (
   process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" &&
@@ -156,8 +197,21 @@ export const authOptions: NextAuthConfig = {
       return session;
     },
     async jwt({ token, user, account }) {
-      // Persist the OAuth access_token and or the user id to the token right after signin
       try {
+        // 账号密码登录：credentials-login，直接用 authorize 返回的 user
+        if (user && account?.provider === "credentials-login") {
+          token.user = {
+            uuid: (user as any).id,
+            email: user.email,
+            nickname: user.name || "",
+            avatar_url: (user as any).image || "",
+            created_at: (user as any).created_at,
+            role: (user as any).role,
+          };
+          return token;
+        }
+
+        // OAuth / One-tap 登录：走原有 saveUser 流程
         if (user && user.email && account) {
           const dbUser: User = {
             uuid: getUuid(),

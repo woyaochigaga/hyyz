@@ -31,6 +31,7 @@ import { signIn } from "next-auth/react";
 import { useAppContext } from "@/contexts/app";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useTranslations } from "next-intl";
+import { PasswordAuth } from "@/components/sign/form";
 
 export default function SignModal() {
   const t = useTranslations();
@@ -136,29 +137,11 @@ function ProfileForm({ className }: React.ComponentProps<"form">) {
       )}
       </div>
 
-      {/* 模式二：账号密码登录（目前仅 UI，后端 Credentials Provider 需要单独接入） */}
+      {/* 模式二：账号密码登录 */}
       <div className="relative text-center text-xs text-muted-foreground">
         <span className="px-2 bg-background">或使用账号密码登录</span>
       </div>
-
-      <div className="grid gap-3">
-        <div className="grid gap-2">
-          <Label htmlFor="modal-email">邮箱</Label>
-          <Input
-            id="modal-email"
-            type="email"
-            placeholder="you@example.com"
-            disabled
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="modal-password">密码</Label>
-          <Input id="modal-password" type="password" disabled />
-        </div>
-        <Button className="w-full" disabled>
-          账号密码登录暂未开通
-        </Button>
-      </div>
+      <PasswordAuth role={role} />
     </div>
   );
 }

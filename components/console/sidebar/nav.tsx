@@ -31,20 +31,20 @@ export default function ({
           item.is_active || (href && pathname && pathname.startsWith(href));
 
         return (
-          <Link
-            key={index}
+        <Link
+          key={index}
             href={href}
             aria-current={isActive ? "page" : undefined}
-            className={cn(
+          className={cn(
               "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
               "text-muted-foreground hover:text-foreground hover:bg-muted/60",
               isActive && "bg-muted text-primary font-medium",
               className
-            )}
-          >
-            {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
+          )}
+        >
+          {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
             <span className="truncate">{item.title}</span>
-          </Link>
+        </Link>
         );
       })}
     </nav>

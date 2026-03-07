@@ -5,6 +5,8 @@ export interface User {
   created_at?: string;
   nickname: string;
   avatar_url: string;
+  // 账号密码登录：数据库中存的是 hash（salt:hash），不要在代码里存明文密码
+  password_hash?: string;
   locale?: string;
   signin_type?: string;
   signin_ip?: string;

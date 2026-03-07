@@ -85,47 +85,13 @@ export default function SignForm({
               </Button>
             </div>
 
-            {false && (
-              <>
-                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                  <span className="relative z-10 bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-                <div className="grid gap-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="m@example.com"
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="flex items-center">
-                      <Label htmlFor="password">Password</Label>
-                      <a
-                        href="#"
-                        className="ml-auto text-sm underline-offset-4 hover:underline"
-                      >
-                        Forgot your password?
-                      </a>
-                    </div>
-                    <Input id="password" type="password" required />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Login
-                  </Button>
-                </div>
-                <div className="text-center text-sm">
-                  Don&apos;t have an account?{" "}
-                  <a href="#" className="underline underline-offset-4">
-                    Sign up
-                  </a>
-                </div>
-              </>
-            )}
+            {/* 账号密码登录 */}
+            <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+              <span className="relative z-10 bg-background px-2 text-muted-foreground">
+                或使用账号密码登录
+              </span>
+            </div>
+            <PasswordAuth role={role} />
           </div>
         </CardContent>
       </Card>
@@ -139,6 +105,131 @@ export default function SignForm({
           Privacy Policy
         </a>
         .
+      </div>
+    </div>
+  );
+}
+
+export function PasswordAuth({ role }: { role: "user" | "artisan" }) {
+  const [mode, setMode] = React.useState<"login" | "register">("login");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [nickname, setNickname] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  const handleRegister = async () => {
+    if (!email || !password || !nickname) {
+      alert("邮箱、昵称、密码不能为空");
+      return;
+    }
+    try {
+      setLoading(true);
+      const resp = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, nickname, role }),
+      });
+      const { code, message } = await resp.json();
+      if (code !== 0) {
+        alert(message || "注册失败");
+        return;
+      }
+      alert("注册成功，请使用账号密码登录");
+      setMode("login");
+    } catch (e) {
+      alert("注册失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert("邮箱和密码不能为空");
+      return;
+    }
+    try {
+      setLoading(true);
+      await signIn("credentials-login", {
+        email,
+        password,
+        callbackUrl: "/",
+      });
+    } catch (e) {
+      alert("登录失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex justify-center gap-4 text-sm">
+        <button
+          type="button"
+          className={cn(
+            "px-3 py-1 rounded-full border",
+            mode === "login"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-foreground border-muted"
+          )}
+          onClick={() => setMode("login")}
+        >
+          登录
+        </button>
+        <button
+          type="button"
+          className={cn(
+            "px-3 py-1 rounded-full border",
+            mode === "register"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-foreground border-muted"
+          )}
+          onClick={() => setMode("register")}
+        >
+          注册
+        </button>
+      </div>
+
+      <div className="grid gap-3">
+        <div className="grid gap-2">
+          <Label htmlFor="email">邮箱</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        {mode === "register" && (
+          <div className="grid gap-2">
+            <Label htmlFor="nickname">昵称</Label>
+            <Input
+              id="nickname"
+              placeholder="你的昵称"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
+          </div>
+        )}
+        <div className="grid gap-2">
+          <Label htmlFor="password">密码</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <Button
+          type="button"
+          className="w-full"
+          onClick={mode === "login" ? handleLogin : handleRegister}
+          disabled={loading}
+        >
+          {mode === "login" ? "登录" : "注册"}
+        </Button>
       </div>
     </div>
   );
