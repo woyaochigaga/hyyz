@@ -87,31 +87,14 @@ function ProfileForm({ className }: React.ComponentProps<"form">) {
 
   return (
     <div className={cn("grid items-start gap-6", className)}>
-      {/* 身份选择：普通用户 / 匠人 */}
-      <div className="grid gap-2">
-        <Label>身份选择</Label>
-        <RadioGroup
-          value={role}
-          onValueChange={(v) => setRole(v as "user" | "artisan")}
-          className="flex gap-4 justify-center"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="user" id="role-user-modal" />
-            <Label htmlFor="role-user-modal">普通用户</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="artisan" id="role-artisan-modal" />
-            <Label htmlFor="role-artisan-modal">匠人</Label>
-          </div>
-        </RadioGroup>
-      </div>
+
 
       {/* 模式一：一键登录（Google / Github） */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 ">
       {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && (
         <Button
           variant="outline"
-          className="w-full flex items-center gap-2"
+          className="w-full flex items-center gap-2 mt-2"
           onClick={() => {
               setSignupRoleCookie(role);
             signIn("google");
@@ -141,6 +124,7 @@ function ProfileForm({ className }: React.ComponentProps<"form">) {
       <div className="relative text-center text-xs text-muted-foreground">
         <span className="px-2 bg-background">或使用账号密码登录</span>
       </div>
+
       <PasswordAuth role={role} />
     </div>
   );

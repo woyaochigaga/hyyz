@@ -118,6 +118,72 @@ export async function getUsersByUuids(user_uuids: string[]): Promise<User[]> {
   return data as User[];
 }
 
+export async function updateUserNickname(
+  user_uuid: string,
+  nickname: string
+) {
+  const supabase = getSupabaseClient();
+  const updated_at = getIsoTimestr();
+  const { data, error } = await supabase
+    .from("users")
+    .update({ nickname, updated_at })
+    .eq("uuid", user_uuid);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateUserProfile(
+  user_uuid: string,
+  patch: Partial<Pick<User, "email" | "nickname" | "avatar_url" | "role">>
+) {
+  const supabase = getSupabaseClient();
+  const updated_at = getIsoTimestr();
+
+  const { data, error } = await supabase
+    .from("users")
+    .update({ ...patch, updated_at })
+    .eq("uuid", user_uuid);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateUserPasswordHash(
+  user_uuid: string,
+  password_hash: string
+) {
+  const supabase = getSupabaseClient();
+  const updated_at = getIsoTimestr();
+  const { data, error } = await supabase
+    .from("users")
+    .update({ password_hash, updated_at })
+    .eq("uuid", user_uuid);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteUserByUuid(user_uuid: string) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("users").delete().eq("uuid", user_uuid);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function findUserByInviteCode(invite_code: string) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase

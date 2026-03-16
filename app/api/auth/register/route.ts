@@ -11,11 +11,15 @@ export async function POST(req: Request) {
   try {
     const { email, password, nickname, role } = await req.json();
 
-    if (!email || !password || !nickname) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedNickname = String(nickname || "").trim();
+    const normalizedPassword = String(password || "");
+
+    if (!normalizedEmail || !normalizedPassword || !normalizedNickname) {
       return respErr("invalid params");
     }
 
-    const exist = await findUserByEmail(email);
+    const exist = await findUserByEmail(normalizedEmail);
     if (exist) {
       return respErr("email already exists");
     }
@@ -23,13 +27,13 @@ export async function POST(req: Request) {
     const now = getIsoTimestr();
     const user: User = {
       uuid: getUuid(),
-      email,
-      nickname,
+      email: normalizedEmail,
+      nickname: normalizedNickname,
       avatar_url: "",
       created_at: now,
       signin_type: "credentials",
       signin_provider: "credentials",
-      password_hash: hashPassword(password),
+      password_hash: hashPassword(normalizedPassword),
       role: role === "artisan" ? "artisan" : "user",
     };
 

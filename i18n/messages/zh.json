@@ -9,8 +9,8 @@
     "sign_out": "退出登录",
     "credits": "额度",
     "api_keys": "API 密钥",
-    "my_orders": "我的订单",
-    "user_center": "用户中心",
+    "personal_center": "个人中心",
+    "user_center": "个人中心",
     "admin_system": "管理后台"
   },
   "sign_modal": {
@@ -33,11 +33,11 @@
     "cancel_title": "取消"
   },
   "my_orders": {
-    "title": "我的订单",
-    "description": "在 ShipAny 上购买的订单。",
-    "no_orders": "未找到订单",
+    "title": "个人中心",
+    "description": "xxxxx --- hzzy",
+    "no_orders": "未找到个人中心",
     "tip": "",
-    "activate_order": "激活订单",
+    "activate_order": "激活个人中心",
     "actived": "已激活",
     "join_discord": "加入 Discord",
     "read_docs": "阅读文档",

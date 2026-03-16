@@ -17,6 +17,7 @@ import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import * as React from "react";
+import { notify } from "@/lib/notify";
 
 export default function SignForm({
   className,
@@ -43,7 +44,7 @@ export default function SignForm({
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
-            <div className="grid gap-2">
+            {/* <div className="grid gap-2">
               <Label>身份选择</Label>
               <RadioGroup
                 value={role}
@@ -59,7 +60,7 @@ export default function SignForm({
                   <Label htmlFor="role-artisan">匠人</Label>
                 </div>
               </RadioGroup>
-            </div>
+            </div> */}
             <div className="flex flex-col gap-4">
               <Button
                 variant="outline"
@@ -118,8 +119,12 @@ export function PasswordAuth({ role }: { role: "user" | "artisan" }) {
   const [loading, setLoading] = React.useState(false);
 
   const handleRegister = async () => {
-    if (!email || !password || !nickname) {
-      alert("邮箱、昵称、密码不能为空");
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedNickname = nickname.trim();
+    const normalizedPassword = password;
+
+    if (!normalizedEmail || !normalizedPassword || !normalizedNickname) {
+      notify("error", "邮箱、昵称、密码不能为空");
       return;
     }
     try {
@@ -127,36 +132,61 @@ export function PasswordAuth({ role }: { role: "user" | "artisan" }) {
       const resp = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, nickname, role }),
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password: normalizedPassword,
+          nickname: normalizedNickname,
+          role,
+        }),
       });
       const { code, message } = await resp.json();
       if (code !== 0) {
-        alert(message || "注册失败");
+        notify("error", message || "注册失败");
         return;
       }
-      alert("注册成功，请使用账号密码登录");
+      notify("success", "注册成功，请使用账号密码登录");
       setMode("login");
     } catch (e) {
-      alert("注册失败");
+      notify("error", "注册失败");
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      alert("邮箱和密码不能为空");
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password;
+
+    if (!normalizedEmail || !normalizedPassword) {
+      notify("error", "邮箱和密码不能为空");
       return;
     }
     try {
       setLoading(true);
-      await signIn("credentials-login", {
-        email,
-        password,
-        callbackUrl: "/",
+      const result = await signIn("credentials-login", {
+        email: normalizedEmail,
+        password: normalizedPassword,
+        redirect: false,
       });
+
+      if (!result) {
+        notify("error", "登录失败");
+        return;
+      }
+
+      if (result.error) {
+        const msg =
+          result.error === "CredentialsSignin"
+            ? "邮箱或密码错误"
+            : result.error;
+        notify("error", msg);
+        return;
+      }
+
+      // 登录成功后跳转
+      window.location.href = result.url || "/";
     } catch (e) {
-      alert("登录失败");
+      notify("error", "登录失败");
     } finally {
       setLoading(false);
     }

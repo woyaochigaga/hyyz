@@ -17,8 +17,8 @@ export default async function ({ children }: { children: ReactNode }) {
     nav: {
       items: [
         {
-          title: t("user.my_orders"),
-          url: "/my-orders",
+          title: t("user.personal_center"),
+          url: "/personal_center",
           icon: "RiOrderPlayLine",
           is_active: false,
         },
@@ -28,18 +28,18 @@ export default async function ({ children }: { children: ReactNode }) {
           icon: "RiBankCardLine",
           is_active: false,
         },
-        {
-          title: t("my_invites.title"),
-          url: "/my-invites",
-          icon: "RiMoneyCnyCircleFill",
-          is_active: false,
-        },
-        {
-          title: t("api_keys.title"),
-          url: "/api-keys",
-          icon: "RiKey2Line",
-          is_active: false,
-        },
+        // {
+        //   title: t("my_invites.title"),
+        //   url: "/my-invites",
+        //   icon: "RiMoneyCnyCircleFill",
+        //   is_active: false,
+        // },
+        // {
+        //   title: t("api_keys.title"),
+        //   url: "/api-keys",
+        //   icon: "RiKey2Line",
+        //   is_active: false,
+        // },
       ],
     },
   };

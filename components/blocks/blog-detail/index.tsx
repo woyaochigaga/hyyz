@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { proxifyAvatarUrl } from "@/lib/avatar";
 
 import Crumb from "./crumb";
 import Markdown from "@/components/markdown";
@@ -19,7 +20,7 @@ export default function BlogDetail({ post }: { post: Post }) {
           {post.author_avatar_url && (
             <Avatar className="h-8 w-8 border">
               <AvatarImage
-                src={post.author_avatar_url}
+                src={proxifyAvatarUrl(post.author_avatar_url)}
                 alt={post.author_name}
               />
             </Avatar>

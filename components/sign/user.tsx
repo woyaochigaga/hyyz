@@ -17,15 +17,17 @@ import Link from "next/link";
 import { User } from "@/types/user";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
+import { proxifyAvatarUrl } from "@/lib/avatar";
 
 export default function ({ user }: { user: User }) {
   const t = useTranslations();
+  const avatarSrc = proxifyAvatarUrl(user.avatar_url);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarImage src={user.avatar_url} alt={user.nickname} />
+          <AvatarImage src={avatarSrc} alt={user.nickname} />
           <AvatarFallback>{user.nickname}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -36,8 +38,8 @@ export default function ({ user }: { user: User }) {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem className="cursor-pointer" asChild>
-          <Link href="/my-orders" className="flex w-full justify-center">
-            {t("user.user_center")}
+          <Link href="/personal_center" className="flex w-full justify-center">
+            {t("user.personal_center")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

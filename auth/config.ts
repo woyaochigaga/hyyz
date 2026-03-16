@@ -102,7 +102,7 @@ providers.push(
         return null;
       }
 
-      const email = credentials.email as string;
+      const email = String(credentials.email).trim().toLowerCase();
       const password = credentials.password as string;
 
       const user = await findUserByEmail(email);
