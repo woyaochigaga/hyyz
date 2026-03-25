@@ -9,6 +9,9 @@ import { getNonceStr } from "@/lib/hash";
 import { getTranslations } from "next-intl/server";
 import { getUserUuid } from "@/services/user";
 
+
+
+
 export default async function () {
   const t = await getTranslations();
 
