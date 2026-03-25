@@ -147,39 +147,55 @@ export function PersonalProfile({ user }: { user: User }) {
   const isEditing = (field: typeof editingField) => loadingField === field;
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-8 px-4 pb-12">
-      {/* 顶部头像与身份区 */}
-      <div className="overflow-hidden rounded-2xl border bg-muted/30">
-        <div className="flex flex-col items-center gap-4 px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20 border-4 border-background shadow-md sm:h-24 sm:w-24">
-              <AvatarImage src={proxifyAvatarUrl(avatarUrl)} alt={nickname} />
-              <AvatarFallback className="text-lg font-medium sm:text-xl">
-                {nickname?.slice(0, 2) || "用户"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                {nickname || "未设置昵称"}
-              </h2>
-              <Badge
-                variant="secondary"
-                className="w-fit font-normal text-muted-foreground"
-              >
-                {role === "artisan" ? "匠人" : "普通用户"}
-              </Badge>
+    <section className="relative overflow-hidden py-10">
+      <div
+        className="hero-bg-slideshow pointer-events-none"
+        aria-hidden="true"
+      >
+        <div className="hero-bg-slide hero-bg-slide-1" />
+        <div className="hero-bg-slide hero-bg-slide-2" />
+        <div className="hero-bg-slide hero-bg-slide-3" />
+        <div className="hero-bg-slide hero-bg-slide-4" />
+        <div className="hero-bg-slide hero-bg-slide-5" />
+        <div className="hero-bg-overlay" />
+      </div>
+
+      <div className="relative mx-auto w-full max-w-7xl space-y-8 px-4 pb-12">
+        {/* 顶部头像与身份区 */}
+        <div className="overflow-hidden rounded-2xl border border-border/10 bg-muted/20 backdrop-blur">
+          <div className="flex flex-col items-center gap-4 px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-20 w-20 border-4 border-background shadow-md sm:h-24 sm:w-24">
+                <AvatarImage
+                  src={proxifyAvatarUrl(avatarUrl)}
+                  alt={nickname}
+                />
+                <AvatarFallback className="text-lg font-medium sm:text-xl">
+                  {nickname?.slice(0, 2) || "用户"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1">
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  {nickname || "未设置昵称"}
+                </h2>
+                <Badge
+                  variant="secondary"
+                  className="w-fit font-normal text-muted-foreground"
+                >
+                  {role === "artisan" ? "匠人" : "普通用户"}
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 基本资料 */}
-      <Card className="overflow-hidden border shadow-sm">
-        <CardHeader className="border-b bg-muted/20 px-6 py-4">
+        {/* 基本资料 */}
+        <Card className="overflow-hidden rounded-2xl border border-border/10 bg-background/70 shadow-none backdrop-blur">
+        <CardHeader className="border-b border-border/10 bg-muted/10 px-6 py-4">
           <CardTitle className="text-base font-medium">基本资料</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y">
+          <div className="divide-y divide-border/10">
             {/* 头像 */}
             <div className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-4">
@@ -347,13 +363,13 @@ export function PersonalProfile({ user }: { user: User }) {
         </CardContent>
       </Card>
 
-      {/* 账户设置 */}
-      <Card className="overflow-hidden border shadow-sm">
-        <CardHeader className="border-b bg-muted/20 px-6 py-4">
+        {/* 账户设置 */}
+        <Card className="overflow-hidden rounded-2xl border border-border/10 bg-background/70 shadow-none backdrop-blur">
+        <CardHeader className="border-b border-border/10 bg-muted/10 px-6 py-4">
           <CardTitle className="text-base font-medium">账户设置</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y">
+          <div className="divide-y divide-border/10">
             {/* 账户类型 */}
             <div className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
               <span className="w-20 shrink-0 text-sm text-muted-foreground">
@@ -529,7 +545,7 @@ export function PersonalProfile({ user }: { user: User }) {
               <span className="w-20 shrink-0 text-sm text-muted-foreground">
                 第三方绑定
               </span>
-              <div className="flex flex-1 items-center justify-between gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+              <div className="flex flex-1 items-center justify-between gap-3 rounded-lg border border-border/10 bg-muted/20 px-4 py-3">
                 <div className="flex items-center gap-2 text-sm">
                   <SiGoogle className="h-5 w-5" />
                   <span>
@@ -556,7 +572,8 @@ export function PersonalProfile({ user }: { user: User }) {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </section>
   );
 }
 
