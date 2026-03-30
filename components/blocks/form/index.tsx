@@ -23,6 +23,8 @@ import Icon from "@/components/icon";
 import { Input } from "@/components/ui/input";
 import { Loader } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { VideoUpload } from "@/components/ui/video-upload";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -184,6 +186,16 @@ export default function ({
                           ))}
                         </SelectContent>
                       </Select>
+                    ) : item.type === "image" ? (
+                      <ImageUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    ) : item.type === "video" ? (
+                      <VideoUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     ) : (
                       <Input
                         {...field}

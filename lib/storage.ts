@@ -1,5 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
+import { buildPublicObjectUrl } from "@/lib/storage-public";
 
 interface StorageConfig {
   endpoint: string;
@@ -56,8 +57,8 @@ export class Storage {
         Bucket: bucket,
         Key: key,
         Body: body,
-        ContentDisposition: disposition,
-        ...(contentType && { ContentType: contentType }),
+        ContentType: contentType || "application/octet-stream",
+        ContentDisposition: disposition === "inline" ? "inline" : `attachment; filename="${key.split("/").pop()}"`,
       },
     });
 
@@ -70,15 +71,15 @@ export class Storage {
     }
 
     const res = await upload.done();
+    const objectKey = res.Key || key;
+    const publicUrl = buildPublicObjectUrl(objectKey);
 
     return {
       location: res.Location,
       bucket: res.Bucket,
-      key: res.Key,
-      filename: res.Key?.split("/").pop(),
-      url: process.env.STORAGE_DOMAIN
-        ? `${process.env.STORAGE_DOMAIN}/${res.Key}`
-        : res.Location,
+      key: objectKey,
+      filename: objectKey.split("/").pop(),
+      url: publicUrl || res.Location || "",
     };
   }
 

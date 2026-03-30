@@ -8,6 +8,7 @@ export interface Post {
   updated_at?: string;
   status?: string;
   cover_url?: string;
+  video_url?: string;
   author_name?: string;
   author_avatar_url?: string;
   locale?: string;

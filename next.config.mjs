@@ -20,6 +20,10 @@ const nextConfig = {
   output: "standalone",
   reactStrictMode: false,
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
+  // Expose public COS domain to client for avatar URL → /api/proxy-storage (Referer / hotlink).
+  env: {
+    NEXT_PUBLIC_STORAGE_DOMAIN: process.env.STORAGE_DOMAIN,
+  },
   images: {
     remotePatterns: [
       {

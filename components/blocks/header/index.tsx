@@ -41,10 +41,10 @@ export default function Header({ header }: { header: HeaderType }) {
   }
 
   return (
-    <section className="py-3 px-1 w-full">
-      <div className="mx-auto w-full px-4 lg:px-8">
+    <section className="py-2 px-1 w-full">
+      <div className="w-full px-3 lg:px-6">
         <nav className="flex justify-between w-full">
-          <div className="flex items-center gap-12">
+          <div className="flex items-center gap-6">
             <a
               href={header.brand?.url || ""}
               className="flex items-center gap-2"
@@ -57,11 +57,11 @@ export default function Header({ header }: { header: HeaderType }) {
                       : header.brand.logo.src
                   }
                   alt={header.brand.logo.alt || header.brand.title}
-                  className="w-12 h-12"
+                  className="w-9 h-9"
                 />
               )}
               {header.brand?.title && (
-                <span className="header-brand-title text-2xl font-bold">
+                <span className="header-brand-title text-xl font-bold">
                   {header.brand?.title || ""}
                 </span>
               )}
@@ -150,7 +150,7 @@ export default function Header({ header }: { header: HeaderType }) {
             </div>
           </div>
           <div className="shrink-0 flex gap-2 items-center">
-            {header.show_locale && <LocaleToggle />}
+            {/* {header.show_locale && <LocaleToggle />} */}
             {header.show_theme && <ThemeToggle />}
 
             {header.buttons?.map((item, i) => {
@@ -173,6 +173,8 @@ export default function Header({ header }: { header: HeaderType }) {
           </div>
         </nav>
 
+
+        {/* Mobile menu */}
         <div className="block lg:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

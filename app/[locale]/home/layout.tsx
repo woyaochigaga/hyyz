@@ -1,7 +1,6 @@
-import Footer from "@/components/blocks/footer";
-import HomeHeader from "@/components/blocks/home-header";
 import { ReactNode } from "react";
 import { getLandingPage } from "@/services/page";
+import HomeLayout from "@/components/home/layout";
 
 export default async function DefaultLayout({
   children,
@@ -11,12 +10,18 @@ export default async function DefaultLayout({
   params: { locale: string };
 }) {
   const page = await getLandingPage(locale);
+  const rails = {
+    leftNav: [
+      { title: "云展首页", url: "/home" },
+      { title: "线下展览", url: "/home/exhibition" },
+      { title: "AI提问", url: "/home/ai-chat" },
+    ] 
+    
+  };
 
   return (
-    <>
-      {page.header && <HomeHeader header={page.header} />}
-      <main className="overflow-x-hidden">{children}</main>    
-      
-    </>
+    <HomeLayout header={page.header} rails={rails} locale={locale}>
+      {children}
+    </HomeLayout>
   );
 }

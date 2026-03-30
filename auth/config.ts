@@ -8,7 +8,8 @@ import { getClientIp } from "@/lib/ip";
 import { getIsoTimestr } from "@/lib/time";
 import { getUuid } from "@/lib/hash";
 import { saveUser } from "@/services/user";
-import { findUserByEmail } from "@/models/user";
+import { findUserByEmail, updateUserProfile } from "@/models/user";
+import { resolveOAuthAvatarForDb } from "@/lib/avatar-cos";
 import { verifyPassword } from "@/lib/password";
 import { cookies } from "next/headers";
 
@@ -211,13 +212,21 @@ export const authOptions: NextAuthConfig = {
           return token;
         }
 
-        // OAuth / One-tap 登录：走原有 saveUser 流程
+        // OAuth / One-tap 登录：Google 头像镜像到 COS 再写入 users.avatar_url
         if (user && user.email && account) {
+          const existUser = await findUserByEmail(user.email);
+          const uuid = existUser?.uuid ?? getUuid();
+          const finalAvatar = await resolveOAuthAvatarForDb(
+            user.image,
+            existUser,
+            uuid
+          );
+
           const dbUser: User = {
-            uuid: getUuid(),
+            uuid,
             email: user.email,
             nickname: user.name || "",
-            avatar_url: user.image || "",
+            avatar_url: finalAvatar,
             signin_type: account.type,
             signin_provider: account.provider,
             signin_openid: account.providerAccountId,
@@ -228,12 +237,20 @@ export const authOptions: NextAuthConfig = {
 
           try {
             const savedUser = await saveUser(dbUser);
+            if (
+              existUser?.uuid &&
+              finalAvatar !== (existUser.avatar_url || "")
+            ) {
+              await updateUserProfile(existUser.uuid, {
+                avatar_url: finalAvatar,
+              });
+            }
 
             token.user = {
               uuid: savedUser.uuid,
               email: savedUser.email,
               nickname: savedUser.nickname,
-              avatar_url: savedUser.avatar_url,
+              avatar_url: finalAvatar,
               created_at: savedUser.created_at,
               role: savedUser.role,
             };

@@ -11,12 +11,12 @@ export default async function () {
 
   const columns: TableColumn[] = [
     { name: "uuid", title: "UUID" },
-    { name: "email", title: "Email" },
-    { name: "nickname", title: "Name" },
-    { name: "role", title: "Role" },
+    { name: "email", title: "邮箱" },
+    { name: "nickname", title: "昵称" },
+    { name: "role", title: "角色" },
     {
       name: "avatar_url",
-      title: "Avatar",
+      title: "头像",
       callback: (row) => (
         <img
           src={proxifyAvatarUrl(row.avatar_url)}
@@ -26,11 +26,11 @@ export default async function () {
     },
     {
       name: "created_at",
-      title: "Created At",
+      title: "创建时间",
       callback: (row) => moment(row.created_at).format("YYYY-MM-DD HH:mm:ss"),
     },
     {
-      title: "Actions",
+      title: "操作",
       className: "text-right",
       callback: (row) => (
         <div className="flex justify-end">
@@ -41,7 +41,7 @@ export default async function () {
   ];
 
   const table: TableSlotType = {
-    title: "All Users",
+    title: "全部用户",
     columns,
     data: users,
   };

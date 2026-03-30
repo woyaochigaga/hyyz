@@ -77,9 +77,21 @@ CREATE TABLE posts (
     updated_at timestamptz,
     status VARCHAR(50),
     cover_url VARCHAR(255),
+    video_url VARCHAR(255),
     author_name VARCHAR(255),
     author_avatar_url VARCHAR(255),
     locale VARCHAR(50)
+);
+
+CREATE TABLE ai_chat_conversations (
+    id SERIAL PRIMARY KEY,
+    uuid VARCHAR(255) UNIQUE NOT NULL,
+    user_uuid VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL DEFAULT '',
+    locale VARCHAR(50) NOT NULL DEFAULT '',
+    messages TEXT NOT NULL DEFAULT '[]',
+    created_at timestamptz,
+    updated_at timestamptz
 );
 
 create table affiliates (

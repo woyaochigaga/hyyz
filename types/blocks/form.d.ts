@@ -19,6 +19,8 @@ export interface FormField {
     | "password"
     | "select"
     | "url"
+    | "image"
+    | "video"
     | "code_editor"
     | "markdown_editor";
   placeholder?: string;

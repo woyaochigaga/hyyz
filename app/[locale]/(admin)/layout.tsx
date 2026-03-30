@@ -17,7 +17,7 @@ export default async function AdminLayout({
 
   const adminEmails = process.env.ADMIN_EMAILS?.split(",");
   if (!adminEmails?.includes(userInfo?.email)) {
-    return <Empty message="No access" />;
+    return <Empty message="无权限访问后台" />;
   }
 
   const sidebar: Sidebar = {
@@ -32,23 +32,23 @@ export default async function AdminLayout({
     nav: {
       items: [
         {
-          title: "Users",
+          title: "用户管理",
           url: "/admin/users",
           icon: "RiUserLine",
         },
         {
-          title: "Orders",
+          title: "订单管理",
           icon: "RiOrderPlayLine",
           is_expand: true,
           children: [
             {
-              title: "Paid Orders",
+              title: "已支付订单",
               url: "/admin/paid-orders",
             },
           ],
         },
         {
-          title: "Posts",
+          title: "文章管理",
           url: "/admin/posts",
           icon: "RiArticleLine",
         },
@@ -57,7 +57,7 @@ export default async function AdminLayout({
     social: {
       items: [
         {
-          title: "Home",
+          title: "前台首页",
           url: "/",
           target: "_blank",
           icon: "RiHomeLine",

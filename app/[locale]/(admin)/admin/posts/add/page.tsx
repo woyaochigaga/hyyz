@@ -18,19 +18,19 @@ function isValidSlug(slug: string) {
 export default async function () {
   const user = await getUserInfo();
   if (!user || !user.uuid) {
-    return <Empty message="no auth" />;
+    return <Empty message="请先登录" />;
   }
 
   const form: FormSlotType = {
-    title: "Add Post",
+    title: "新增文章",
     crumb: {
       items: [
         {
-          title: "Posts",
+          title: "文章管理",
           url: "/admin/posts",
         },
         {
-          title: "Add Post",
+          title: "新增文章",
           is_active: true,
         },
       ],
@@ -38,65 +38,71 @@ export default async function () {
     fields: [
       {
         name: "title",
-        title: "Title",
+        title: "标题",
         type: "text",
-        placeholder: "Post Title",
+        placeholder: "请输入文章标题",
         validation: {
           required: true,
         },
       },
       {
         name: "slug",
-        title: "Slug",
+        title: "别名",
         type: "text",
-        placeholder: "what-is-shipany",
+        placeholder: "例如：hangzhou-art-intro",
         validation: {
           required: true,
         },
-        tip: "post slug should be unique, visit like: /blog/what-is-shipany",
+        tip: "文章别名必须唯一，访问路径示例：/posts/hangzhou-art-intro",
       },
       {
         name: "locale",
-        title: "Locale",
+        title: "语言",
         type: "select",
         options: locales.map((locale: string) => ({
           title: localeNames[locale],
           value: locale,
         })),
-        value: "en",
+        value: "zh",
         validation: {
           required: true,
         },
       },
       {
         name: "description",
-        title: "Description",
+        title: "描述",
         type: "textarea",
-        placeholder: "Post Description",
+        placeholder: "请输入文章摘要或简介",
       },
       {
         name: "cover_url",
-        title: "Cover URL",
-        type: "url",
-        placeholder: "Post Cover Image URL",
+        title: "封面图",
+        type: "image",
+        placeholder: "上传文章封面图",
+      },
+      {
+        name: "video_url",
+        title: "视频",
+        type: "video",
+        placeholder: "上传文章视频",
       },
       {
         name: "author_name",
-        title: "Author Name",
+        title: "作者名",
         type: "text",
-        placeholder: "Author Name",
+        placeholder: "请输入作者名",
       },
       {
         name: "author_avatar_url",
-        title: "Author Avatar URL",
-        type: "url",
-        placeholder: "Author Avatar Image URL",
+        title: "作者头像",
+        type: "image",
+        placeholder: "上传作者头像",
       },
       {
         name: "content",
-        title: "Content",
+        title: "正文内容",
         type: "textarea",
-        placeholder: "Post Content",
+        placeholder: "请输入文章正文",
         attributes: {
           rows: 10,
         },
@@ -104,7 +110,7 @@ export default async function () {
     ],
     submit: {
       button: {
-        title: "Submit",
+        title: "提交",
       },
       handler: async (data: FormData, passby: any) => {
         "use server";
@@ -114,6 +120,7 @@ export default async function () {
         const locale = data.get("locale") as string;
         const description = data.get("description") as string;
         const cover_url = data.get("cover_url") as string;
+        const video_url = data.get("video_url") as string;
         const author_name = data.get("author_name") as string;
         const author_avatar_url = data.get("author_avatar_url") as string;
         const content = data.get("content") as string;
@@ -126,18 +133,18 @@ export default async function () {
           !locale ||
           !locale.trim()
         ) {
-          throw new Error("invalid form data");
+          throw new Error("表单数据不完整");
         }
 
         if (!isValidSlug(slug)) {
           throw new Error(
-            "invalid slug: only letters/numbers and . _ - , are allowed, and it cannot contain / or \\"
+            "别名格式不正确，只允许字母、数字和 . _ - ,，且不能包含 / 或 \\"
           );
         }
 
         const existPost = await findPostBySlug(slug, locale);
         if (existPost) {
-          throw new Error("post with same slug already exists");
+          throw new Error("已存在相同别名的文章");
         }
 
         const post: Post = {
@@ -149,6 +156,7 @@ export default async function () {
           locale,
           description,
           cover_url,
+          video_url,
           author_name,
           author_avatar_url,
           content,
@@ -159,7 +167,7 @@ export default async function () {
 
           return {
             status: "success",
-            message: "Post added",
+            message: "文章已新增",
             redirect_url: "/admin/posts",
           };
         } catch (err: any) {

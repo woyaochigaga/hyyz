@@ -6,6 +6,20 @@ import { Table as TableSlotType } from "@/types/slots/table";
 import { getAllPosts } from "@/models/post";
 import moment from "moment";
 
+function getStatusText(status?: string) {
+  switch (status) {
+    case "online":
+      return "已上线";
+    case "offline":
+      return "已下线";
+    case "deleted":
+      return "已删除";
+    case "created":
+    default:
+      return "草稿";
+  }
+}
+
 export default async function ({
   params: { locale },
 }: {
@@ -14,11 +28,11 @@ export default async function ({
   const posts = await getAllPosts();
 
   const table: TableSlotType = {
-    title: "Posts",
+    title: "文章管理",
     toolbar: {
       items: [
         {
-          title: "Add Post",
+          title: "新增文章",
           icon: "RiAddLine",
           url: `/${locale}/admin/posts/add`,
         },
@@ -27,27 +41,33 @@ export default async function ({
     columns: [
       {
         name: "title",
-        title: "Title",
+        title: "标题",
       },
       {
         name: "description",
-        title: "Description",
+        title: "描述",
       },
       {
         name: "slug",
-        title: "Slug",
+        title: "别名",
       },
       {
         name: "locale",
-        title: "Locale",
+        title: "语言",
       },
       {
         name: "status",
-        title: "Status",
+        title: "状态",
+        callback: (item: Post) => getStatusText(item.status),
+      },
+      {
+        name: "video_url",
+        title: "视频",
+        callback: (item: Post) => (item.video_url ? "已上传" : "无"),
       },
       {
         name: "created_at",
-        title: "Created At",
+        title: "创建时间",
         callback: (item: Post) => {
           return moment(item.created_at).format("YYYY-MM-DD HH:mm:ss");
         },
@@ -59,12 +79,12 @@ export default async function ({
 
           const items: NavItem[] = [
             {
-              title: "Edit",
+              title: "编辑",
               icon: "RiEditLine",
               url: `/${locale}/admin/posts/${item.uuid}/edit`,
             },
             {
-              title: "View",
+              title: "查看",
               icon: "RiEyeLine",
               url: `/${locale}/posts/${encodeURIComponent(slug)}`,
               target: "_self",
@@ -76,7 +96,7 @@ export default async function ({
       },
     ],
     data: posts,
-    empty_message: "No posts found",
+    empty_message: "暂无文章",
   };
 
   return <TableSlot {...table} />;

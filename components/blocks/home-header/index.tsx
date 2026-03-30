@@ -29,22 +29,48 @@ import Icon from "@/components/icon";
 import Link from "next/link";
 import LocaleToggle from "@/components/locale/toggle";
 import { Menu } from "lucide-react";
+import { Search } from "lucide-react";
 import SignToggle from "@/components/sign/toggle";
 import ThemeToggle from "@/components/theme/toggle";
 import { useAppContext } from "@/contexts/app";
 import { cn } from "@/lib/utils";
+import { usePathname, useRouter } from "next/navigation";
+import * as React from "react";
 
 export default function HomeHeader({ header }: { header: HeaderType }) {
   const { theme } = useAppContext();
+  const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname?.split("/")?.[1] || "";
+
+  const [query, setQuery] = React.useState("");
   if (header.disabled) {
     return null;
   }
 
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+
+    const postsUrl = locale ? `/${locale}/posts` : "/posts";
+    router.push(`${postsUrl}?keyword=${encodeURIComponent(q)}`);
+  };
+
+  const searchShellBase =
+    "flex h-9 w-full items-stretch overflow-hidden rounded-full border border-zinc-300/90 bg-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:border-white/[0.08] dark:bg-[#252632] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 hover:border-zinc-400/90 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_12px_rgba(0,0,0,0.08)] dark:hover:border-white/[0.15] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.3)] focus-within:border-zinc-400 focus-within:ring-2 focus-within:ring-zinc-400/30 dark:focus-within:border-white/20 dark:focus-within:ring-white/10";
+
+  const searchInputClass =
+    "min-w-0 flex-1 bg-transparent py-0 pl-4 pr-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500";
+
+  const searchSubmitClass =
+    "inline-flex shrink-0 items-center gap-1 border-l border-zinc-300/90 bg-zinc-200/80 px-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-300/80 hover:text-zinc-900 dark:border-white/[0.12] dark:bg-transparent dark:text-zinc-200 dark:hover:bg-white/[0.06] dark:hover:text-white";
+
   return (
-    <section className="py-3 px-1 w-full">
-      <div className="mx-auto w-full px-4 lg:px-8">
-        <nav className="flex justify-between w-full">
-          <div className="flex items-center gap-12">
+    <section className="z-40 w-full shrink-0 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/55">
+      <div className="mx-auto w-full px-3 lg:px-6">
+        <nav className="flex h-14 items-center gap-3 lg:gap-4 w-full">
+          <div className="flex min-w-0 shrink-0 items-center gap-6">
             <a
               href={header.brand?.url || ""}
               className="flex items-center gap-2"
@@ -57,105 +83,58 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                       : header.brand.logo.src
                   }
                   alt={header.brand.logo.alt || header.brand.title}
-                  className="w-12 h-12"
+                  className="h-9 w-9"
                 />
               )}
               {header.brand?.title && (
-                <span className="header-brand-title text-2xl font-bold">
+                <span className="header-brand-title text-xl font-bold">
                   {header.brand?.title || ""}
                 </span>
               )}
             </a>
-            {/* <div className="flex items-center">
-              <NavigationMenu className="hero-nav">
-                <NavigationMenuList className="hero-nav-list">
-                  {header.nav?.items?.map((item, i) => {
-                    if (item.children && item.children.length > 0) {
-                      return (
-                        <NavigationMenuItem
-                          key={i}
-                          className="hero-nav-item text-muted-foreground"
-                        >
-                          <NavigationMenuTrigger className="hero-nav-trigger">
-                            {item.icon && (
-                              <Icon
-                                name={item.icon}
-                                className="size-4 shrink-0 mr-2"
-                              />
-                            )}
-                            <span>{item.title}</span>
-                          </NavigationMenuTrigger>
-                          <NavigationMenuContent>
-                            <ul className="hero-nav-dropdown w-80 p-3">
-                              <NavigationMenuLink>
-                                {item.children.map((iitem, ii) => (
-                                  <li key={ii}>
-                                    <a
-                                      className={cn(
-                                        "hero-nav-dropdown-item flex select-none gap-4  rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                      )}
-                                      href={iitem.url}
-                                      target={iitem.target}
-                                    >
-                                      {iitem.icon && (
-                                        <Icon
-                                          name={iitem.icon}
-                                          className="size-5 shrink-0"
-                                        />
-                                      )}
-                                      <div>
-                                        <div className="text-l font-semibold">
-                                          {iitem.title}
-                                        </div>
-                                        <p className="text-l leading-snug text-muted-foreground">
-                                          {iitem.description}
-                                        </p>
-                                      </div>
-                                    </a>
-                                  </li>
-                                ))}
-                              </NavigationMenuLink>
-                            </ul>
-                          </NavigationMenuContent>
-                        </NavigationMenuItem>
-                      );
-                    }
-
-                    return (
-                      <NavigationMenuItem key={i}>
-                        <a
-                          className={cn(
-                            "hero-nav-link text-muted-foreground",
-                            navigationMenuTriggerStyle,
-                            buttonVariants({
-                              variant: "ghost",
-                            })
-                          )}
-                          href={item.url}
-                          target={item.target}
-                        >
-                          {item.icon && (
-                            <Icon
-                              name={item.icon}
-                              className="size-4 shrink-0 mr-0"
-                            />
-                          )}
-                          {item.title}
-                        </a>
-                      </NavigationMenuItem>
-                    );
-                  })}
-                </NavigationMenuList>
-              </NavigationMenu>
-            </div> */}
           </div>
-          <div className="shrink-0 flex gap-2 items-center">
-            {header.show_locale && <LocaleToggle />}
-            {header.show_theme && <ThemeToggle />}
+
+          {/* Desktop search — centered capsule like Douyin */}
+          <div className="hidden min-w-0 flex-1 justify-center lg:flex">
+            <form
+              onSubmit={submitSearch}
+              className={cn(
+                searchShellBase,
+                "max-w-[min(42vw,36rem)] min-w-[16rem]"
+              )}
+            >
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="搜索你感兴趣的内容"
+                className={searchInputClass}
+                aria-label="搜索"
+              />
+              <button
+                type="submit"
+                className={searchSubmitClass}
+                aria-label="搜索"
+              >
+                <Search className="size-[15px] opacity-90" strokeWidth={2.25} />
+                搜索
+              </button>
+            </form>
+          </div>
+
+          <div className="ml-auto flex shrink-0 gap-1.5 items-center">
+            {/* {header.show_locale && <LocaleToggle />} */}
+            <div className="scale-90 origin-right">
+              {header.show_theme && <ThemeToggle />}
+            </div>
 
             {header.buttons?.map((item, i) => {
               return (
-                <Button key={i} variant={item.variant}>
+                <Button
+                  key={i}
+                  variant={item.variant}
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                >
                   <Link
                     href={item.url || ""}
                     target={item.target || ""}
@@ -169,11 +148,13 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                 </Button>
               );
             })}
-            {header.show_sign && <SignToggle />}
+            <div className="scale-90 origin-right">
+              {header.show_sign && <SignToggle />}
+            </div>
           </div>
         </nav>
 
-        <div className="block lg:hidden">
+        <div className="block space-y-2 pb-2 lg:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {header.brand?.logo?.src && (
@@ -277,7 +258,7 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                   </Accordion>
                 </div>
                 <div className="flex-1"></div>
-                <div className="border-t pt-4">
+                <div className="pt-4">
                   <div className="mt-2 flex flex-col gap-3">
                     {header.buttons?.map((item, i) => {
                       return (
@@ -312,6 +293,23 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
               </SheetContent>
             </Sheet>
           </div>
+          <form onSubmit={submitSearch} className={searchShellBase}>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="搜索你感兴趣的内容"
+              className={searchInputClass}
+              aria-label="搜索"
+            />
+            <button
+              type="submit"
+              className={searchSubmitClass}
+              aria-label="搜索"
+            >
+              <Search className="size-[15px] opacity-90" strokeWidth={2.25} />
+              搜索
+            </button>
+          </form>
         </div>
       </div>
     </section>

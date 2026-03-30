@@ -39,24 +39,8 @@ export default async function LandingPage({
 
   return (
     <>
-      {(page.hero || page.branding) && (
-        <div className="min-h-[calc(100svh-3.5rem)] flex flex-col">
-          {page.hero && (
-            <Hero
-              hero={page.hero}
-              sectionClassName="flex-1 py-0 flex items-center"
-            />
-          )}
-          {page.branding && (
-            <Branding section={page.branding} sectionClassName="py-6" />
-          )}
-        </div>
-      )}
-
       
-      {page.introduce && <Feature1 section={page.introduce} />}
-      {page.benefit && <Feature2 section={page.benefit} />}
-      
+      展厅列表
     </>
   );
 }

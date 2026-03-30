@@ -8,19 +8,19 @@ export default async function () {
   const orders = await getPaiedOrders(1, 50);
 
   const columns: TableColumn[] = [
-    { name: "order_no", title: "Order No" },
-    { name: "paid_email", title: "Paid Email" },
-    { name: "product_name", title: "Product Name" },
-    { name: "amount", title: "Amount" },
+    { name: "order_no", title: "订单号" },
+    { name: "paid_email", title: "支付邮箱" },
+    { name: "product_name", title: "商品名称" },
+    { name: "amount", title: "金额" },
     {
       name: "created_at",
-      title: "Created At",
+      title: "创建时间",
       callback: (row) => moment(row.created_at).format("YYYY-MM-DD HH:mm:ss"),
     },
   ];
 
   const table: TableSlotType = {
-    title: "Paid Orders",
+    title: "已支付订单",
     columns,
     data: orders,
   };

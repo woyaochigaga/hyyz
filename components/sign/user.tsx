@@ -21,13 +21,16 @@ import { proxifyAvatarUrl } from "@/lib/avatar";
 
 export default function ({ user }: { user: User }) {
   const t = useTranslations();
-  const avatarSrc = proxifyAvatarUrl(user.avatar_url);
+  const avatarSrc = proxifyAvatarUrl(user.avatar_url || "");
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarImage src={avatarSrc} alt={user.nickname} />
+          <AvatarImage
+            src={avatarSrc || undefined}
+            alt={user.nickname || "User"}
+          />
           <AvatarFallback>{user.nickname}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
