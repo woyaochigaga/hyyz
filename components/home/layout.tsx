@@ -35,8 +35,14 @@ export default function HomeLayout({
       ) : null}
 
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 flex-1 flex-col gap-4 px-3 pb-4 pt-3 lg:flex-row lg:items-stretch lg:gap-4 lg:pl-4 lg:pr-3">
-          <aside className="hidden min-h-0 w-full max-h-full shrink-0 flex-col overflow-hidden lg:flex lg:w-[220px]">
+        <div
+          data-home-main-shell="true"
+          className="flex min-h-0 flex-1 flex-col gap-4 px-3 pb-4 pt-3 lg:flex-row lg:items-stretch lg:gap-4 lg:pl-4 lg:pr-3"
+        >
+          <aside
+            data-home-sidebar="true"
+            className="hidden min-h-0 w-full max-h-full shrink-0 flex-col overflow-hidden lg:flex lg:w-[220px]"
+          >
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="space-y-3 pb-3">
                 {rails?.leftNav && rails.leftNav.length > 0 && (
@@ -64,7 +70,10 @@ export default function HomeLayout({
             </div>
           </aside>
 
-          <section className="min-h-0 w-full min-w-0 max-w-none flex-1 overflow-y-auto overflow-x-hidden">
+          <section
+            data-home-content="true"
+            className="min-h-0 w-full min-w-0 max-w-none flex-1 overflow-y-auto overflow-x-hidden"
+          >
             {children}
           </section>
         </div>

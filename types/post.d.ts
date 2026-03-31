@@ -1,5 +1,6 @@
 export interface Post {
   uuid?: string;
+  user_uuid?: string;
   slug?: string;
   title?: string;
   description?: string;

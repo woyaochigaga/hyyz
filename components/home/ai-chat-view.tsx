@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useTranslations } from "next-intl";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -17,6 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { proxifyAvatarUrl } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 import {
   ArrowUp,
@@ -67,11 +69,25 @@ type UserInfoResponse = {
   code?: number;
   data?: {
     uuid?: string;
+    nickname?: string;
+    avatar_url?: string;
   };
+};
+
+type ChatProfile = {
+  uuid: string;
+  nickname: string;
+  avatarUrl: string;
 };
 
 function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function getInitials(name?: string, fallback = "U") {
+  const value = String(name || "").trim();
+  if (!value) return fallback;
+  return value.slice(0, 1).toUpperCase();
 }
 
 function formatHistoryDateLabel(
@@ -258,10 +274,10 @@ function HistoryPanel({
                       <div
                         key={c.id}
                         className={cn(
-                          "group flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors",
+                          "group flex w-full items-center gap-2 rounded-xl border px-2.5 py-2.5 text-sm transition-all",
                           activeId === c.id
-                            ? "bg-primary/15 text-primary dark:bg-primary/22 dark:text-white"
-                            : "text-zinc-600 hover:bg-black/[0.04] hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                            ? "border-zinc-200 bg-white text-zinc-900 shadow-[0_8px_24px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
+                            : "border-transparent text-zinc-600 hover:border-black/[0.05] hover:bg-white/70 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white/8 dark:hover:bg-white/[0.03] dark:hover:text-zinc-200"
                         )}
                       >
                         {selectionMode ? (
@@ -271,7 +287,7 @@ function HistoryPanel({
                             className={cn(
                               "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border transition",
                               selectedSet.has(c.id)
-                                ? "border-primary bg-primary text-white"
+                                ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900"
                                 : "border-zinc-300 text-transparent dark:border-zinc-600"
                             )}
                             aria-label={t("ai_chat.select_chat")}
@@ -419,6 +435,7 @@ export default function AiChatView({ locale }: { locale: string }) {
   const [deepThinking, setDeepThinking] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
   const [serverUserUuid, setServerUserUuid] = React.useState<string | null>(null);
+  const [currentUser, setCurrentUser] = React.useState<ChatProfile | null>(null);
   const [selectionMode, setSelectionMode] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -488,13 +505,21 @@ export default function AiChatView({ locale }: { locale: string }) {
         });
         const userResult = (await userResp.json()) as UserInfoResponse;
         const userUuid = String(userResult?.data?.uuid || "").trim();
+        const nickname = String(userResult?.data?.nickname || "").trim();
+        const avatarUrl = String(userResult?.data?.avatar_url || "").trim();
 
         if (!userUuid || cancelled) {
           setServerUserUuid(null);
+          setCurrentUser(null);
           return;
         }
 
         setServerUserUuid(userUuid);
+        setCurrentUser({
+          uuid: userUuid,
+          nickname: nickname || "User",
+          avatarUrl,
+        });
 
         const remoteResp = await fetch("/api/home/ai-chat/conversations");
         const remoteResult = await remoteResp.json();
@@ -546,6 +571,7 @@ export default function AiChatView({ locale }: { locale: string }) {
         }
       } catch {
         setServerUserUuid(null);
+        setCurrentUser(null);
       }
     };
 
@@ -1170,10 +1196,19 @@ export default function AiChatView({ locale }: { locale: string }) {
                     <div
                       key={m.id}
                       className={cn(
-                        "flex",
+                        "flex items-end gap-3",
                         m.role === "user" ? "justify-end" : "justify-start"
                       )}
                     >
+                      {m.role === "assistant" ? (
+                        <div className="shrink-0">
+                          <Avatar className="h-9 w-9 border border-black/5 bg-[linear-gradient(135deg,#171717,#3f3f46)] text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] dark:border-white/10">
+                            <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
+                              AI
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      ) : null}
                       <div
                         className={cn(
                           "max-w-[min(100%,720px)] rounded-2xl px-4 py-3 text-[15px] leading-relaxed",
@@ -1235,6 +1270,21 @@ export default function AiChatView({ locale }: { locale: string }) {
                           </>
                         )}
                       </div>
+                      {m.role === "user" ? (
+                        <div className="shrink-0">
+                          <Avatar className="h-9 w-9 border border-black/5 shadow-[0_8px_24px_rgba(15,23,42,0.12)] dark:border-white/10">
+                            <AvatarImage
+                              src={
+                                proxifyAvatarUrl(currentUser?.avatarUrl) || undefined
+                              }
+                              alt={currentUser?.nickname || "User"}
+                            />
+                            <AvatarFallback className="bg-zinc-200 text-xs font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100">
+                              {getInitials(currentUser?.nickname, "我")}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>

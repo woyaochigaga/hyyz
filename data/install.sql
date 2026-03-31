@@ -14,6 +14,10 @@ CREATE TABLE users (
     updated_at timestamptz,
     invited_by VARCHAR(255) NOT NULL default '',
     is_affiliate BOOLEAN NOT NULL default false,
+    phone_number VARCHAR(30) NOT NULL default '',
+    gender VARCHAR(20) NOT NULL default '',
+    signature VARCHAR(200) NOT NULL default '',
+    address VARCHAR(255) NOT NULL default '',
     UNIQUE (email, signin_provider)
 );
 
@@ -69,6 +73,7 @@ CREATE TABLE credits (
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
     uuid VARCHAR(255) UNIQUE NOT NULL,
+    user_uuid VARCHAR(255),
     slug VARCHAR(255),
     title VARCHAR(255),
     description TEXT,
@@ -90,6 +95,53 @@ CREATE TABLE ai_chat_conversations (
     title VARCHAR(255) NOT NULL DEFAULT '',
     locale VARCHAR(50) NOT NULL DEFAULT '',
     messages TEXT NOT NULL DEFAULT '[]',
+    created_at timestamptz,
+    updated_at timestamptz
+);
+
+CREATE TABLE home_posts (
+    id SERIAL PRIMARY KEY,
+    uuid VARCHAR(255) UNIQUE NOT NULL,
+    user_uuid VARCHAR(255) NOT NULL,
+    locale VARCHAR(50) NOT NULL DEFAULT '',
+    type VARCHAR(20) NOT NULL DEFAULT 'text',
+    title VARCHAR(255) NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    cover_url VARCHAR(500) NOT NULL DEFAULT '',
+    images TEXT NOT NULL DEFAULT '[]',
+    video_url VARCHAR(500) NOT NULL DEFAULT '',
+    status VARCHAR(20) NOT NULL DEFAULT 'published',
+    like_count INT NOT NULL DEFAULT 0,
+    comment_count INT NOT NULL DEFAULT 0,
+    created_at timestamptz,
+    updated_at timestamptz,
+    published_at timestamptz
+);
+
+CREATE TABLE home_post_tags (
+    id SERIAL PRIMARY KEY,
+    post_uuid VARCHAR(255) NOT NULL,
+    tag VARCHAR(100) NOT NULL,
+    created_at timestamptz,
+    UNIQUE (post_uuid, tag)
+);
+
+CREATE TABLE home_post_likes (
+    id SERIAL PRIMARY KEY,
+    post_uuid VARCHAR(255) NOT NULL,
+    user_uuid VARCHAR(255) NOT NULL,
+    created_at timestamptz,
+    UNIQUE (post_uuid, user_uuid)
+);
+
+CREATE TABLE home_post_comments (
+    id SERIAL PRIMARY KEY,
+    uuid VARCHAR(255) UNIQUE NOT NULL,
+    post_uuid VARCHAR(255) NOT NULL,
+    user_uuid VARCHAR(255) NOT NULL,
+    parent_uuid VARCHAR(255) NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at timestamptz,
     updated_at timestamptz
 );

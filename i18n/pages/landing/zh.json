@@ -14,7 +14,7 @@
       "items": [
         {
           "title": "首页",
-          "url": "/#hero",
+          "url": "/home",
           "icon": "HiOutlineSparkles"
         },
         {
@@ -61,7 +61,7 @@
       {
         "title": "进入云展厅",
         "icon": "RiFlashlightFill",
-        "url": "/home",
+        "url": "/home/world",
         "target": "_self",
         "variant": "default"
       }
@@ -350,7 +350,7 @@
         "is_featured": false,
         "tip": "一次开通，长期展示。",
         "button": {
-          "title": "获取 ShipAny",
+          "title": "立即申请",
           "url": "/#pricing",
           "icon": "RiFlashlightFill"
         },
@@ -381,7 +381,7 @@
         "is_featured": true,
         "tip": "提升品牌曝光与城市记忆。",
         "button": {
-          "title": "获取 ShipAny",
+          "title": "立即申请",
           "url": "/#pricing",
           "icon": "RiFlashlightFill"
         },
@@ -411,7 +411,7 @@
         "is_featured": false,
         "tip": "共塑杭州手工艺术城市名片。",
         "button": {
-          "title": "获取 ShipAny",
+          "title": "立即申请",
           "url": "/#pricing",
           "icon": "RiFlashlightFill"
         },
@@ -482,32 +482,32 @@
   "faq": {
     "name": "faq",
     "label": "常见问题",
-    "title": "关于 ShipAny 的常见问题",
-    "description": "还有其他问题？通过 Discord 或电子邮件联系我们。",
+    "title": "常见问题",
+    "description": "这里汇总了关于平台、展览和入驻合作的常见问题。",
     "items": [
       {
-        "title": "ShipAny 究竟是什么，它是如何工作的？",
-        "description": "ShipAny 是一个专门为构建 AI SaaS 创业项目设计的综合性 NextJS 模板。它提供即用型模板、基础设施设置和部署工具，帮助您在几小时内而不是几天内启动 AI 业务。"
+        "title": "杭艺云展是什么？",
+        "description": "杭艺云展是一个围绕杭州手工艺与匠人文化打造的线上云展平台，帮助用户在线浏览作品、了解匠人故事，并发现线下展览与城市文化内容。"
       },
       {
-        "title": "使用 ShipAny 需要高级技术技能吗？",
-        "description": "虽然基本的编程知识会有帮助，但 ShipAny 设计得非常开发者友好。我们的模板和文档使您即使不是 AI 或云基础设施专家也能轻松入门。"
+        "title": "哪些人适合使用杭艺云展？",
+        "description": "平台面向手艺人、工作室、文旅机构、收藏者、游客，以及所有对杭州手工艺和城市文化感兴趣的人群。"
       },
       {
-        "title": "我可以用 ShipAny 构建什么类型的 AI SaaS？",
-        "description": "ShipAny 支持广泛的 AI 应用，从内容生成到数据分析工具。我们的模板涵盖流行用例，如 AI 聊天机器人、内容生成器、图像处理应用等。"
+        "title": "在平台上可以做什么？",
+        "description": "你可以浏览精选作品、查看匠人档案、参与线上展览、使用 AI 提问功能了解相关知识，也可以在创作流中发布和互动。"
       },
       {
-        "title": "使用 ShipAny 通常需要多长时间才能启动？",
-        "description": "使用 ShipAny，您可以在几小时内完成工作原型，并在几小时内完成生产就绪的应用。我们的一键部署和预配置基础设施显著缩短了传统的数月开发周期。"
+        "title": "匠人或机构可以入驻吗？",
+        "description": "可以。平台支持个人匠人、工作室以及机构合作，帮助不同类型的合作方开展线上展示、专题策展和传播推广。"
       },
       {
-        "title": "ShipAny 的基础设施包括什么？",
-        "description": "ShipAny 提供完整的基础设施栈，包括身份验证、数据库设置、API 集成、支付处理和可扩展的云部署。一切都按照行业最佳实践预先配置。"
+        "title": "平台支持中英文吗？",
+        "description": "支持。平台已提供中英文内容展示，方便本地观众与海外游客更方便地理解作品与杭州工艺文化。"
       },
       {
-        "title": "我可以自定义模板以匹配我的品牌吗？",
-        "description": "当然可以！所有 ShipAny 模板都完全可定制。您可以修改设计、功能和功能性以匹配您的品牌标识和特定业务需求，同时保持强大的底层基础设施。"
+        "title": "AI 提问功能能做什么？",
+        "description": "AI 助手可以围绕杭艺云展平台、杭州手工艺、展览导览和相关文化主题提供讲解、答疑和辅助搜索。"
       }
     ]
   },
@@ -518,14 +518,14 @@
     "buttons": [
       {
         "title": "马上逛展",
-        "url": "/zh",
-        "target": "_blank",
+        "url": "/zh/home/world",
+        "target": "_self",
         "icon": "GoArrowUpRight"
       },
       {
         "title": "申请成为展出匠人",
         "url": "/zh#pricing",
-        "target": "_blank",
+        "target": "_self",
         "variant": "outline"
       }
     ]
@@ -568,19 +568,19 @@
           "title": "资源",
           "children": [
             {
-              "title": "文档",
-              "url": "https://docs.shipany.ai",
-              "target": "_blank"
+              "title": "云展大厅",
+              "url": "/zh/home/world",
+              "target": "_self"
             },
             {
-              "title": "组件",
-              "url": "https://shipany.ai/components",
-              "target": "_blank"
+              "title": "AI 提问",
+              "url": "/zh/home/ai-chat",
+              "target": "_self"
             },
             {
-              "title": "模板",
-              "url": "https://shipany.ai/templates",
-              "target": "_blank"
+              "title": "创作流",
+              "url": "/zh/home/world",
+              "target": "_self"
             }
           ]
         },
@@ -588,19 +588,19 @@
           "title": "友情链接",
           "children": [
             {
-              "title": "ThinkAny",
-              "url": "https://thinkany.ai",
-              "target": "_blank"
+              "title": "隐私政策",
+              "url": "/privacy-policy",
+              "target": "_self"
             },
             {
-              "title": "HeyBeauty",
-              "url": "https://heybeauty.ai",
-              "target": "_blank"
+              "title": "服务条款",
+              "url": "/terms-of-service",
+              "target": "_self"
             },
             {
-              "title": "Pagen",
-              "url": "https://pagen.so",
-              "target": "_blank"
+              "title": "申请入驻",
+              "url": "/zh#pricing",
+              "target": "_self"
             }
           ]
         }
@@ -609,27 +609,27 @@
     "social": {
       "items": [
         {
-          "title": "X",
-          "icon": "RiTwitterXFill",
-          "url": "https://x.com/shipanyai",
-          "target": "_blank"
+          "title": "首页",
+          "icon": "RiHomeLine",
+          "url": "/zh",
+          "target": "_self"
         },
         {
-          "title": "Github",
-          "icon": "RiGithubFill",
-          "url": "https://github.com/shipanyai",
-          "target": "_blank"
+          "title": "云展大厅",
+          "icon": "RiGalleryLine",
+          "url": "/zh/home/world",
+          "target": "_self"
         },
         {
-          "title": "Discord",
-          "icon": "RiDiscordFill",
-          "url": "https://discord.gg/HQNnrzjZQS",
-          "target": "_blank"
+          "title": "AI 提问",
+          "icon": "RiRobot2Line",
+          "url": "/zh/home/ai-chat",
+          "target": "_self"
         },
         {
-          "title": "邮箱",
+          "title": "隐私政策",
           "icon": "RiMailLine",
-          "url": "mailto:support@shipany.ai",
+          "url": "/privacy-policy",
           "target": "_self"
         }
       ]

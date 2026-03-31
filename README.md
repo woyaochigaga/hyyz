@@ -1,76 +1,71 @@
-# ShipAny Template One
+# 杭艺云展前端
 
-Ship Any AI SaaS Startups in hours.
+杭艺云展是一个围绕杭州手工艺、线上展览、匠人展示、AI 导览与内容创作流构建的 Next.js 前端项目。
 
 ![preview](preview.png)
 
-## Quick Start
+## 技术栈
 
-1. Clone the repository
+- Next.js 14 App Router
+- TypeScript
+- Tailwind CSS + shadcn/ui
+- next-intl
+- next-auth
+- Supabase
+- Stripe
+- Vercel AI SDK
 
-```bash
-git clone git@github.com:langrentaole/ai-saas-template.git
-```
+## 本地开发
 
-2. Install dependencies
+1. 安装依赖
 
 ```bash
 pnpm install
 ```
 
-3. Run the development server
-
-```bash
-pnpm dev
-```
-
-## Customize
-
-- Set your environment variables
+2. 初始化环境变量
 
 ```bash
 cp .env.example .env.local
 ```
 
-- Set your theme in `app/theme.css`
-
-[shadcn-ui-theme-generator](https://zippystarter.com/tools/shadcn-ui-theme-generator)
-
-- Set your landing page content in `i18n/pages/landing`
-
-- Set your i18n messages in `i18n/messages`
-
-## Deploy
-
-- Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fshipanyai%2Fshipany-template-one&project-name=my-shipany-project&repository-name=my-shipany-project&redirect-url=https%3A%2F%2Fshipany.ai&demo-title=ShipAny&demo-description=Ship%20Any%20AI%20Startup%20in%20hours%2C%20not%20days&demo-url=https%3A%2F%2Fshipany.ai&demo-image=https%3A%2F%2Fpbs.twimg.com%2Fmedia%2FGgGSW3La8AAGJgU%3Fformat%3Djpg%26name%3Dlarge)
-
-- Deploy to Cloudflare
-
-1. Customize your environment variables
+3. 启动开发环境
 
 ```bash
-cp .env.example .env.production
-cp wrangler.toml.example wrangler.toml
+pnpm dev
 ```
 
-edit your environment variables in `.env.production`
+默认地址为 `http://localhost:3000`。
 
-and put all the environment variables under `[vars]` in `wrangler.toml`
+## 主要目录
 
-2. Deploy
+- `app/`：页面与 API 路由
+- `components/`：界面组件
+- `models/`：Supabase 数据访问
+- `services/`：业务服务层
+- `i18n/`：国际化消息与落地页文案
+- `data/`：数据库初始化脚本
+
+## 常用命令
 
 ```bash
-npm run cf:deploy
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+pnpm analyze
+pnpm db:migrate
+pnpm cf:build
+pnpm cf:preview
+pnpm cf:deploy
 ```
 
-## Community
+## 部署说明
 
-- [ShipAny](https://shipany.ai)
-- [Documentation](https://docs.shipany.ai)
-- [Discord](https://discord.gg/HQNnrzjZQS)
+- Vercel：配置 `.env` 后直接部署
+- Cloudflare Pages：复制 `wrangler.toml.example` 为 `wrangler.toml` 后执行 `pnpm cf:deploy`
 
-## License
+## 说明
 
-- [ShipAny AI SaaS Boilerplate License Agreement](LICENSE)
+- 示例环境变量文件已改为占位值，请按实际环境填写
+- `LICENSE` 保留了上游模板授权文本，若准备对外发布，请自行确认授权与法律文案是否需要重写

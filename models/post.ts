@@ -107,3 +107,18 @@ export async function getPostsByLocale(
 
   return data;
 }
+
+export async function getPostsByUserUuid(user_uuid: string): Promise<Post[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*")
+    .eq("user_uuid", user_uuid)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return [];
+  }
+
+  return data || [];
+}

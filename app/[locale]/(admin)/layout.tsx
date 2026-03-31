@@ -22,10 +22,10 @@ export default async function AdminLayout({
 
   const sidebar: Sidebar = {
     brand: {
-      title: "hyyz",
+      title: "杭艺云展",
       logo: {
         src: "/logo.png",
-        alt: "hyyz",
+        alt: "杭艺云展",
       },
       url: "/admin",
     },
@@ -63,22 +63,22 @@ export default async function AdminLayout({
           icon: "RiHomeLine",
         },
         {
-          title: "Github",
-          url: "https://github.com/shipanyai/shipany-template-one",
-          target: "_blank",
-          icon: "RiGithubLine",
+          title: "云展首页",
+          url: "/home/world",
+          target: "_self",
+          icon: "RiHomeLine",
         },
         {
-          title: "Discord",
-          url: "https://discord.gg/HQNnrzjZQS",
-          target: "_blank",
-          icon: "RiDiscordLine",
+          title: "云展大厅",
+          url: "/home/world",
+          target: "_self",
+          icon: "RiGalleryLine",
         },
         {
-          title: "X",
-          url: "https://x.com/shipanyai",
-          target: "_blank",
-          icon: "RiTwitterLine",
+          title: "AI 提问",
+          url: "/home/ai-chat",
+          target: "_self",
+          icon: "RiRobot2Line",
         },
       ],
     },

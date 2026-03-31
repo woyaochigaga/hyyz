@@ -1,3 +1,5 @@
+export type UserGender = "" | "male" | "female" | "other";
+
 export interface User {
   id?: number;
   uuid?: string;
@@ -17,6 +19,10 @@ export interface User {
   invited_by?: string;
   is_affiliate?: boolean;
   role?: "user" | "artisan" | "admin";
+  phone_number?: string;
+  gender?: UserGender;
+  signature?: string;
+  address?: string;
 }
 
 export interface UserCredits {

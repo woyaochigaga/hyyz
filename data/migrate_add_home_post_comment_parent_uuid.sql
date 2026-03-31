@@ -1,0 +1,2 @@
+ALTER TABLE home_post_comments
+ADD COLUMN IF NOT EXISTS parent_uuid VARCHAR(255) NOT NULL DEFAULT '';

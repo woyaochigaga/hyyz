@@ -21,17 +21,17 @@ export default async function ({ children }: { children: ReactNode }) {
           url: "/personal_center",
           icon: "RiOrderPlayLine",
           is_active: false,
+        }, 
+        {
+          title: t("my_invites.title"),
+          url: "/my-posts",
+          icon: "RiImageLine",
+          is_active: false,
         },
         {
           title: t("my_credits.title"),
           url: "/my-credits",
           icon: "RiBankCardLine",
-          is_active: false,
-        },
-        {
-          title: t("my_invites.title"),
-          url: "/my-invites",
-          icon: "RiMoneyCnyCircleFill",
           is_active: false,
         },
         {

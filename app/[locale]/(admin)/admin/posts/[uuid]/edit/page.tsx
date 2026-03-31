@@ -190,6 +190,7 @@ export default async function ({ params }: { params: { uuid: string } }) {
 
         const updatedPost: Partial<Post> = {
           updated_at: getIsoTimestr(),
+          user_uuid: post.user_uuid || undefined,
           status,
           title,
           slug,

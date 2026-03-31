@@ -138,7 +138,19 @@ export async function updateUserNickname(
 
 export async function updateUserProfile(
   user_uuid: string,
-  patch: Partial<Pick<User, "email" | "nickname" | "avatar_url" | "role">>
+  patch: Partial<
+    Pick<
+      User,
+      | "email"
+      | "nickname"
+      | "avatar_url"
+      | "role"
+      | "phone_number"
+      | "gender"
+      | "signature"
+      | "address"
+    >
+  >
 ) {
   const supabase = getSupabaseClient();
   const updated_at = getIsoTimestr();

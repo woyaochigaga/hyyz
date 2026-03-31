@@ -149,6 +149,7 @@ export default async function () {
 
         const post: Post = {
           uuid: getUuid(),
+          user_uuid: user.uuid,
           created_at: getIsoTimestr(),
           status: PostStatus.Created,
           title,
@@ -157,8 +158,8 @@ export default async function () {
           description,
           cover_url,
           video_url,
-          author_name,
-          author_avatar_url,
+          author_name: author_name || user.nickname || "",
+          author_avatar_url: author_avatar_url || user.avatar_url || "",
           content,
         };
 

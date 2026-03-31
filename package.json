@@ -1,9 +1,9 @@
 {
-  "name": "shipany-template-one",
+  "name": "hangyi-cloud-expo-frontend",
   "version": "1.0.0",
   "private": true,
-  "author": "idoubi",
-  "homepage": "https://shipany.ai",
+  "author": "Hangyi Cloud Expo",
+  "homepage": "https://hyyz.vercel.app",
   "scripts": {
     "dev": "cross-env NODE_NO_WARNINGS=1 next dev",
     "build": "next build",

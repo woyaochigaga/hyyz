@@ -2,9 +2,18 @@ import { respData, respErr, respJson } from "@/lib/resp";
 import { getUserUuid } from "@/services/user";
 import { findUserByEmail, updateUserProfile } from "@/models/user";
 
-// 更新当前登录用户的基础资料：昵称、头像、邮箱、角色
+// 更新当前登录用户的基础资料
 // POST /api/user/update/profile
-// body: { nickname?: string; avatar_url?: string; email?: string; role?: "user" | "artisan" }
+// body: {
+//   nickname?: string;
+//   avatar_url?: string;
+//   email?: string;
+//   role?: "user" | "artisan";
+//   phone_number?: string;
+//   gender?: "" | "male" | "female" | "other";
+//   signature?: string;
+//   address?: string;
+// }
 export async function POST(req: Request) {
   try {
     const user_uuid = await getUserUuid();
@@ -13,11 +22,24 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    let { nickname, avatar_url, email, role } = body as {
+    let {
+      nickname,
+      avatar_url,
+      email,
+      role,
+      phone_number,
+      gender,
+      signature,
+      address,
+    } = body as {
       nickname?: string;
       avatar_url?: string;
       email?: string;
       role?: string;
+      phone_number?: string;
+      gender?: string;
+      signature?: string;
+      address?: string;
     };
 
     const patch: any = {};
@@ -67,6 +89,46 @@ export async function POST(req: Request) {
       patch.role = role;
     }
 
+    if (typeof phone_number === "string") {
+      const trimmed = phone_number.trim();
+      if (trimmed.length > 30) {
+        return respErr("手机号长度不能超过 30 个字符");
+      }
+      if (trimmed && !/^[0-9+\-\s()]+$/.test(trimmed)) {
+        return respErr("手机号格式不正确");
+      }
+      patch.phone_number = trimmed;
+    }
+
+    if (typeof gender === "string") {
+      const normalizedGender = gender.trim();
+      if (
+        normalizedGender !== "" &&
+        normalizedGender !== "male" &&
+        normalizedGender !== "female" &&
+        normalizedGender !== "other"
+      ) {
+        return respErr("无效的性别选项");
+      }
+      patch.gender = normalizedGender;
+    }
+
+    if (typeof signature === "string") {
+      const trimmed = signature.trim();
+      if (trimmed.length > 200) {
+        return respErr("个性签名不能超过 200 个字符");
+      }
+      patch.signature = trimmed;
+    }
+
+    if (typeof address === "string") {
+      const trimmed = address.trim();
+      if (trimmed.length > 255) {
+        return respErr("详细地址不能超过 255 个字符");
+      }
+      patch.address = trimmed;
+    }
+
     if (Object.keys(patch).length === 0) {
       return respErr("没有可更新的字段");
     }
@@ -79,4 +141,3 @@ export async function POST(req: Request) {
     return respErr("更新个人信息失败");
   }
 }
-
