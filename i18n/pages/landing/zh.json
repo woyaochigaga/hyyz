@@ -14,7 +14,7 @@
       "items": [
         {
           "title": "首页",
-          "url": "/home",
+          "url": "/",
           "icon": "HiOutlineSparkles"
         },
         {
@@ -61,7 +61,7 @@
       {
         "title": "进入云展厅",
         "icon": "RiFlashlightFill",
-        "url": "/home/world",
+        "url": "/home",
         "target": "_self",
         "variant": "default"
       }

@@ -11,6 +11,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import { getHomePostExcerpt } from "@/lib/home-post-content";
 import { HomePost } from "@/types/home-post";
 import { PlayCircle } from "lucide-react";
 
@@ -160,7 +161,7 @@ export function PostMediaGallery({
           </span>
         ) : null}
         <h3 className="mt-3 line-clamp-4 text-xl font-semibold leading-8 text-zinc-900 dark:text-white">
-          {post.title || post.content}
+          {post.title || post.excerpt || getHomePostExcerpt(post.content, 80)}
         </h3>
       </div>
     </div>

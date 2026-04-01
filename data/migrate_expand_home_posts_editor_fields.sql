@@ -1,0 +1,11 @@
+ALTER TABLE home_posts
+  ADD COLUMN IF NOT EXISTS excerpt TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS content_format VARCHAR(20) NOT NULL DEFAULT 'markdown',
+  ADD COLUMN IF NOT EXISTS editor_mode VARCHAR(20) NOT NULL DEFAULT 'hybrid',
+  ADD COLUMN IF NOT EXISTS content_blocks JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS attachments JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS display_settings JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+UPDATE home_posts
+SET excerpt = ''
+WHERE excerpt IS NULL;

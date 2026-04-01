@@ -214,12 +214,12 @@ function HistoryPanel({
   const hasSelected = selectedIds.length > 0;
 
   return (
-    <div className="flex h-full min-h-0 w-[280px] flex-col bg-[rgb(238,240,246)] dark:bg-[rgba(40,42,54,0.96)]">
+    <div className="flex h-full min-h-0 w-[280px] flex-col rounded-[26px] border border-[#9cb1ab]/16 bg-[linear-gradient(180deg,rgba(250,252,251,0.98),rgba(243,247,245,0.96))] shadow-[0_18px_48px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(28,32,33,0.98),rgba(23,27,28,0.98))]">
       <div className="shrink-0 space-y-3 p-3">
         <Button
           type="button"
           onClick={onNew}
-          className="h-10 w-full justify-center gap-2 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white/12 dark:text-white dark:hover:bg-white/18"
+          className="h-10 w-full justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#203b35,#31524a)] text-white shadow-[0_14px_30px_rgba(32,59,53,0.18)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
         >
           <MessageSquarePlus className="h-4 w-4" />
           {t("ai_chat.new_chat")}
@@ -227,13 +227,13 @@ function HistoryPanel({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
-        <div className="mb-2 flex shrink-0 items-center justify-between px-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+        <div className="mb-2 flex shrink-0 items-center justify-between px-1 text-xs font-medium uppercase tracking-[0.18em] text-[#6b827c] dark:text-[#92aea7]">
           <span>{t("ai_chat.history")}</span>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={onToggleSelectionMode}
-              className="rounded px-2 py-1 text-[11px] text-zinc-500 transition hover:bg-black/[0.06] hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-zinc-300"
+              className="rounded px-2 py-1 text-[11px] text-zinc-500 transition hover:bg-black/[0.04] hover:text-zinc-700 dark:hover:bg-white/5 dark:hover:text-zinc-300"
             >
               {selectionMode
                 ? t("ai_chat.selection_cancel")
@@ -266,7 +266,7 @@ function HistoryPanel({
                   value={label}
                   className="rounded-lg border-b-0 bg-transparent"
                 >
-                  <AccordionTrigger className="py-2 text-xs font-medium text-zinc-500 hover:no-underline [&[data-state=open]]:text-zinc-800 dark:text-zinc-500 dark:[&[data-state=open]]:text-zinc-200">
+                  <AccordionTrigger className="py-2 text-xs font-medium text-zinc-500 hover:no-underline [&[data-state=open]]:text-[#20312d] dark:text-zinc-500 dark:[&[data-state=open]]:text-zinc-200">
                     {label}
                   </AccordionTrigger>
                   <AccordionContent className="space-y-0.5 pb-2 pt-0">
@@ -276,8 +276,8 @@ function HistoryPanel({
                         className={cn(
                           "group flex w-full items-center gap-2 rounded-xl border px-2.5 py-2.5 text-sm transition-all",
                           activeId === c.id
-                            ? "border-zinc-200 bg-white text-zinc-900 shadow-[0_8px_24px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
-                            : "border-transparent text-zinc-600 hover:border-black/[0.05] hover:bg-white/70 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white/8 dark:hover:bg-white/[0.03] dark:hover:text-zinc-200"
+                            ? "border-[#cfd8d4] bg-white text-zinc-900 shadow-[0_12px_28px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
+                            : "border-transparent text-zinc-600 hover:border-black/[0.04] hover:bg-white/76 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white/8 dark:hover:bg-white/[0.03] dark:hover:text-zinc-200"
                         )}
                       >
                         {selectionMode ? (
@@ -287,7 +287,7 @@ function HistoryPanel({
                             className={cn(
                               "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border transition",
                               selectedSet.has(c.id)
-                                ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900"
+                                ? "border-[#203b35] bg-[#203b35] text-white dark:border-white dark:bg-white dark:text-zinc-900"
                                 : "border-zinc-300 text-transparent dark:border-zinc-600"
                             )}
                             aria-label={t("ai_chat.select_chat")}
@@ -358,12 +358,12 @@ function Composer({
   return (
     <div
       className={cn(
-        "rounded-2xl bg-[rgba(255,255,255,0.78)] p-3 shadow-[0_12px_48px_rgba(15,23,42,0.09),0_1px_0_rgba(255,255,255,0.9)_inset] backdrop-blur-xl dark:bg-[rgba(50,52,66,0.52)] dark:shadow-[0_18px_56px_rgba(6,8,16,0.42),0_1px_0_rgba(255,255,255,0.06)_inset]",
+        "rounded-[26px] border border-[#9cb1ab]/16 bg-[linear-gradient(180deg,rgba(252,253,252,0.98),rgba(246,249,247,0.96))] p-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(34,38,39,0.94),rgba(28,32,33,0.92))] dark:shadow-[0_18px_56px_rgba(6,8,16,0.42)]",
         compact ? "max-w-3xl" : "max-w-2xl w-full"
       )}
     >
       <div className="flex gap-2">
-        <Search className="mt-1.5 h-5 w-5 shrink-0 text-zinc-400 dark:text-zinc-500" />
+        <Search className="mt-1.5 h-5 w-5 shrink-0 text-[#7f9790] dark:text-zinc-500" />
         <Textarea
           ref={taRef}
           value={value}
@@ -389,7 +389,7 @@ function Composer({
           disabled={sending}
           className={cn(
             "gap-1.5 rounded-full text-zinc-600 hover:bg-black/[0.04] hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200",
-            deepThinking && "bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary"
+            deepThinking && "bg-[#dde8e3] text-[#24433c] hover:bg-[#d6e4de] hover:text-[#24433c] dark:bg-white/10 dark:text-[#dcebe6]"
           )}
         >
           <Brain className="h-4 w-4" />
@@ -409,7 +409,7 @@ function Composer({
           <Button
             type="button"
             size="icon"
-            className="h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90"
+            className="h-10 w-10 rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] text-white shadow-[0_14px_30px_rgba(32,59,53,0.22)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
             disabled={!value.trim() || sending}
             onClick={submit}
           >
@@ -1091,11 +1091,24 @@ export default function AiChatView({ locale }: { locale: string }) {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-[rgb(246,247,251)] text-zinc-900 dark:bg-[rgba(34,36,46,1)] dark:text-zinc-100",
+        "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[30px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] text-zinc-900 shadow-[0_26px_80px_rgba(43,60,55,0.08)] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))] dark:text-zinc-100",
         "h-[min(100%,calc(100dvh-5.75rem))] min-h-[480px] max-h-[calc(100dvh-5.75rem)]"
       )}
     >
-      <header className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(108,134,126,0.24),rgba(176,188,184,0.22),transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(117,144,136,0.24),rgba(86,104,99,0.20),transparent)]" />
+      <header className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-5 py-5 lg:px-6">
+        <div className="min-w-0">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-[#6b827c] dark:text-[#92aea7]">
+            AI
+          </div>
+          <h1 className="text-[2rem] font-semibold tracking-[0.01em] text-[#20312d] dark:text-[#e6efec]">
+            {t("ai_chat.meta_title")}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5d6f6a] dark:text-[#aac0ba]">
+            {t("ai_chat.greeting")}
+          </p>
+        </div>
+
         <div className="flex items-center gap-1">
           <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
             <SheetTrigger asChild>
@@ -1110,7 +1123,7 @@ export default function AiChatView({ locale }: { locale: string }) {
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="w-[300px] border-0 bg-[rgb(238,240,246)] p-0 text-zinc-900 shadow-none dark:bg-[rgba(40,42,54,0.98)] dark:text-zinc-100 [&>button]:text-zinc-500 dark:[&>button]:text-zinc-400"
+              className="w-[320px] border-0 bg-transparent p-3 text-zinc-900 shadow-none dark:text-zinc-100 [&>button]:text-zinc-500 dark:[&>button]:text-zinc-400"
             >
               <SheetHeader className="sr-only">
                 <SheetTitle>{t("ai_chat.history")}</SheetTitle>
@@ -1140,7 +1153,7 @@ export default function AiChatView({ locale }: { locale: string }) {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 gap-4 px-4 pb-4 lg:px-6 lg:pb-6">
         <div
           className={cn(
             "hidden shrink-0 overflow-hidden transition-[width] duration-200 ease-out lg:block",
@@ -1150,7 +1163,7 @@ export default function AiChatView({ locale }: { locale: string }) {
           <HistoryPanel {...historyPanelProps} />
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[26px] border border-[#9cb1ab]/16 bg-[linear-gradient(180deg,rgba(251,252,252,0.98),rgba(243,246,245,0.97))] shadow-[0_24px_64px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(27,31,31,0.98),rgba(22,26,26,0.98))]">
           {!hasStarted ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 pt-14 pb-8">
               <h1 className="mb-10 text-center text-2xl font-semibold tracking-tight text-zinc-900 md:text-3xl dark:text-white">
@@ -1174,9 +1187,9 @@ export default function AiChatView({ locale }: { locale: string }) {
                     onClick={() => {
                       setInput(card.text);
                     }}
-                    className="rounded-2xl bg-[rgba(15,23,42,0.04)] p-4 text-left transition hover:bg-[rgba(15,23,42,0.07)] dark:bg-[rgba(255,255,255,0.05)] dark:hover:bg-[rgba(255,255,255,0.08)]"
+                    className="rounded-[22px] border border-[#d8e2de] bg-white/82 p-4 text-left shadow-[0_12px_28px_rgba(15,23,42,0.04)] transition hover:-translate-y-px hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
                   >
-                    <p className="text-xs font-medium text-zinc-500">{card.cat}</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#6b827c] dark:text-[#92aea7]">{card.cat}</p>
                     <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-200">
                       <span className="mr-1">{card.emoji}</span>
                       {card.text}
@@ -1213,10 +1226,10 @@ export default function AiChatView({ locale }: { locale: string }) {
                         className={cn(
                           "max-w-[min(100%,720px)] rounded-2xl px-4 py-3 text-[15px] leading-relaxed",
                           m.role === "user"
-                            ? "bg-[rgba(43,95,200,0.92)] text-white shadow-[0_2px_14px_rgba(37,80,160,0.28)] dark:bg-[rgba(55,110,220,0.92)] dark:shadow-[0_2px_12px_rgba(28,64,140,0.35)]"
+                            ? "bg-[linear-gradient(135deg,#203b35,#31524a)] text-white shadow-[0_10px_28px_rgba(32,59,53,0.18)] dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
                             : m.error
                               ? "bg-[rgba(255,244,244,0.98)] text-red-700 shadow-[0_1px_3px_rgba(15,23,42,0.06)] dark:bg-[rgba(84,34,34,0.9)] dark:text-red-100 dark:shadow-none"
-                              : "bg-[rgba(255,255,255,0.92)] text-zinc-800 shadow-[0_1px_3px_rgba(15,23,42,0.06)] dark:bg-[rgba(46,48,60,0.92)] dark:text-zinc-100 dark:shadow-none"
+                              : "bg-[rgba(255,255,255,0.92)] text-zinc-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] dark:bg-[rgba(46,48,60,0.92)] dark:text-zinc-100 dark:shadow-none"
                         )}
                       >
                         {m.pending ? (
@@ -1289,8 +1302,8 @@ export default function AiChatView({ locale }: { locale: string }) {
                   ))}
                 </div>
 
-                <aside className="hidden w-[220px] shrink-0 px-3 py-6 lg:block">
-                  <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <aside className="hidden w-[240px] shrink-0 px-3 py-6 lg:block">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-[#6b827c] dark:text-[#92aea7]">
                     {t("ai_chat.followup_title")}
                   </p>
                   <ul className="space-y-2">
@@ -1299,7 +1312,7 @@ export default function AiChatView({ locale }: { locale: string }) {
                         <button
                           type="button"
                           onClick={() => setInput(line)}
-                          className="flex w-full gap-2 rounded-lg px-2 py-2 text-left text-sm text-primary transition hover:bg-black/[0.04] dark:text-[rgba(124,168,255,0.95)] dark:hover:bg-[rgba(255,255,255,0.05)]"
+                          className="flex w-full gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-[#24433c] transition hover:bg-black/[0.04] dark:text-[#cfe3dd] dark:hover:bg-[rgba(255,255,255,0.05)]"
                         >
                           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
                           <span>{line}</span>
@@ -1310,7 +1323,7 @@ export default function AiChatView({ locale }: { locale: string }) {
                 </aside>
               </div>
 
-              <div className="shrink-0 bg-gradient-to-t from-[rgb(246,247,251)] via-[rgba(246,247,251,0.92)] to-transparent px-4 pb-5 pt-2 backdrop-blur-sm dark:from-[rgba(34,36,46,1)] dark:via-[rgba(34,36,46,0.9)]">
+              <div className="shrink-0 bg-gradient-to-t from-[rgba(243,246,245,0.98)] via-[rgba(243,246,245,0.92)] to-transparent px-4 pb-5 pt-2 backdrop-blur-sm dark:from-[rgba(27,31,31,0.98)] dark:via-[rgba(27,31,31,0.9)]">
                 <div className="mx-auto w-full max-w-3xl">
                   <Composer
                     compact

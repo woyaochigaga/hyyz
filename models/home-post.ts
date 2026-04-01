@@ -3,12 +3,17 @@ import { getUsersByUuids } from "@/models/user";
 import {
   HomePost,
   HomePostAuthor,
+  HomePostAttachment,
   HomePostComment,
   HomePostCommentStatus,
+  HomePostDisplaySettings,
+  HomePostEditorMode,
+  HomePostContentFormat,
   HomePostStatus,
   HomePostType,
 } from "@/types/home-post";
 import { getIsoTimestr } from "@/lib/time";
+import { getHomePostExcerpt } from "@/lib/home-post-content";
 
 type HomePostRow = {
   id?: number;
@@ -17,9 +22,15 @@ type HomePostRow = {
   locale?: string;
   type: HomePostType;
   title?: string;
+  excerpt?: string;
   content?: string;
+  content_format?: HomePostContentFormat;
+  editor_mode?: HomePostEditorMode;
+  content_blocks?: unknown;
+  attachments?: unknown;
+  display_settings?: unknown;
   cover_url?: string;
-  images?: string;
+  images?: unknown;
   video_url?: string;
   status?: HomePostStatus;
   like_count?: number;
@@ -51,7 +62,7 @@ type HomePostCommentRow = {
   updated_at?: string;
 };
 
-function normalizeImages(input: unknown): string[] {
+function normalizeStringArray(input: unknown): string[] {
   if (Array.isArray(input)) {
     return input.map((item) => String(item || "").trim()).filter(Boolean);
   }
@@ -68,6 +79,105 @@ function normalizeImages(input: unknown): string[] {
   }
 
   return [];
+}
+
+function normalizeImages(input: unknown): string[] {
+  return normalizeStringArray(input);
+}
+
+function normalizeRecordArray(input: unknown): Record<string, unknown>[] {
+  if (Array.isArray(input)) {
+    return input.filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === "object" && item !== null && !Array.isArray(item)
+    );
+  }
+
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (item): item is Record<string, unknown> =>
+            typeof item === "object" && item !== null && !Array.isArray(item)
+        );
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function normalizeAttachments(input: unknown): HomePostAttachment[] {
+  const attachments = normalizeRecordArray(input).map((item): HomePostAttachment | null => {
+      const type = String(item.type || "").trim();
+      const url = String(item.url || "").trim();
+
+      if (!url) return null;
+      if (!["image", "video", "file", "link"].includes(type)) return null;
+
+      return {
+        type: type as HomePostAttachment["type"],
+        url,
+        title: String(item.title || "").trim() || undefined,
+        mime_type: String(item.mime_type || "").trim() || undefined,
+        size:
+          typeof item.size === "number" && Number.isFinite(item.size)
+            ? item.size
+            : undefined,
+        width:
+          typeof item.width === "number" && Number.isFinite(item.width)
+            ? item.width
+            : undefined,
+        height:
+          typeof item.height === "number" && Number.isFinite(item.height)
+            ? item.height
+            : undefined,
+        alt: String(item.alt || "").trim() || undefined,
+      };
+    });
+
+  return attachments.filter((item): item is HomePostAttachment => item !== null).slice(0, 30);
+}
+
+function normalizeDisplaySettings(input: unknown): HomePostDisplaySettings {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    if (typeof input === "string") {
+      try {
+        const parsed = JSON.parse(input);
+        return normalizeDisplaySettings(parsed);
+      } catch {
+        return {};
+      }
+    }
+
+    return {};
+  }
+
+  const raw = input as Record<string, unknown>;
+  const contentWidth = String(raw.content_width || "").trim();
+  const coverStyle = String(raw.cover_style || "").trim();
+
+  return {
+    content_width:
+      contentWidth === "compact" ||
+      contentWidth === "comfortable" ||
+      contentWidth === "wide"
+        ? (contentWidth as HomePostDisplaySettings["content_width"])
+        : undefined,
+    cover_style:
+      coverStyle === "auto" ||
+      coverStyle === "immersive" ||
+      coverStyle === "card"
+        ? (coverStyle as HomePostDisplaySettings["cover_style"])
+        : undefined,
+    emphasize_excerpt:
+      typeof raw.emphasize_excerpt === "boolean"
+        ? raw.emphasize_excerpt
+        : undefined,
+  };
 }
 
 function normalizeTags(tags: unknown): string[] {
@@ -91,7 +201,13 @@ function toHomePost(row: HomePostRow): HomePost {
     locale: row.locale || "",
     type: row.type,
     title: row.title || "",
+    excerpt: row.excerpt || "",
     content: row.content || "",
+    content_format: row.content_format || "markdown",
+    editor_mode: row.editor_mode || "hybrid",
+    content_blocks: normalizeRecordArray(row.content_blocks),
+    attachments: normalizeAttachments(row.attachments),
+    display_settings: normalizeDisplaySettings(row.display_settings),
     cover_url: row.cover_url || "",
     images: normalizeImages(row.images),
     video_url: row.video_url || "",
@@ -242,6 +358,19 @@ export function validateHomePostPayload(input: Partial<HomePost>) {
   const type = (input.type || "text") as HomePostType;
   const content = String(input.content || "").trim();
   const title = String(input.title || "").trim();
+  const excerpt = String(input.excerpt || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 280);
+  const content_format: HomePostContentFormat =
+    input.content_format === "plain" ? "plain" : "markdown";
+  const editor_mode: HomePostEditorMode =
+    input.editor_mode === "markdown" || input.editor_mode === "rich"
+      ? input.editor_mode
+      : "hybrid";
+  const content_blocks = normalizeRecordArray(input.content_blocks);
+  const attachments = normalizeAttachments(input.attachments);
+  const display_settings = normalizeDisplaySettings(input.display_settings);
   const cover_url = String(input.cover_url || "").trim();
   const images = normalizeImages(input.images);
   const video_url = String(input.video_url || "").trim();
@@ -269,7 +398,14 @@ export function validateHomePostPayload(input: Partial<HomePost>) {
     }
   } else {
     const hasAnyContent = Boolean(
-      title || content || cover_url || images.length > 0 || video_url || tags.length > 0
+      title ||
+        excerpt ||
+        content ||
+        cover_url ||
+        images.length > 0 ||
+        video_url ||
+        tags.length > 0 ||
+        attachments.length > 0
     );
     if (!hasAnyContent) {
       throw new Error("draft is empty");
@@ -279,7 +415,13 @@ export function validateHomePostPayload(input: Partial<HomePost>) {
   return {
     type,
     title: title || content.slice(0, 30),
+    excerpt: excerpt || getHomePostExcerpt(content, 120),
     content,
+    content_format,
+    editor_mode,
+    content_blocks,
+    attachments,
+    display_settings,
     cover_url,
     images: images.length > 0 ? images : cover_url ? [cover_url] : [],
     video_url,
@@ -302,7 +444,13 @@ export async function createHomePost(
     locale: post.locale || "",
     type: post.type,
     title: post.title || "",
+    excerpt: post.excerpt || "",
     content: post.content || "",
+    content_format: post.content_format || "markdown",
+    editor_mode: post.editor_mode || "hybrid",
+    content_blocks: normalizeRecordArray(post.content_blocks),
+    attachments: normalizeAttachments(post.attachments),
+    display_settings: normalizeDisplaySettings(post.display_settings),
     cover_url: post.cover_url || "",
     images: JSON.stringify(normalizeImages(post.images)),
     video_url: post.video_url || "",
@@ -333,7 +481,19 @@ export async function updateHomePost(
 
   if (patch.type) updatePayload.type = patch.type;
   if (typeof patch.title === "string") updatePayload.title = patch.title;
+  if (typeof patch.excerpt === "string") updatePayload.excerpt = patch.excerpt;
   if (typeof patch.content === "string") updatePayload.content = patch.content;
+  if (patch.content_format) updatePayload.content_format = patch.content_format;
+  if (patch.editor_mode) updatePayload.editor_mode = patch.editor_mode;
+  if (patch.content_blocks) {
+    updatePayload.content_blocks = normalizeRecordArray(patch.content_blocks);
+  }
+  if (patch.attachments) {
+    updatePayload.attachments = normalizeAttachments(patch.attachments);
+  }
+  if (patch.display_settings) {
+    updatePayload.display_settings = normalizeDisplaySettings(patch.display_settings);
+  }
   if (typeof patch.cover_url === "string") updatePayload.cover_url = patch.cover_url;
   if (patch.images) updatePayload.images = JSON.stringify(normalizeImages(patch.images));
   if (typeof patch.video_url === "string") updatePayload.video_url = patch.video_url;

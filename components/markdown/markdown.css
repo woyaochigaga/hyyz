@@ -31,9 +31,18 @@
   margin-bottom: 16px;
 }
 
+.markdown strong {
+  font-weight: 700;
+}
+
+.markdown em {
+  font-style: italic;
+}
+
 .markdown a {
   color: #3182ce;
   text-decoration: none;
+  word-break: break-word;
 }
 
 .markdown a:hover {
@@ -55,14 +64,106 @@
   font-size: 85%;
 }
 
+.markdown :not(pre) > code {
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.06);
+  padding: 0.18rem 0.4rem;
+}
+
 .markdown ul,
 .markdown ol {
-  padding-left: 1em;
+  padding-left: 1.25em;
   margin-bottom: 16px;
+}
+
+.markdown ul {
   list-style-type: square;
 }
 
+.markdown ol {
+  list-style-type: decimal;
+}
+
+.markdown li + li {
+  margin-top: 6px;
+}
+
+.markdown blockquote {
+  margin: 0 0 16px;
+  border-left: 4px solid rgba(113, 128, 150, 0.35);
+  padding-left: 16px;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.markdown hr {
+  margin: 24px 0;
+  border: 0;
+  border-top: 1px solid rgba(113, 128, 150, 0.25);
+}
+
 .markdown img {
+  display: block;
   max-width: 100%;
   box-sizing: border-box;
+  border-radius: 16px;
+  margin: 16px 0;
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid rgba(113, 128, 150, 0.2);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+/* Dark mode: readable prose on dark cards (e.g. 作品详情) */
+.dark .markdown {
+  color: #d4d4d8;
+}
+
+.dark .markdown h1,
+.dark .markdown h2,
+.dark .markdown h3,
+.dark .markdown h4,
+.dark .markdown h5,
+.dark .markdown h6 {
+  color: #f4f4f5;
+}
+
+.dark .markdown a {
+  color: #5eead4;
+}
+
+.dark .markdown a:hover {
+  color: #99f6e4;
+}
+
+.dark .markdown :not(pre) > code {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e4e4e7;
+}
+
+.dark .markdown pre {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dark .markdown blockquote {
+  border-left-color: rgba(148, 163, 184, 0.45);
+  color: #cbd5e1;
+}
+
+.dark .markdown hr {
+  border-top-color: rgba(148, 163, 184, 0.25);
+}
+
+.dark .markdown th,
+.dark .markdown td {
+  border-color: rgba(148, 163, 184, 0.25);
 }

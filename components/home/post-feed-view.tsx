@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { proxifyAvatarUrl } from "@/lib/avatar";
+import { getHomePostExcerpt } from "@/lib/home-post-content";
 import {
   FileImage,
   FileText,
@@ -84,11 +85,12 @@ function getPostHref(locale: string, uuid: string) {
   return `/${locale}/home/post/${uuid}`;
 }
 
+/** 文本帖内层「本文」预览：与社区主色统一，轮换轻微色相变化 */
 function getTextCardTone(index: number) {
   const tones = [
-    "border-[#d9d3c4] bg-[linear-gradient(135deg,rgba(251,247,236,0.98),rgba(244,235,214,0.94))] dark:border-[#5b5548] dark:bg-[linear-gradient(180deg,rgba(54,48,38,0.96),rgba(39,35,29,0.94))]",
-    "border-[#d4ddd8] bg-[linear-gradient(135deg,rgba(240,247,244,0.98),rgba(223,235,229,0.94))] dark:border-[#4d615a] dark:bg-[linear-gradient(180deg,rgba(36,49,45,0.96),rgba(29,39,36,0.94))]",
-    "border-[#d7dbe5] bg-[linear-gradient(135deg,rgba(244,246,252,0.98),rgba(227,233,245,0.94))] dark:border-[#505869] dark:bg-[linear-gradient(180deg,rgba(36,40,52,0.96),rgba(29,33,44,0.94))]",
+    "border-[#b8cfc8]/55 bg-[linear-gradient(165deg,rgba(255,255,255,0.97)_0%,rgba(241,248,245,0.92)_48%,rgba(232,241,237,0.88)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:border-[#4a635c]/50 dark:bg-[linear-gradient(165deg,rgba(32,38,36,0.98)_0%,rgba(26,32,30,0.96)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+    "border-[#aec9c2]/50 bg-[linear-gradient(165deg,rgba(255,255,255,0.97)_0%,rgba(238,246,243,0.93)_52%,rgba(228,238,233,0.9)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:border-[#3f5a54]/45 dark:bg-[linear-gradient(165deg,rgba(30,36,35,0.98)_0%,rgba(24,30,28,0.95)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+    "border-[#c5d4cf]/55 bg-[linear-gradient(165deg,rgba(255,255,255,0.98)_0%,rgba(244,249,247,0.94)_50%,rgba(234,242,239,0.9)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-[#4f6b63]/48 dark:bg-[linear-gradient(165deg,rgba(28,34,32,0.98)_0%,rgba(22,28,26,0.96)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
   ];
 
   return tones[index % tones.length];
@@ -268,19 +270,23 @@ export function HomePostFeedView({ locale }: { locale: string }) {
                   {post.type === "text" ? (
                     <div
                       className={cn(
-                        "relative overflow-hidden rounded-[18px] border px-4 py-4",
+                        "relative overflow-hidden rounded-[20px] border px-5 pb-5 pt-4",
                         getTextCardTone(index)
                       )}
                     >
-                      <div className="pointer-events-none absolute right-3 top-2 text-[52px] font-semibold leading-none text-black/[0.06] dark:text-white/[0.05]">
-                        "
+                      <div
+                        className="pointer-events-none absolute inset-y-3 left-0 w-[3px] rounded-full bg-[linear-gradient(180deg,#5d8a7e,#3d5c54)] opacity-90 dark:opacity-80"
+                        aria-hidden
+                      />
+                      <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#6b9083]/[0.07] blur-2xl dark:bg-[#8fb5a8]/[0.06]" />
+                      <div className="mb-3.5 flex items-center gap-2 pl-1">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#8ea8a1]/22 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-[#3d524c] shadow-[0_1px_2px_rgba(15,23,42,0.04)] backdrop-blur-sm dark:border-white/10 dark:bg-[rgba(40,52,48,0.65)] dark:text-[#c8ddd6]">
+                          <FileText className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                          {t("feed.text_card_badge")}
+                        </span>
                       </div>
-                      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(120,120,120,0.18),transparent)]" />
-                      <div className="mb-3 inline-flex rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#6b685d] shadow-sm dark:bg-white/[0.08] dark:text-[#d7d2c4]">
-                        Short Note
-                      </div>
-                      <p className="line-clamp-4 whitespace-pre-wrap text-[16px] font-medium leading-7 tracking-[-0.01em] text-[#2e312b] dark:text-[#f1eee7]">
-                        {post.content}
+                      <p className="line-clamp-5 pl-1 text-[15px] font-normal leading-[1.72] tracking-[-0.01em] text-[#24302c] dark:text-[#e8f1ed]">
+                        {post.excerpt || getHomePostExcerpt(post.content, 140)}
                       </p>
                     </div>
                   ) : (

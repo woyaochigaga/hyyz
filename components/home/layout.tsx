@@ -41,7 +41,7 @@ export default function HomeLayout({
         >
           <aside
             data-home-sidebar="true"
-            className="hidden min-h-0 w-full max-h-full shrink-0 flex-col overflow-hidden lg:flex lg:w-[220px]"
+            className="hidden min-h-0 w-full max-h-full shrink-0 flex-col overflow-hidden md:flex md:w-[200px] lg:w-[220px]"
           >
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="space-y-3 pb-3">
