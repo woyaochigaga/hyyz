@@ -29,6 +29,12 @@ export default async function ({ children }: { children: ReactNode }) {
           is_active: false,
         },
         {
+          title: "线下展览申请",
+          url: "/my-exhibitions",
+          icon: "RiMapPinLine",
+          is_active: false,
+        },
+        {
           title: t("my_credits.title"),
           url: "/my-credits",
           icon: "RiBankCardLine",

@@ -37,6 +37,22 @@ pnpm dev
 
 默认地址为 `http://localhost:3000`。
 
+## 高德地图接入
+
+如果你要启用线下展览申请页里的地图预览、地址解析和“获取当前位置”功能，请在你本地的 `.env.local` 里补充：
+
+```bash
+NEXT_PUBLIC_AMAP_KEY=你的高德Web端JSAPI Key
+NEXT_PUBLIC_AMAP_SECURITY_JS_CODE=你的安全密钥
+```
+
+说明：
+
+- `NEXT_PUBLIC_AMAP_KEY`：必填，否则地图 SDK 无法加载
+- `NEXT_PUBLIC_AMAP_SECURITY_JS_CODE`：多数开启安全校验的高德项目也需要配置
+- 线下展览页现在只保存文本地址，不保存经纬度；地图预览时会临时解析位置
+- “获取当前位置”依赖浏览器定位权限，请在本地开发或正式域名环境下允许定位
+
 ## 主要目录
 
 - `app/`：页面与 API 路由
