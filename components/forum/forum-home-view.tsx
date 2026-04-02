@@ -1,0 +1,831 @@
+"use client";
+
+import * as React from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { Home, Plus, Users } from "lucide-react";
+import { ForumBar, ForumPost } from "@/types/forum";
+import { ForumBarDetailSection } from "@/components/forum/bar-detail-section";
+import { ForumPostDetailSection } from "@/components/forum/post-detail-section";
+import { ForumPostCard } from "@/components/forum/post-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { proxifyAvatarUrl } from "@/lib/avatar";
+import { cn } from "@/lib/utils";
+import { ForumPostDetail } from "@/types/forum";
+
+function barInitial(name: string) {
+  return String(name || "").trim().slice(0, 1) || "?";
+}
+
+export function ForumHomeView({
+  locale,
+  initialBars,
+  initialPosts,
+  followingBarIds,
+}: {
+  locale: string;
+  initialBars: ForumBar[];
+  initialPosts: ForumPost[];
+  followingBarIds: string[];
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isZh = locale.startsWith("zh");
+  const [bars, setBars] = React.useState(initialBars);
+  const [posts, setPosts] = React.useState(initialPosts);
+
+  const [selectedBarId, setSelectedBarId] = React.useState(
+    followingBarIds[0] || initialBars[0]?.id || ""
+  );
+  const [postTitle, setPostTitle] = React.useState("");
+  const [postContent, setPostContent] = React.useState("");
+
+  const [barName, setBarName] = React.useState("");
+  const [barDescription, setBarDescription] = React.useState("");
+  const [barCover, setBarCover] = React.useState("");
+
+  const [submittingPost, setSubmittingPost] = React.useState(false);
+  const [submittingBar, setSubmittingBar] = React.useState(false);
+  const [followingBarId, setFollowingBarId] = React.useState("");
+  const [postDialogOpen, setPostDialogOpen] = React.useState(false);
+  const [barDialogOpen, setBarDialogOpen] = React.useState(false);
+  const [activeBarId, setActiveBarId] = React.useState("");
+  const [activeBarDetail, setActiveBarDetail] = React.useState<ForumBar | null>(null);
+  const [activeBarPosts, setActiveBarPosts] = React.useState<ForumPost[]>([]);
+  const [loadingBarId, setLoadingBarId] = React.useState("");
+  const [activePostId, setActivePostId] = React.useState("");
+  const [activePostDetail, setActivePostDetail] = React.useState<ForumPostDetail | null>(null);
+  const [loadingPostId, setLoadingPostId] = React.useState("");
+
+  React.useEffect(() => {
+    if (!selectedBarId && bars[0]?.id) setSelectedBarId(bars[0].id);
+  }, [bars, selectedBarId]);
+
+  const handleCreatePost = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmittingPost(true);
+
+    try {
+      const resp = await fetch("/api/forum/post/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: postTitle,
+          content: postContent,
+          bar_id: selectedBarId,
+        }),
+      });
+
+      const result = await resp.json();
+      if (result.code !== 0 || !result.data?.id) {
+        throw new Error(result.message || (isZh ? "发帖失败" : "Failed to publish"));
+      }
+
+      setPostTitle("");
+      setPostContent("");
+      setPostDialogOpen(false);
+      toast.success(isZh ? "帖子已发布" : "Post published");
+      router.push(`/${locale}/home/forum?post=${result.data.id}`);
+      router.refresh();
+    } catch (error: any) {
+      toast.error(error?.message || (isZh ? "发帖失败" : "Failed to publish"));
+    } finally {
+      setSubmittingPost(false);
+    }
+  };
+
+  const handleCreateBar = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmittingBar(true);
+
+    try {
+      const resp = await fetch("/api/forum/bar/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: barName,
+          description: barDescription,
+          cover_image: barCover,
+        }),
+      });
+
+      const result = await resp.json();
+      if (result.code !== 0 || !result.data?.id) {
+        throw new Error(result.message || (isZh ? "创建吧失败" : "Failed to create bar"));
+      }
+
+      const createdBar = result.data as ForumBar;
+      setBars((current) => [createdBar, ...current.filter((item) => item.id !== createdBar.id)]);
+      setSelectedBarId(createdBar.id);
+      setActivePostId("");
+      setActivePostDetail(null);
+      setActiveBarId(createdBar.id);
+      setActiveBarDetail(createdBar);
+      setActiveBarPosts([]);
+      setBarName("");
+      setBarDescription("");
+      setBarCover("");
+      setBarDialogOpen(false);
+      toast.success(isZh ? "吧创建成功" : "Bar created");
+      router.replace(`${pathname}?bar=${createdBar.id}`, { scroll: false });
+    } catch (error: any) {
+      toast.error(error?.message || (isZh ? "创建吧失败" : "Failed to create bar"));
+    } finally {
+      setSubmittingBar(false);
+    }
+  };
+
+  const handleToggleFollow = async (barId: string) => {
+    setFollowingBarId(barId);
+    try {
+      const resp = await fetch("/api/forum/bar/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bar_id: barId }),
+      });
+
+      const result = await resp.json();
+      if (result.code !== 0) {
+        throw new Error(result.message || (isZh ? "关注失败" : "Follow failed"));
+      }
+
+      const nextFollowed = Boolean(result.data?.followed);
+      const nextFollowCount = Number(result.data?.follow_count || 0);
+
+      setBars((current) =>
+        current.map((item) =>
+          item.id === barId
+            ? {
+                ...item,
+                followed: nextFollowed,
+                follow_count: nextFollowCount,
+              }
+            : item
+        )
+      );
+
+      setActiveBarDetail((current) =>
+        current && current.id === barId
+          ? {
+              ...current,
+              followed: nextFollowed,
+              follow_count: nextFollowCount,
+            }
+          : current
+      );
+    } catch (error: any) {
+      toast.error(error?.message || (isZh ? "关注失败" : "Follow failed"));
+    } finally {
+      setFollowingBarId("");
+    }
+  };
+
+  const handleOpenBar = React.useCallback(async (barId: string, syncUrl: boolean = true) => {
+    if (!barId || loadingBarId === barId) return;
+
+    setLoadingBarId(barId);
+    setSelectedBarId(barId);
+
+    try {
+      const resp = await fetch(`/api/forum/bar/${barId}/posts`);
+      const result = await resp.json();
+      if (result.code !== 0 || !result.data?.bar) {
+        throw new Error(result.message || (isZh ? "加载吧详情失败" : "Failed to load bar"));
+      }
+
+      setActivePostId("");
+      setActivePostDetail(null);
+      setActiveBarId(barId);
+      setActiveBarDetail(result.data.bar as ForumBar);
+      setActiveBarPosts(Array.isArray(result.data.posts) ? (result.data.posts as ForumPost[]) : []);
+      if (syncUrl) {
+        router.replace(`${pathname}?bar=${barId}`, { scroll: false });
+      }
+    } catch (error: any) {
+      toast.error(error?.message || (isZh ? "加载吧详情失败" : "Failed to load bar"));
+    } finally {
+      setLoadingBarId("");
+    }
+  }, [isZh, loadingBarId, pathname, router]);
+
+  const handleOpenPost = React.useCallback(async (post: ForumPost | string, syncUrl: boolean = true) => {
+    const postId = typeof post === "string" ? post : post.id;
+    if (!postId || loadingPostId === postId) return;
+
+    setLoadingPostId(postId);
+
+    try {
+      const resp = await fetch(`/api/forum/post/${postId}`);
+      const result = await resp.json();
+      if (result.code !== 0 || !result.data?.post) {
+        throw new Error(result.message || (isZh ? "加载帖子失败" : "Failed to load post"));
+      }
+
+      setActivePostId(postId);
+      setActivePostDetail(result.data as ForumPostDetail);
+      if (syncUrl) {
+        router.replace(`${pathname}?post=${postId}`, { scroll: false });
+      }
+    } catch (error: any) {
+      toast.error(error?.message || (isZh ? "加载帖子失败" : "Failed to load post"));
+    } finally {
+      setLoadingPostId("");
+    }
+  }, [isZh, loadingPostId, pathname, router]);
+
+  const handleBackToForumHome = () => {
+    router.replace(pathname, { scroll: false });
+  };
+
+  const handleBackFromPostDetail = () => {
+    if (activeBarId && activeBarDetail) {
+      router.replace(`${pathname}?bar=${activeBarId}`, { scroll: false });
+      return;
+    }
+
+    router.replace(pathname, { scroll: false });
+  };
+
+  const handlePostChange = React.useCallback((nextPost: ForumPost) => {
+    setPosts((current) =>
+      current.map((item) => (item.id === nextPost.id ? { ...item, ...nextPost } : item))
+    );
+    setActiveBarPosts((current) =>
+      current.map((item) => (item.id === nextPost.id ? { ...item, ...nextPost } : item))
+    );
+    setActivePostDetail((current) =>
+      current
+        ? {
+            ...current,
+            post: current.post.id === nextPost.id ? { ...current.post, ...nextPost } : current.post,
+          }
+        : current
+    );
+  }, []);
+
+  const handlePostCreated = React.useCallback((nextPost: ForumPost) => {
+    setPosts((current) => [nextPost, ...current.filter((item) => item.id !== nextPost.id)]);
+    setActiveBarPosts((current) => [nextPost, ...current.filter((item) => item.id !== nextPost.id)]);
+    setBars((current) =>
+      current.map((item) =>
+        item.id === nextPost.bar_id
+          ? {
+              ...item,
+              post_count: item.post_count + 1,
+            }
+          : item
+      )
+    );
+    setActiveBarDetail((current) =>
+      current && current.id === nextPost.bar_id
+        ? {
+            ...current,
+            post_count: current.post_count + 1,
+          }
+        : current
+    );
+  }, []);
+
+  React.useEffect(() => {
+    const postParam = String(searchParams.get("post") || "").trim();
+    const barParam = String(searchParams.get("bar") || "").trim();
+    if (postParam) {
+      if (postParam === activePostId || loadingPostId === postParam) {
+        return;
+      }
+
+      void handleOpenPost(postParam, false);
+      return;
+    }
+
+    if (!barParam) {
+      if (activePostId) {
+        setActivePostId("");
+        setActivePostDetail(null);
+      }
+      if (activeBarId) {
+        setActiveBarId("");
+        setActiveBarDetail(null);
+        setActiveBarPosts([]);
+      }
+      return;
+    }
+
+    if (activePostId) {
+      setActivePostId("");
+      setActivePostDetail(null);
+    }
+
+    if (barParam === activeBarId || loadingBarId === barParam) {
+      return;
+    }
+
+    void handleOpenBar(barParam, false);
+  }, [activeBarId, activePostId, activePostDetail, handleOpenBar, handleOpenPost, loadingBarId, loadingPostId, searchParams]);
+
+  const heroTitle = isZh ? "杭艺论坛" : "Hangyi Forum";
+  const heroDesc = isZh
+    ? "围绕作品进度、展讯征集、材料工艺与校园观察，分享正在发生的创作现场。"
+    : "A shared space for works in progress, exhibition calls, making notes, and studio conversations.";
+
+  const showingFollowed = followingBarIds.length > 0;
+
+  const sectionClass = cn(
+    "rounded-xl border border-border bg-card",
+    "shadow-sm text-foreground"
+  );
+  const showingBarDetail = Boolean(activeBarId && activeBarDetail);
+  const showingPostDetail = Boolean(activePostId && activePostDetail);
+
+  return (
+    <div className="min-h-full w-full bg-background text-foreground">
+      <div className="w-full px-2 pb-10 pt-3 sm:px-3 lg:px-4">
+        <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_290px] xl:grid-cols-[240px_minmax(0,1.35fr)_320px] 2xl:grid-cols-[260px_minmax(0,1.5fr)_340px]">
+          {/* Left */}
+          <aside className="hidden min-w-0 lg:block">
+            <div className="space-y-4 lg:sticky lg:top-3 lg:z-10 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto lg:pr-0.5">
+              <section className={cn(sectionClass, "p-4")}> 
+                <button
+                  type="button"
+                  onClick={handleBackToForumHome}
+                  className="flex w-full items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-left text-sm font-medium text-primary"
+                >
+                  <Home className="h-4 w-4 shrink-0" />
+                  {isZh ? "论坛首页" : "Forum home"}
+                </button>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  {isZh
+                    ? "按方向聚合课程讨论、作品互评、布展记录和展讯消息。"
+                    : "Gather studio critiques, exhibition notes, and topic-based discussions by bar."}
+                </p>
+
+                
+                {/* <Dialog open={postDialogOpen} onOpenChange={setPostDialogOpen}>
+                    <DialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex min-w-[112px] items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {isZh ? "发布讨论" : "Publish"}
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[680px] rounded-2xl border-border bg-background p-0 shadow-2xl">
+                      <div className="rounded-2xl border border-border bg-card p-6">
+                        <DialogHeader>
+                          <DialogTitle>{isZh ? "发布新讨论" : "Start a thread"}</DialogTitle>
+                          <DialogDescription>
+                            {isZh
+                              ? "选一个吧，再发作品进度、布展记录、问题求助或展讯分享。"
+                              : "Choose a bar, then share work in progress, exhibition notes, questions, or open calls."}
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <form className="mt-5 space-y-3" onSubmit={handleCreatePost}>
+                          <select
+                            value={selectedBarId}
+                            onChange={(event) => setSelectedBarId(event.target.value)}
+                            className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            {bars.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </select>
+
+                          <Input
+                            value={postTitle}
+                            onChange={(event) => setPostTitle(event.target.value)}
+                            placeholder={
+                              isZh ? "标题可选，例如：油画毕业创作想听听修改建议" : "Optional title"
+                            }
+                            className="h-11"
+                          />
+
+                          <Textarea
+                            value={postContent}
+                            onChange={(event) => setPostContent(event.target.value)}
+                            placeholder={
+                              isZh
+                                ? "可以写作品构思、材料尝试、布展照片、征集信息，或你现在卡住的问题。"
+                                : "Share your concept, making notes, install shots, or the question you are stuck on."
+                            }
+                            className="min-h-[180px]"
+                          />
+
+                          <div className="flex justify-end">
+                            <button
+                              type="submit"
+                              disabled={submittingPost || !selectedBarId}
+                              className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {submittingPost
+                                ? isZh
+                                  ? "发布中..."
+                                  : "Publishing..."
+                                : isZh
+                                  ? "发布帖子"
+                                  : "Publish"}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </DialogContent>
+                  </Dialog> */}
+              </section>
+
+              
+
+              <section className={cn(sectionClass, "p-4")}> 
+                <h3 className="text-sm font-semibold">{isZh ? "推荐讨论吧" : "Suggested bars"}</h3>
+                <nav className="mt-3 space-y-1" aria-label={isZh ? "吧列表" : "Bar list"}>
+                  {bars.map((bar) => {
+                    const cover = bar.cover_image
+                      ? proxifyAvatarUrl(bar.cover_image) || bar.cover_image
+                      : "";
+
+                    return (
+                      <button
+                        type="button"
+                        key={bar.id}
+                        onClick={() => void handleOpenBar(bar.id)}
+                        className="flex h-14 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted">
+                          {cover ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={cover} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-primary">
+                              {barInitial(bar.name)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium leading-none">{bar.name}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </section>
+            </div>
+          </aside>
+
+          {/* Center */}
+          <div className="min-w-0 ">
+      
+            {/* Mobile: bar chips */}
+            <div className="lg:hidden">
+
+              
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{isZh ? "进入吧" : "Bars"}</p>
+              <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 pl-1 pr-3 [scrollbar-width:thin]">
+                {bars.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    onClick={() => void handleOpenBar(item.id)}
+                    className={cn(
+                      "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                      item.followed
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {showingPostDetail && activePostDetail ? (
+              <ForumPostDetailSection
+                key={activePostId}
+                locale={locale}
+                postId={activePostId}
+                initialDetail={activePostDetail}
+                onBack={handleBackFromPostDetail}
+                onPostChange={handlePostChange}
+              />
+            ) : loadingPostId ? (
+              <section className={cn(sectionClass, "p-6")}>
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 w-48 rounded bg-muted" />
+                  <div className="h-28 rounded-xl bg-muted" />
+                  <div className="h-40 rounded-xl bg-muted" />
+                </div>
+              </section>
+            ) : showingBarDetail && activeBarDetail ? (
+              <ForumBarDetailSection
+                key={activeBarId}
+                locale={locale}
+                initialBar={activeBarDetail}
+                initialPosts={activeBarPosts}
+                onBack={handleBackToForumHome}
+                onOpenPost={handleOpenPost}
+                onPostChange={handlePostChange}
+                onPostCreated={handlePostCreated}
+              />
+            ) : loadingBarId ? (
+              <section className={cn(sectionClass, "p-6")}>
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 w-40 rounded bg-muted" />
+                  <div className="h-20 rounded-xl bg-muted" />
+                  <div className="h-24 rounded-xl bg-muted" />
+                </div>
+              </section>
+            ) : (
+              <>
+                <section className={cn(sectionClass, "p-5")}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold">{isZh ? "逛吧入口" : "Bar directory"}</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {isZh
+                          ? "中间先看各个吧，像贴吧一样先找到话题场，再进去看帖或发帖。"
+                          : "Browse bars first, then enter the topic space you want to read or post in."}
+                      </p>
+                    </div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                      <Users className="h-3.5 w-3.5" />
+                      {showingFollowed
+                        ? isZh
+                          ? "优先逛你关注的吧"
+                          : "Followed bars first"
+                        : isZh
+                          ? "先看当前活跃吧"
+                          : "Active bars first"}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {bars.map((bar) => {
+                      const cover = bar.cover_image
+                        ? proxifyAvatarUrl(bar.cover_image) || bar.cover_image
+                        : "";
+
+                      return (
+                        <div
+                          key={bar.id}
+                          className="flex h-[224px] flex-col rounded-xl border border-border bg-background/90 p-4 transition hover:border-primary/30 hover:bg-accent/30"
+                        >
+                          <div className="flex min-h-0 items-start gap-3">
+                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">
+                              {cover ? (
+                                <img src={cover} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-primary">
+                                  {barInitial(bar.name)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <button
+                                type="button"
+                                onClick={() => void handleOpenBar(bar.id)}
+                                className="block w-full truncate text-left text-sm font-semibold hover:text-primary"
+                              >
+                                {bar.name}
+                              </button>
+                              <p className="mt-1 h-10 overflow-hidden text-xs leading-5 text-muted-foreground">
+                                {bar.description ||
+                                  (isZh ? "还没有简介，适合补充这个吧的讨论方向。" : "No description yet.")}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+                            <div className="flex gap-3 text-xs text-muted-foreground">
+                              <span>{isZh ? `帖子 ${bar.post_count}` : `${bar.post_count} posts`}</span>
+                              <span>{isZh ? `关注 ${bar.follow_count}` : `${bar.follow_count} follows`}</span>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={followingBarId === bar.id}
+                              onClick={() => void handleToggleFollow(bar.id)}
+                              className={cn(
+                                "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-60",
+                                bar.followed
+                                  ? "border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+                                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+                              )}
+                            >
+                              {followingBarId === bar.id
+                                ? isZh
+                                  ? "处理中..."
+                                  : "..."
+                                : bar.followed
+                                  ? isZh
+                                    ? "已关注"
+                                    : "Following"
+                                  : isZh
+                                    ? "关注"
+                                    : "Follow"}
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleOpenBar(bar.id)}
+                            className="mt-4 inline-flex h-9 items-center text-sm font-medium text-primary hover:underline"
+                          >
+                            {loadingBarId === bar.id
+                              ? isZh
+                                ? "加载中..."
+                                : "Loading..."
+                              : isZh
+                                ? "进入这个吧"
+                                : "Enter bar"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-5 flex justify-end">
+                    <Dialog open={barDialogOpen} onOpenChange={setBarDialogOpen}>
+                      <DialogTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                        >
+                          <Plus className="h-4 w-4" />
+                          {isZh ? "创建新吧" : "Create a bar"}
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[680px] rounded-2xl border-border bg-background p-0 shadow-2xl">
+                        <div className="rounded-2xl border border-border bg-card p-6">
+                          <DialogHeader>
+                            <DialogTitle>{isZh ? "创建新吧" : "Create a bar"}</DialogTitle>
+                            <DialogDescription>
+                              {isZh
+                                ? "适合围绕学院、工作室、媒介方向、课程主题或策展计划建立长期讨论。"
+                                : "Create a long-term space for a studio, medium, course, or curatorial topic."}
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          <form className="mt-5 space-y-3" onSubmit={handleCreateBar}>
+                            <Input
+                              value={barName}
+                              onChange={(event) => setBarName(event.target.value)}
+                              placeholder={isZh ? "吧名，例如：版画交换吧" : "Bar name"}
+                              className="h-11"
+                            />
+                            <Textarea
+                              value={barDescription}
+                              onChange={(event) => setBarDescription(event.target.value)}
+                              placeholder={isZh ? "一句话说明这个吧讨论什么、适合谁加入" : "Describe the focus of this bar"}
+                              className="min-h-[92px]"
+                            />
+                            <Input
+                              value={barCover}
+                              onChange={(event) => setBarCover(event.target.value)}
+                              placeholder={isZh ? "封面图 URL，可选" : "Cover URL (optional)"}
+                              className="h-11"
+                            />
+
+                            <div className="flex justify-end">
+                              <button
+                                type="submit"
+                                disabled={submittingBar}
+                                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {submittingBar
+                                  ? isZh
+                                    ? "创建中..."
+                                    : "Creating..."
+                                  : isZh
+                                    ? "创建吧"
+                                    : "Create"}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="mb-3 pt-3">
+                    <h2 className="text-lg font-semibold">
+                      {showingFollowed
+                        ? isZh
+                          ? "帖子列表"
+                          : "Post list"
+                        : isZh
+                          ? "正在发生的讨论"
+                          : "What is active now"}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {showingFollowed
+                        ? isZh
+                          ? "按最后回复时间排序，最近被回应的作品和话题会排在前面。"
+                          : "Sorted by latest replies, so recently revived conversations stay on top."
+                        : isZh
+                          ? "你还没关注方向，先看看当前最活跃的作品讨论和展讯话题。"
+                          : "You have not followed any bars yet, so the feed shows the most active conversations."}
+                    </p>
+                  </div>
+
+                  {posts.length === 0 ? (
+                    <div className={cn(sectionClass, "px-6 py-12 text-center")}>
+                      <p className="text-base font-medium">
+                        {isZh ? "还没有讨论，先发出第一条作品现场。" : "No threads yet."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {posts.map((post, index) => (
+                        <ForumPostCard
+                          key={post.id}
+                          locale={locale}
+                          post={post}
+                          featured={index === 0}
+                          onOpenPost={handleOpenPost}
+                          onPostChange={handlePostChange}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
+          </div>
+
+          {/* Right */}
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-3 lg:z-10 lg:max-h-[calc(100dvh-5rem)] lg:self-start lg:overflow-y-auto lg:pr-0.5">
+            <section className={cn(sectionClass, "p-5")}>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <h3 className="text-base font-semibold">{isZh ? "活跃讨论吧" : "Active bars"}</h3>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {bars.map((bar) => (
+                  <div key={bar.id} className="rounded-lg border border-border bg-background p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => void handleOpenBar(bar.id)}
+                          className="truncate text-left text-sm font-semibold hover:text-primary"
+                        >
+                          {bar.name}
+                        </button>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                          {bar.description ||
+                            (isZh ? "这个吧还没有简介，欢迎补充它的创作方向。" : "No description yet.")}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={followingBarId === bar.id}
+                        onClick={() => void handleToggleFollow(bar.id)}
+                        className={cn(
+                          "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-60",
+                          bar.followed
+                            ? "border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90"
+                        )}
+                      >
+                        {followingBarId === bar.id
+                          ? isZh
+                            ? "处理中..."
+                            : "..."
+                          : bar.followed
+                            ? isZh
+                              ? "已关注"
+                              : "Following"
+                            : isZh
+                              ? "关注"
+                              : "Follow"}
+                      </button>
+                    </div>
+
+                    <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
+                      <span>{isZh ? `帖子 ${bar.post_count}` : `${bar.post_count} posts`}</span>
+                      <span>{isZh ? `关注 ${bar.follow_count}` : `${bar.follow_count} follows`}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}

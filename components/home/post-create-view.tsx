@@ -109,7 +109,7 @@ export function PostCreateView({ locale }: { locale: string }) {
   const [loadingPosts, setLoadingPosts] = React.useState(true);
   const [editingDraftId, setEditingDraftId] = React.useState<string | null>(null);
   const [activeDrawer, setActiveDrawer] = React.useState<DrawerMode | null>(null);
-  const [assistField, setAssistField] = React.useState<HomePostAiTargetField>("content");
+  const [assistField, setAssistField] = React.useState<HomePostAiTargetField>("combined");
   const [assistClearSignal, setAssistClearSignal] = React.useState(0);
 
   const loadMyPosts = React.useCallback(async () => {
@@ -332,18 +332,35 @@ export function PostCreateView({ locale }: { locale: string }) {
     }
   }, [assistField, type]);
 
+  React.useEffect(() => {
+    if (activeDrawer !== "assist") {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setActiveDrawer(null);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeDrawer]);
+
   const applyAiPatch = React.useCallback(
-    (patch: HomePostAiPatch, targetField: keyof HomePostAiPatch) => {
-      if (targetField === "title" && typeof patch.title === "string") {
+    (patch: HomePostAiPatch) => {
+      if (typeof patch.title === "string") {
         setTitle(patch.title);
       }
-      if (targetField === "excerpt" && typeof patch.excerpt === "string") {
+      if (typeof patch.excerpt === "string") {
         setExcerpt(patch.excerpt);
       }
-      if (targetField === "content" && typeof patch.content === "string") {
+      if (typeof patch.content === "string") {
         setContent(patch.content);
       }
-      if (targetField === "tags" && Array.isArray(patch.tags)) {
+      if (Array.isArray(patch.tags)) {
         setTagsInput(patch.tags.join(", "));
       }
     },
@@ -434,7 +451,7 @@ export function PostCreateView({ locale }: { locale: string }) {
     </div>
   );
 
-  const drawerTitle = activeDrawer === "assist" ? "AI 辅助修改" : "草稿箱";
+  const drawerTitle = activeDrawer === "assist" ? "小云AI操作台" : "草稿箱";
 
   const drawerBody =
     activeDrawer === "assist" ? (
@@ -482,11 +499,11 @@ export function PostCreateView({ locale }: { locale: string }) {
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Button
               type="button"
-              onClick={() => openAssistDrawer(type === "video" ? "excerpt" : "content")}
+              onClick={() => openAssistDrawer("combined")}
               className="h-11 rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] px-5 text-white shadow-[0_14px_34px_rgba(32,59,53,0.22)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
             >
               <Sparkles className="h-4 w-4" />
-              AI辅助修改
+              小云AI操作台
             </Button>
             <Button
               type="button"

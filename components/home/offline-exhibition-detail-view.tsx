@@ -191,19 +191,25 @@ export function OfflineExhibitionDetailView({
   }
 
   const cover = item.cover_url || item.poster_url || item.gallery_images?.[0] || "";
+  const heroStyle: React.CSSProperties | undefined = cover
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(18,28,26,0.08), rgba(18,28,26,0.78)), url(${cover})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : undefined;
 
   return (
     <div className="flex min-h-full w-full min-w-0 max-w-none flex-col gap-6">
       <section className="relative overflow-hidden rounded-[32px] border border-[#d4dfdb] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.08)] dark:border-[#31443e] dark:bg-[#111917]">
         <div
-          className="relative min-h-[340px] p-6"
-          style={{
-            backgroundImage: cover
-              ? `linear-gradient(180deg, rgba(18,28,26,0.08), rgba(18,28,26,0.78)), url(${cover})`
-              : "linear-gradient(135deg, rgba(236,245,241,0.98), rgba(224,232,228,0.96))",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
+          className={cn(
+            "relative min-h-[340px] p-6",
+            cover
+              ? "bg-black/0"
+              : "bg-[linear-gradient(135deg,rgba(252,252,251,0.99),rgba(247,246,245,0.97)_54%,rgba(241,240,239,0.96))] dark:bg-[linear-gradient(135deg,rgba(24,26,28,0.98),rgba(29,31,34,0.98)_54%,rgba(20,22,24,0.97))]"
+          )}
+          style={heroStyle}
         >
           <Link
             href={`/${locale}/home/exhibition`}

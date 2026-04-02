@@ -114,6 +114,8 @@
   },
   "home": {
     "categories_nav": "Content categories",
+    "sidebar_collapse": "Collapse navigation",
+    "sidebar_expand": "Expand navigation",
     "category": {
       "all": "All",
       "open_class": "Open class",

@@ -221,6 +221,55 @@ CREATE TABLE offline_exhibitions (
     rejected_at timestamptz
 );
 
+CREATE TABLE bars (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    cover_image TEXT NOT NULL DEFAULT '',
+    creator_id VARCHAR(255) NOT NULL,
+    post_count INT NOT NULL DEFAULT 0,
+    follow_count INT NOT NULL DEFAULT 0,
+    created_at timestamptz
+);
+
+CREATE TABLE bar_follows (
+    user_id VARCHAR(255) NOT NULL,
+    bar_id VARCHAR(255) NOT NULL,
+    followed_at timestamptz,
+    PRIMARY KEY (user_id, bar_id)
+);
+
+CREATE TABLE forum_posts (
+    id VARCHAR(255) PRIMARY KEY,
+    title VARCHAR(200) NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    author_id VARCHAR(255) NOT NULL,
+    bar_id VARCHAR(255) NOT NULL,
+    reply_count INT NOT NULL DEFAULT 0,
+    like_count INT NOT NULL DEFAULT 0,
+    last_reply_at timestamptz,
+    created_at timestamptz
+);
+
+CREATE TABLE forum_replies (
+    id VARCHAR(255) PRIMARY KEY,
+    content TEXT NOT NULL DEFAULT '',
+    author_id VARCHAR(255) NOT NULL,
+    post_id VARCHAR(255) NOT NULL,
+    like_count INT NOT NULL DEFAULT 0,
+    created_at timestamptz
+);
+
+CREATE INDEX bars_creator_id_idx ON bars(creator_id);
+CREATE INDEX bar_follows_user_id_idx ON bar_follows(user_id);
+CREATE INDEX bar_follows_bar_id_idx ON bar_follows(bar_id);
+CREATE INDEX forum_posts_bar_id_idx ON forum_posts(bar_id);
+CREATE INDEX forum_posts_author_id_idx ON forum_posts(author_id);
+CREATE INDEX forum_posts_last_reply_at_idx ON forum_posts(last_reply_at DESC);
+CREATE INDEX forum_posts_bar_last_reply_at_idx ON forum_posts(bar_id, last_reply_at DESC);
+CREATE INDEX forum_replies_post_id_idx ON forum_replies(post_id);
+CREATE INDEX forum_replies_post_created_at_idx ON forum_replies(post_id, created_at ASC);
+
 create table affiliates (
     id SERIAL PRIMARY KEY,
     user_uuid VARCHAR(255) NOT NULL,

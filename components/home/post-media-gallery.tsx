@@ -21,15 +21,20 @@ export function PostMediaGallery({
   aspectClassName,
   showBadge = true,
   preferVideoPlayback = false,
+  autoPlay = false,
+  imageFit = "cover",
 }: {
   post: HomePost;
   className?: string;
   aspectClassName?: string;
   showBadge?: boolean;
   preferVideoPlayback?: boolean;
+  autoPlay?: boolean;
+  imageFit?: "cover" | "contain";
 }) {
   const t = useTranslations("home");
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi>();
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const images = React.useMemo(() => {
     const list = Array.isArray(post.images) ? post.images.filter(Boolean) : [];
     if (list.length > 0) return list;
@@ -52,13 +57,27 @@ export function PostMediaGallery({
 
   if (post.type === "video" && post.video_url) {
     if (preferVideoPlayback) {
+      // Autoplay requires muted in most browsers; try play() as a best-effort fallback.
+      React.useEffect(() => {
+        if (!autoPlay) return;
+        const el = videoRef.current;
+        if (!el) return;
+        const id = window.setTimeout(() => {
+          void el.play().catch(() => null);
+        }, 0);
+        return () => window.clearTimeout(id);
+      }, [autoPlay, post.video_url]);
+
       return (
         <div className={cn("relative overflow-hidden", className)}>
           <video
+            ref={videoRef}
             src={post.video_url}
             controls
             playsInline
             preload="metadata"
+            autoPlay={autoPlay}
+            muted={autoPlay}
             poster={post.cover_url || undefined}
             className={cn("w-full bg-black object-cover", aspectClassName || "aspect-video")}
           />
@@ -106,11 +125,17 @@ export function PostMediaGallery({
           <CarouselContent className="ml-0">
             {images.map((image, index) => (
               <CarouselItem key={`${post.uuid}-${index}`} className="pl-0">
-                <img
-                  src={image}
-                  alt={post.title || ""}
-                  className={cn("w-full object-cover", aspectClassName || "aspect-[4/3]")}
-                />
+                <div className="bg-[linear-gradient(135deg,rgba(241,245,244,0.95),rgba(228,235,232,0.92))] dark:bg-[linear-gradient(135deg,rgba(29,33,36,0.96),rgba(24,28,31,0.94))]">
+                  <img
+                    src={image}
+                    alt={post.title || ""}
+                    className={cn(
+                      "w-full",
+                      imageFit === "contain" ? "object-contain" : "object-cover",
+                      aspectClassName || "aspect-[4/3]"
+                    )}
+                  />
+                </div>
               </CarouselItem>
             ))}
           </CarouselContent>
@@ -129,11 +154,17 @@ export function PostMediaGallery({
   if (images.length === 1) {
     return (
       <div className={cn("relative overflow-hidden", className)}>
-        <img
-          src={images[0]}
-          alt={post.title || ""}
-          className={cn("w-full object-cover", aspectClassName || "aspect-[4/3]")}
-        />
+        <div className="bg-[linear-gradient(135deg,rgba(241,245,244,0.95),rgba(228,235,232,0.92))] dark:bg-[linear-gradient(135deg,rgba(29,33,36,0.96),rgba(24,28,31,0.94))]">
+          <img
+            src={images[0]}
+            alt={post.title || ""}
+            className={cn(
+              "w-full",
+              imageFit === "contain" ? "object-contain" : "object-cover",
+              aspectClassName || "aspect-[4/3]"
+            )}
+          />
+        </div>
         {showBadge && post.type === "image" ? (
           <div className="absolute left-4 top-4 rounded-full bg-black/65 px-3 py-1 text-xs font-medium text-white">
             {t("feed.type_image")}

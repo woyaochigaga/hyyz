@@ -31,6 +31,7 @@ type AssistHistoryItem = {
 };
 
 const TARGET_FIELD_LABEL: Record<HomePostAiTargetField, string> = {
+  combined: "综合",
   title: "标题",
   excerpt: "导语/摘要",
   content: "正文内容",
@@ -113,7 +114,12 @@ function normalizeTargetField(
   type: string
 ): HomePostAiTargetField {
   const field = String(value || "").trim();
-  if (field === "title" || field === "excerpt" || field === "tags") {
+  if (
+    field === "combined" ||
+    field === "title" ||
+    field === "excerpt" ||
+    field === "tags"
+  ) {
     return field;
   }
   if (field === "content" && type !== "video") {
@@ -125,13 +131,39 @@ function normalizeTargetField(
 
 function normalizePatch(
   target_field: HomePostAiTargetField,
-  value: unknown
+  value: unknown,
+  type: string
 ): HomePostAiPatch {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
 
   const raw = value as Record<string, unknown>;
+  if (target_field === "combined") {
+    const patch: HomePostAiPatch = {};
+
+    if (typeof raw.title === "string" && raw.title.trim()) {
+      patch.title = raw.title.trim();
+    }
+    if (typeof raw.excerpt === "string" && raw.excerpt.trim()) {
+      patch.excerpt = raw.excerpt.trim();
+    }
+    if (
+      type !== "video" &&
+      typeof raw.content === "string" &&
+      raw.content.trim()
+    ) {
+      patch.content = raw.content.trim();
+    }
+
+    const tags = normalizeTags(raw.tags);
+    if (tags.length > 0) {
+      patch.tags = tags;
+    }
+
+    return patch;
+  }
+
   switch (target_field) {
     case "title":
       return typeof raw.title === "string" && raw.title.trim()
@@ -156,15 +188,20 @@ function normalizePatch(
 
 function getFallbackPatch(
   target_field: HomePostAiTargetField,
-  fields: NormalizedAssistFields
+  fields: NormalizedAssistFields,
+  type: string
 ): HomePostAiPatch {
+  if (target_field === "combined") {
+    return {};
+  }
+
   switch (target_field) {
     case "title":
       return fields.title ? { title: fields.title } : {};
     case "excerpt":
       return fields.excerpt ? { excerpt: fields.excerpt } : {};
     case "content":
-      return fields.content ? { content: fields.content } : {};
+      return type !== "video" && fields.content ? { content: fields.content } : {};
     case "tags":
       return fields.tags.length > 0 ? { tags: fields.tags } : {};
     default:
@@ -197,7 +234,12 @@ function buildPrompt(input: {
 }) {
   const { type, target_field, instruction, fields, history } = input;
   const currentFieldValue =
-    target_field === "title"
+    target_field === "combined"
+      ? [
+          "综合模式：可以同时生成或调整标题、导语/摘要、标签",
+          type !== "video" ? "以及正文内容。" : "。",
+        ].join("")
+      : target_field === "title"
       ? fields.title
       : target_field === "excerpt"
         ? fields.excerpt
@@ -220,7 +262,7 @@ function buildPrompt(input: {
       : "（无）";
 
   return `
-你现在要像 Cursor / Trae 那样，针对单个字段返回“可直接应用”的修改结果。
+你现在要像 Cursor / Trae 那样，返回“可直接应用”的修改结果。
 
 作品类型：${type}
 本次目标字段：${target_field}
@@ -247,18 +289,21 @@ ${instruction}
   "reply": "给编辑器右侧面板展示的 Markdown 回复。可以用标题、列表、重点说明。",
   "target_field": "${target_field}",
   "patch": {
-    "${target_field}": "或数组，根据目标字段返回"
+    "字段名": "或数组，根据目标字段返回"
   }
 }
 
 严格要求：
 1. reply 必须是 Markdown 字符串，简洁说明你改了什么、为什么这样改。
-2. patch 只能返回本次目标字段，不要顺带修改其它字段。
-3. 如果目标字段是 content，patch.content 必须是可直接写回编辑器的完整 Markdown 正文，不能混入解释文字。
-4. 如果目标字段是 title 或 excerpt，patch 对应字段必须是纯文本字符串。
-5. 如果目标字段是 tags，patch.tags 必须是 3 到 8 个字符串数组，不带 #。
-6. 不要编造事实。如果原文信息不足，只能基于已有内容重写、整理、提炼。
-7. 最终输出必须是 JSON 对象，不要加代码块，不要输出额外说明。
+2. 如果目标字段不是 combined，patch 只能返回本次目标字段，不要顺带修改其它字段。
+3. 如果目标字段是 combined，patch 可以同时返回 title、excerpt、tags，文本/图文类型还可以返回 content；至少返回 1 个字段。
+4. 如果目标字段是 content，patch.content 必须是可直接写回编辑器的完整 Markdown 正文，不能混入解释文字。
+5. 如果目标字段是 title 或 excerpt，patch 对应字段必须是纯文本字符串。
+6. 如果目标字段是 tags，或 combined 中含有 tags，patch.tags 必须是 3 到 8 个字符串数组，不带 #。
+7. 如果用户要求“根据标题生成内容/导语/标签”，优先利用标题和现有上下文补全缺失字段，但不要编造事实。
+8. 视频类型禁止返回 content。
+9. 不要编造事实。如果原文信息不足，只能基于已有内容重写、整理、提炼。
+10. 最终输出必须是 JSON 对象，不要加代码块，不要输出额外说明。
 `.trim();
 }
 
@@ -277,7 +322,7 @@ function normalizeResult(
       typeof parsed?.reply === "string" && parsed.reply.trim()
         ? parsed.reply.trim()
         : rawText.trim();
-    const patch = normalizePatch(normalizedTarget, parsed?.patch);
+    const patch = normalizePatch(normalizedTarget, parsed?.patch, type);
 
     return {
       reply: reply || "已生成修改建议。",
@@ -285,13 +330,13 @@ function normalizeResult(
       patch:
         Object.keys(patch).length > 0
           ? patch
-          : getFallbackPatch(normalizedTarget, fields),
+          : getFallbackPatch(normalizedTarget, fields, type),
     };
   } catch {
     return {
       reply: rawText.trim() || "已生成修改建议。",
       target_field,
-      patch: getFallbackPatch(target_field, fields),
+      patch: getFallbackPatch(target_field, fields, type),
     };
   }
 }

@@ -37,6 +37,7 @@ type PostAiAssistPanelProps = {
 const UNSAVED_STORAGE_PREFIX = "home-post-ai-assist:unsaved:";
 
 const FIELD_LABEL: Record<HomePostAiTargetField, string> = {
+  combined: "综合",
   title: "标题",
   excerpt: "导语",
   content: "内容",
@@ -92,6 +93,7 @@ function normalizePatch(input: unknown): HomePostAiPatch | undefined {
 function normalizeTargetField(input: unknown): HomePostAiTargetField | undefined {
   const value = String(input || "").trim();
   if (
+    value === "combined" ||
     value === "title" ||
     value === "excerpt" ||
     value === "content" ||
@@ -113,7 +115,7 @@ function normalizeDecision(input: unknown): HomePostAiDecision | undefined {
 }
 
 function buildConversationTitle(title: string) {
-  return title.trim().slice(0, 80) || "AI辅助修改";
+  return title.trim().slice(0, 80) || "小云AI操作台";
 }
 
 function createEmptyConversation(
@@ -167,7 +169,7 @@ function normalizeConversation(input: unknown): HomePostAiAssistConversation | n
     uuid,
     locale: String(raw.locale || "").trim(),
     post_uuid: String(raw.post_uuid || "").trim(),
-    title: String(raw.title || "").trim() || "AI辅助修改",
+    title: String(raw.title || "").trim() || "小云AI操作台",
     messages: normalizeMessages(raw.messages),
     created_at: String(raw.created_at || "").trim() || undefined,
     updated_at: String(raw.updated_at || "").trim() || undefined,
@@ -271,7 +273,26 @@ async function saveRemoteConversation(
   return normalizeConversation(result.data);
 }
 
-function buildQuickPrompts(type: CreatorType) {
+function buildQuickPrompts(
+  type: CreatorType,
+  selectedField: HomePostAiTargetField
+) {
+  if (selectedField === "combined") {
+    if (type === "video") {
+      return [
+        "根据我的标题和简介，补一版更完整的标题、简介和标签，我来选择是否应用。",
+        "做一版更适合首页发布的视频文案组合：标题、简介、标签一起给我。",
+        "保留原意，整体整理成更适合公开发布的视频信息。",
+      ];
+    }
+
+    return [
+      "根据我的标题，补一版内容、导语和标签，我来选择是否应用。",
+      "整体整理这篇内容，给出标题、导语、正文和标签的一套建议。",
+      "保留原意，但把整篇内容整理得更适合首页展示和分享。",
+    ];
+  }
+
   if (type === "video") {
     return [
       "把简介改得更利落一点，突出看点和亮点。",
@@ -287,6 +308,96 @@ function buildQuickPrompts(type: CreatorType) {
   ];
 }
 
+function hasPatchValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value.length > 0 : Boolean(String(value || "").trim());
+}
+
+function AiPatchPreview({
+  patch,
+  isDrawer,
+}: {
+  patch: HomePostAiPatch;
+  isDrawer: boolean;
+}) {
+  const sections: Array<{
+    key: keyof HomePostAiPatch;
+    label: string;
+    value: string | string[] | undefined;
+  }> = [
+    { key: "title" as const, label: FIELD_LABEL.title, value: patch.title },
+    { key: "excerpt" as const, label: FIELD_LABEL.excerpt, value: patch.excerpt },
+    { key: "content" as const, label: FIELD_LABEL.content, value: patch.content },
+    { key: "tags" as const, label: FIELD_LABEL.tags, value: patch.tags },
+  ].filter((item) => hasPatchValue(item.value));
+
+  if (sections.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      {sections.map((section) => (
+        <div
+          key={section.key}
+          className={cn(
+            "rounded-lg border p-3",
+            isDrawer
+              ? "border-[#3c3c3c] bg-[#1f1f1f]"
+              : "border-black/6 bg-black/[0.03] dark:border-white/10 dark:bg-white/[0.03]"
+          )}
+        >
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#858585]">
+            {section.label}
+          </div>
+
+          {section.key === "tags" && Array.isArray(section.value) ? (
+            <div className="flex flex-wrap gap-1.5">
+              {section.value.map((tag) => (
+                <span
+                  key={`${section.key}-${tag}`}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px]",
+                    isDrawer
+                      ? "bg-[#2d2d2d] text-[#9cdcfe]"
+                      : "bg-zinc-100 text-zinc-700 dark:bg-white/[0.08] dark:text-zinc-200"
+                  )}
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          ) : section.key === "content" && typeof section.value === "string" ? (
+            <div
+              className={cn(
+                "max-h-56 overflow-y-auto rounded-md px-3 py-2 text-[13px] leading-relaxed",
+                isDrawer
+                  ? "bg-[#252526] text-[#d4d4d4]"
+                  : "bg-white text-zinc-800 dark:bg-black/20 dark:text-zinc-200"
+              )}
+            >
+              <Markdown
+                content={section.value}
+                className="text-[13px] leading-relaxed [&_p]:my-1.5 [&_li]:my-0.5"
+              />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "whitespace-pre-wrap rounded-md px-3 py-2 text-[13px] leading-relaxed",
+                isDrawer
+                  ? "bg-[#252526] text-[#d4d4d4]"
+                  : "bg-white text-zinc-800 dark:bg-black/20 dark:text-zinc-200"
+              )}
+            >
+              {String(section.value || "")}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PostAiAssistPanel({
   locale,
   type,
@@ -299,11 +410,14 @@ export function PostAiAssistPanel({
   onApplyPatch,
 }: PostAiAssistPanelProps) {
   const availableFields = React.useMemo<HomePostAiTargetField[]>(
-    () => (type === "video" ? ["title", "excerpt", "tags"] : ["content", "excerpt", "title", "tags"]),
+    () =>
+      type === "video"
+        ? ["combined", "title", "excerpt", "tags"]
+        : ["combined", "content", "excerpt", "title", "tags"],
     [type]
   );
   const [internalSelectedField, setInternalSelectedField] = React.useState<HomePostAiTargetField>(
-    type === "video" ? "excerpt" : "content"
+    "combined"
   );
   const selectedField = selectedFieldProp && availableFields.includes(selectedFieldProp)
     ? selectedFieldProp
@@ -562,6 +676,18 @@ export function PostAiAssistPanel({
     type,
   ]);
 
+  const getPatchFieldLabels = React.useCallback((patch?: HomePostAiPatch) => {
+    if (!patch) return [];
+
+    return (Object.keys(patch) as Array<keyof HomePostAiPatch>)
+      .filter((key) => {
+        const value = patch[key];
+        return Array.isArray(value) ? value.length > 0 : Boolean(String(value || "").trim());
+      })
+      .map((key) => FIELD_LABEL[key as HomePostAiTargetField])
+      .filter(Boolean);
+  }, []);
+
   const handleDecision = React.useCallback(
     async (messageId: string, decision: HomePostAiDecision) => {
       if (!conversation) return;
@@ -573,7 +699,12 @@ export function PostAiAssistPanel({
 
       if (decision === "applied") {
         onApplyPatch(targetMessage.patch, targetMessage.target_field);
-        toast.success(`已应用到${FIELD_LABEL[targetMessage.target_field]}`);
+        const labels = getPatchFieldLabels(targetMessage.patch);
+        toast.success(
+          labels.length > 1
+            ? `已应用到${labels.join("、")}`
+            : `已应用到${labels[0] || FIELD_LABEL[targetMessage.target_field]}`
+        );
       } else {
         toast.success("已拒绝这次修改建议");
       }
@@ -582,10 +713,13 @@ export function PostAiAssistPanel({
       setConversation(nextConversation);
       await persistConversation(nextConversation, { silent: true });
     },
-    [conversation, onApplyPatch, persistConversation]
+    [conversation, getPatchFieldLabels, onApplyPatch, persistConversation]
   );
 
-  const quickPrompts = React.useMemo(() => buildQuickPrompts(type), [type]);
+  const quickPrompts = React.useMemo(
+    () => buildQuickPrompts(type, selectedField),
+    [selectedField, type]
+  );
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const isDrawer = variant === "drawer";
@@ -609,10 +743,10 @@ export function PostAiAssistPanel({
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b827c] dark:text-[#92aea7]">
-              AI 辅助修改
+              小云AI操作台
             </div>
             <h3 className="mt-2 text-lg font-semibold text-[#223430] dark:text-[#eef7f3]">
-              会话式改写
+              综合生成与局部润色
             </h3>
           </div>
           <div className="rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] p-2 text-white">
@@ -679,6 +813,7 @@ export function PostAiAssistPanel({
             const canDecide = Boolean(
               isAssistant && message.patch && message.target_field && decision === "pending"
             );
+            const patchFieldLabels = getPatchFieldLabels(message.patch);
 
             return (
               <div
@@ -708,6 +843,23 @@ export function PostAiAssistPanel({
                   ) : (
                     <div className="whitespace-pre-wrap">{message.content}</div>
                   )}
+
+                  {isAssistant && patchFieldLabels.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {patchFieldLabels.map((label) => (
+                        <span
+                          key={`${message.id}-${label}`}
+                          className="rounded-full bg-[#2d2d2d] px-2 py-0.5 text-[10px] text-[#9cdcfe]"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {isAssistant && message.patch ? (
+                    <AiPatchPreview patch={message.patch} isDrawer={isDrawer} />
+                  ) : null}
 
                   {isAssistant && message.patch && message.target_field ? (
                     <div className="mt-3 flex flex-wrap gap-2 border-t border-[#3c3c3c] pt-2">
@@ -753,7 +905,7 @@ export function PostAiAssistPanel({
             <Sparkles className="h-8 w-8 text-[#3c3c3c]" />
             <p className="text-sm text-[#858585]">输入指令开始对话</p>
             <p className="text-xs text-[#6a6a6a]">
-              先选字段，再描述你想要的修改方式
+              先选综合或具体字段，再描述你想要的修改方式
             </p>
           </div>
         )}
@@ -795,7 +947,11 @@ export function PostAiAssistPanel({
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             rows={isDrawer ? 5 : 4}
-            placeholder={`修改「${FIELD_LABEL[selectedField]}」：例如更精炼、更适合展示…`}
+            placeholder={
+              selectedField === "combined"
+                ? "综合模式：例如根据我的标题生成内容、导语、标签，我来选择是否应用。"
+                : `修改「${FIELD_LABEL[selectedField]}」：例如更精炼、更适合展示…`
+            }
             className={cn(
               "min-h-[100px] resize-none border-0 bg-transparent pr-12 text-sm focus-visible:ring-0 focus-visible:ring-offset-0",
               isDrawer

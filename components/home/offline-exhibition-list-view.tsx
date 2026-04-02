@@ -7,9 +7,9 @@ import {
   CalendarDays,
   LocateFixed,
   MapPin,
-  Phone,
   Search,
   Store,
+  Ticket,
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type {
   OfflineExhibition,
+  OfflineExhibitionAdmissionType,
   OfflineExhibitionStatus,
 } from "@/types/offline-exhibition";
 
@@ -68,6 +69,20 @@ function statusTone(status?: OfflineExhibitionStatus) {
       return "border-[#d8dce1] bg-[#f3f5f7] text-[#52606d]";
     default:
       return "border-[#d8e4e0] bg-[#f3f8f6] text-[#506660]";
+  }
+}
+
+function admissionTypeLabel(type?: OfflineExhibitionAdmissionType) {
+  switch (type) {
+    case "ticketed":
+      return "购票入场";
+    case "reservation":
+      return "预约入场";
+    case "invite_only":
+      return "邀约入场";
+    case "free":
+    default:
+      return "免费入场";
   }
 }
 
@@ -140,8 +155,8 @@ export function OfflineExhibitionListView({ locale }: { locale: string }) {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[24px] border border-white/80 bg-white/75 p-4 backdrop-blur dark:border-white/10 dark:bg-white/5">
+          <div className="flex w-full justify-start lg:justify-end">
+            <div className="w-full max-w-[360px] rounded-[24px] border border-white/80 bg-white/75 p-4 backdrop-blur sm:w-[280px] dark:border-white/10 dark:bg-white/5">
               <div className="text-xs uppercase tracking-[0.24em] text-[#789089] dark:text-[#8ea7a0]">
                 Published
               </div>
@@ -149,17 +164,6 @@ export function OfflineExhibitionListView({ locale }: { locale: string }) {
                 {list.length}
               </div>
               <div className="mt-1 text-sm text-[#6a7f79] dark:text-[#9bb0aa]">当前公开展览</div>
-            </div>
-            <div className="rounded-[24px] border border-white/80 bg-white/75 p-4 backdrop-blur dark:border-white/10 dark:bg-white/5">
-              <div className="text-xs uppercase tracking-[0.24em] text-[#789089] dark:text-[#8ea7a0]">
-                Map
-              </div>
-              <div className="mt-2 text-xl font-semibold text-[#223733] dark:text-[#edf5f2]">
-                高德导航
-              </div>
-              <div className="mt-1 text-sm text-[#6a7f79] dark:text-[#9bb0aa]">
-                列表可直接打开地图位置
-              </div>
             </div>
           </div>
         </div>
@@ -172,7 +176,7 @@ export function OfflineExhibitionListView({ locale }: { locale: string }) {
             <Input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="搜索展览标题、主办方、场馆、城市"
+              placeholder="搜索展览名、简介、主办方、场馆、城市或地址"
               className="h-11 rounded-[14px] border-[#d5e0dc] pl-9 dark:border-[#31443e] dark:bg-[#0e1513] dark:text-[#edf5f2]"
             />
           </div>
@@ -207,109 +211,117 @@ export function OfflineExhibitionListView({ locale }: { locale: string }) {
             当前没有公开中的线下展览。
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-3">
             {list.map((item) => {
               const cover = item.cover_url || item.poster_url || item.gallery_images?.[0] || "";
 
               return (
                 <article
                   key={item.uuid}
-                  className="overflow-hidden rounded-[28px] border border-[#d4dfdb] bg-white shadow-[0_18px_36px_rgba(32,46,42,0.06)] dark:border-[#31443e] dark:bg-[#111917]"
+                  className="group overflow-hidden rounded-[26px] border border-[#d4dfdb] bg-white shadow-[0_14px_34px_rgba(32,46,42,0.05)] transition hover:border-[#c3d2cd] hover:shadow-[0_18px_44px_rgba(32,46,42,0.08)] dark:border-[#31443e] dark:bg-[#111917] dark:hover:border-[#3b534d]"
                 >
-                  <div
-                    className="relative flex min-h-[220px] flex-col justify-between p-5"
-                    style={{
-                      backgroundImage: cover
-                        ? `linear-gradient(180deg, rgba(18,28,26,0.08), rgba(18,28,26,0.72)), url(${cover})`
-                        : "linear-gradient(135deg, rgba(236,245,241,0.98), rgba(224,232,228,0.96))",
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <Badge className={cn("bg-white/90", statusTone(item.status))} variant="outline">
-                        {statusLabel(item.status)}
-                      </Badge>
-                      <Badge className="border-white/20 bg-black/20 text-white backdrop-blur" variant="outline">
-                        {item.applicant_role === "artisan" ? "匠人主理" : "用户主理"}
-                      </Badge>
+                  <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
+                    <div className="relative overflow-hidden rounded-[18px] border border-black/5 bg-[#f3f4f6] sm:w-[220px] sm:shrink-0 dark:border-white/10 dark:bg-white/[0.05]">
+                      <div
+                        className="h-[140px] w-full sm:h-full sm:min-h-[168px]"
+                        style={{
+                          backgroundImage: cover
+                            ? `linear-gradient(180deg, rgba(18,28,26,0.06), rgba(18,28,26,0.72)), url(${cover})`
+                            : "linear-gradient(135deg, rgba(252,252,251,0.99), rgba(245,245,244,0.96))",
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }}
+                      />
+                      <div className="absolute left-3 top-3 flex items-center gap-2">
+                        <Badge className={cn("bg-white/90", statusTone(item.status))} variant="outline">
+                          {statusLabel(item.status)}
+                        </Badge>
+                        <Badge className="border-white/20 bg-black/20 text-white backdrop-blur" variant="outline">
+                          {item.applicant_role === "artisan" ? "匠人主理" : "用户主理"}
+                        </Badge>
+                      </div>
                     </div>
 
-                      <div className={cn("space-y-2", cover ? "text-white" : "text-[#1f302c]")}>
-                        <div className="text-[11px] uppercase tracking-[0.24em] opacity-80">
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] uppercase tracking-[0.22em] text-[#7a8984] dark:text-[#91a49d]">
                           OFFLINE EXHIBITION
                         </div>
-                      <Link
-                        href={`/${locale}/home/exhibition/${item.uuid}`}
-                        className="block"
-                      >
-                        <h2 className="text-2xl font-semibold leading-tight transition hover:opacity-90">
-                          {item.title || "未命名展览"}
-                        </h2>
-                      </Link>
-                      {item.subtitle ? <p className="text-sm opacity-90">{item.subtitle}</p> : null}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 p-5">
-                    <p className="line-clamp-3 min-h-[66px] text-sm leading-6 text-[#5e716b] dark:text-[#9bb0aa]">
-                      {item.summary || item.description || "暂无展览介绍"}
-                    </p>
-
-                    <div className="grid gap-3 text-sm text-[#324540] dark:text-[#d7e3de]">
-                      <div className="flex items-start gap-2">
-                        <Store className="mt-0.5 h-4 w-4 text-[#6e8780]" />
-                        <span>{item.organizer_name || "未填写主办方"}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <UserRound className="mt-0.5 h-4 w-4 text-[#6e8780]" />
-                        <span>{item.curator_name || "未填写主理人"}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CalendarDays className="mt-0.5 h-4 w-4 text-[#6e8780]" />
-                        <span>{formatDisplayDate(item.start_at, item.end_at)}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <MapPin className="mt-0.5 h-4 w-4 text-[#6e8780]" />
-                        <span>{item.formatted_address || item.address_detail || "地址待补充"}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Phone className="mt-0.5 h-4 w-4 text-[#6e8780]" />
-                        <span>{item.contact_phone || item.contact_wechat || item.contact_email || "联系方式待补充"}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {(item.tags || []).slice(0, 4).map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full bg-[#edf4f1] px-3 py-1 text-xs text-[#516661] dark:bg-[#1b2623] dark:text-[#aec1bb]"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-[#7a8984] dark:text-[#91a49d]">
-                        发布者：{item.owner?.nickname || "未知用户"}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/${locale}/home/exhibition/${item.uuid}`}
-                          className="inline-flex items-center gap-1 rounded-full border border-[#d0dbd6] px-3 py-1.5 text-xs text-[#27453d] transition hover:border-[#9db7b0] hover:bg-[#f4faf7] dark:border-[#31443e] dark:text-[#d7e3de] dark:hover:bg-[#18211f]"
-                        >
-                          详情
+                        <Link href={`/${locale}/home/exhibition/${item.uuid}`} className="block">
+                          <h2 className="line-clamp-2 text-xl font-semibold leading-snug text-[#1f302c] transition group-hover:opacity-95 dark:text-[#edf5f2]">
+                            {item.title || "未命名展览"}
+                          </h2>
                         </Link>
-                        <a
-                          href={buildMapUrl(item)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-full border border-[#d0dbd6] px-3 py-1.5 text-xs text-[#27453d] transition hover:border-[#9db7b0] hover:bg-[#f4faf7] dark:border-[#31443e] dark:text-[#d7e3de] dark:hover:bg-[#18211f]"
-                        >
-                          <LocateFixed className="h-3.5 w-3.5" />
-                          高德打开
-                        </a>
+                        {item.subtitle ? (
+                          <p className="line-clamp-1 text-sm text-[#5e716b] dark:text-[#9bb0aa]">
+                            {item.subtitle}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <p className="line-clamp-2 text-sm leading-6 text-[#5e716b] dark:text-[#9bb0aa]">
+                        {item.summary || item.description || "暂无展览介绍"}
+                      </p>
+
+                      <div className="grid gap-2 text-sm text-[#324540] sm:grid-cols-2 dark:text-[#d7e3de]">
+                        <div className="flex items-start gap-2">
+                          <CalendarDays className="mt-0.5 h-4 w-4 text-[#6e8780]" />
+                          <span className="min-w-0 truncate">{formatDisplayDate(item.start_at, item.end_at)}</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <MapPin className="mt-0.5 h-4 w-4 text-[#6e8780]" />
+                          <span className="min-w-0 truncate">
+                            {item.formatted_address || item.address_detail || "地址待补充"}
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Store className="mt-0.5 h-4 w-4 text-[#6e8780]" />
+                          <span className="min-w-0 truncate">{item.organizer_name || "未填写主办方"}</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <UserRound className="mt-0.5 h-4 w-4 text-[#6e8780]" />
+                          <span className="min-w-0 truncate">{item.curator_name || "未填写主理人"}</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Ticket className="mt-0.5 h-4 w-4 text-[#6e8780]" />
+                          <span className="min-w-0 truncate">{admissionTypeLabel(item.admission_type)}</span>
+                        </div>
+                      </div>
+
+                      {(item.tags || []).length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {(item.tags || []).slice(0, 6).map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-full bg-[#edf4f1] px-3 py-1 text-xs text-[#516661] dark:bg-[#1b2623] dark:text-[#aec1bb]"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div className="text-xs text-[#7a8984] dark:text-[#91a49d]">
+                          发布者：{item.owner?.nickname || "未知用户"}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/${locale}/home/exhibition/${item.uuid}`}
+                            className="inline-flex items-center gap-1 rounded-full border border-[#d0dbd6] px-3 py-1.5 text-xs text-[#27453d] transition hover:border-[#9db7b0] hover:bg-[#f4faf7] dark:border-[#31443e] dark:text-[#d7e3de] dark:hover:bg-[#18211f]"
+                          >
+                            详情
+                          </Link>
+                          <a
+                            href={buildMapUrl(item)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-full border border-[#d0dbd6] px-3 py-1.5 text-xs text-[#27453d] transition hover:border-[#9db7b0] hover:bg-[#f4faf7] dark:border-[#31443e] dark:text-[#d7e3de] dark:hover:bg-[#18211f]"
+                          >
+                            <LocateFixed className="h-3.5 w-3.5" />
+                            高德打开
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </div>

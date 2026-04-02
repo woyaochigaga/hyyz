@@ -122,7 +122,7 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
           </div>
 
           <div className="ml-auto flex shrink-0 gap-1.5 items-center">
-            {/* {header.show_locale && <LocaleToggle />} */}
+            {header.show_locale && <LocaleToggle />}
             <div className="scale-90 origin-right">
               {header.show_theme && <ThemeToggle />}
             </div>

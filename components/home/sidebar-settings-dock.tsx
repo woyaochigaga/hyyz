@@ -24,7 +24,13 @@ import { cn } from "@/lib/utils";
 const iconBtn =
   "rounded-lg p-2 text-muted-foreground outline-none transition hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
-export default function HomeSidebarSettingsDock({ locale }: { locale: string }) {
+export default function HomeSidebarSettingsDock({
+  locale,
+  collapsed = false,
+}: {
+  locale: string;
+  collapsed?: boolean;
+}) {
   const t = useTranslations("home");
   const { resolvedTheme, setTheme } = useTheme();
   const [themeReady, setThemeReady] = React.useState(false);
@@ -150,7 +156,14 @@ export default function HomeSidebarSettingsDock({ locale }: { locale: string }) 
   );
 
   return (
-    <div className="flex items-center justify-between gap-1">
+    <div
+      className={cn(
+        "flex gap-1",
+        collapsed
+          ? "flex-col items-center justify-start"
+          : "items-center justify-between"
+      )}
+    >
       <div
         ref={anchorRef}
         className="relative flex items-center"
@@ -189,7 +202,12 @@ export default function HomeSidebarSettingsDock({ locale }: { locale: string }) 
         </button>
       </div>
 
-      <div className="flex items-center gap-0.5">
+      <div
+        className={cn(
+          "flex items-center",
+          collapsed ? "flex-col gap-1" : "gap-0.5"
+        )}
+      >
         <button
           type="button"
           className={iconBtn}

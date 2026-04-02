@@ -1,3 +1,4 @@
+import { getUuid } from "@/lib/hash";
 import { getIsoTimestr } from "@/lib/time";
 import { getSupabaseClient } from "@/models/db";
 import { getUsersByUuids } from "@/models/user";
@@ -9,6 +10,7 @@ import type {
   OfflineExhibitionOwner,
   OfflineExhibitionScheduleItem,
   OfflineExhibitionStatus,
+  OfflineExhibitionTicketType,
 } from "@/types/offline-exhibition";
 
 type OfflineExhibitionRow = {
@@ -68,6 +70,19 @@ type OfflineExhibitionRow = {
   rejected_at?: string | null;
 };
 
+type OfflineExhibitionTicketTypeRow = {
+  id?: number;
+  uuid?: string;
+  exhibition_uuid?: string;
+  name?: string;
+  description?: string;
+  price?: number | string | null;
+  quantity?: number | string | null;
+  sort_order?: number | string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
 function normalizeString(input: unknown, maxLength?: number) {
   const value = String(input || "").trim().replace(/\s+/g, " ");
   if (!maxLength) return value;
@@ -112,6 +127,24 @@ function normalizeStringArray(input: unknown, max = 20) {
   }
 
   return [] as string[];
+}
+
+function buildSearchTerms(input: unknown, max = 5) {
+  const raw = normalizeString(input, 80)
+    .replace(/[%(),，（）]/g, " ")
+    .trim();
+
+  if (!raw) return [] as string[];
+
+  return Array.from(
+    new Set(
+      raw
+        .split(/\s+/)
+        .map((item) => normalizeString(item, 40))
+        .filter((item) => item.length > 0)
+        .slice(0, max)
+    )
+  );
 }
 
 function normalizeNumber(input: unknown, opts?: { min?: number; max?: number }) {
@@ -192,6 +225,39 @@ function normalizeExternalLinks(input: unknown): OfflineExhibitionExternalLink[]
   return result.slice(0, 10);
 }
 
+function normalizeTicketTypes(input: unknown): OfflineExhibitionTicketType[] {
+  const result: OfflineExhibitionTicketType[] = [];
+
+  for (const item of normalizeRecordArray(input)) {
+    const name = normalizeString(item.name, 120);
+    if (!name) continue;
+
+    result.push({
+      uuid: normalizeString(item.uuid, 255) || undefined,
+      name,
+      description: normalizeString(item.description, 255) || undefined,
+      price: normalizeNumber(item.price, { min: 0, max: 999999 }) || 0,
+      quantity: normalizeNumber(item.quantity, { min: 0, max: 1000000 }) || 0,
+      sort_order: normalizeNumber(item.sort_order, { min: 0, max: 9999 }) || 0,
+    });
+  }
+
+  return result.slice(0, 20);
+}
+
+function toOfflineExhibitionTicketType(
+  row: OfflineExhibitionTicketTypeRow
+): OfflineExhibitionTicketType {
+  return {
+    uuid: row.uuid || "",
+    name: row.name || "",
+    description: row.description || "",
+    price: normalizeNumber(row.price, { min: 0 }) || 0,
+    quantity: normalizeNumber(row.quantity, { min: 0 }) || 0,
+    sort_order: normalizeNumber(row.sort_order, { min: 0 }) || 0,
+  };
+}
+
 function buildFormattedAddress(input: Partial<OfflineExhibition>) {
   const full = normalizeString(input.formatted_address, 500);
   if (full) return full;
@@ -205,6 +271,50 @@ function buildFormattedAddress(input: Partial<OfflineExhibition>) {
   ]
     .filter(Boolean)
     .join("");
+}
+
+function buildFallbackTicketTypes(
+  exhibition: OfflineExhibition
+): OfflineExhibitionTicketType[] {
+  const admissionType = exhibition.admission_type || "free";
+  const price = normalizeNumber(exhibition.admission_fee, { min: 0 }) || 0;
+  const quantity = normalizeNumber(exhibition.capacity, { min: 0 }) || 0;
+
+  if (!admissionType && !price && !quantity) {
+    return [];
+  }
+
+  let name = "标准票";
+  let description = "";
+
+  switch (admissionType) {
+    case "free":
+      name = "免费票";
+      break;
+    case "reservation":
+      name = "预约票";
+      description = "需提前预约";
+      break;
+    case "invite_only":
+      name = "邀约票";
+      description = "仅限邀约";
+      break;
+    case "ticketed":
+    default:
+      name = "标准票";
+      break;
+  }
+
+  return [
+    {
+      uuid: `${exhibition.uuid}-default-ticket`,
+      name,
+      description: description || undefined,
+      price,
+      quantity,
+      sort_order: 0,
+    },
+  ];
 }
 
 function toOfflineExhibition(row: OfflineExhibitionRow): OfflineExhibition {
@@ -257,6 +367,7 @@ function toOfflineExhibition(row: OfflineExhibitionRow): OfflineExhibition {
     submission_materials: normalizeStringArray(row.submission_materials, 12),
     schedule_items: normalizeScheduleItems(row.schedule_items),
     external_links: normalizeExternalLinks(row.external_links),
+    ticket_types: [],
     review_note: row.review_note || "",
     created_at: row.created_at || "",
     updated_at: row.updated_at || "",
@@ -296,6 +407,83 @@ async function attachOwners(exhibitions: OfflineExhibition[]) {
         avatar_url: "",
       },
   }));
+}
+
+async function attachTicketTypes(exhibitions: OfflineExhibition[]) {
+  if (exhibitions.length === 0) return exhibitions;
+
+  const exhibitionUuids = Array.from(
+    new Set(exhibitions.map((item) => item.uuid).filter(Boolean))
+  );
+  if (exhibitionUuids.length === 0) return exhibitions;
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("offline_exhibition_ticket_types")
+    .select("*")
+    .in("exhibition_uuid", exhibitionUuids)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error || !data) {
+    return exhibitions.map((item) => ({
+      ...item,
+      ticket_types: buildFallbackTicketTypes(item),
+    }));
+  }
+
+  const ticketTypeMap = new Map<string, OfflineExhibitionTicketType[]>();
+
+  for (const row of data as OfflineExhibitionTicketTypeRow[]) {
+    const exhibitionUuid = normalizeString(row.exhibition_uuid, 255);
+    if (!exhibitionUuid) continue;
+    const current = ticketTypeMap.get(exhibitionUuid) || [];
+    current.push(toOfflineExhibitionTicketType(row));
+    ticketTypeMap.set(exhibitionUuid, current);
+  }
+
+  return exhibitions.map((item) => ({
+    ...item,
+    ticket_types:
+      ticketTypeMap.get(item.uuid)?.filter((ticketType) => ticketType.name) ||
+      buildFallbackTicketTypes(item),
+  }));
+}
+
+async function replaceOfflineExhibitionTicketTypes(
+  exhibitionUuid: string,
+  ticketTypes: OfflineExhibitionTicketType[]
+) {
+  const supabase = getSupabaseClient();
+  const { error: deleteError } = await supabase
+    .from("offline_exhibition_ticket_types")
+    .delete()
+    .eq("exhibition_uuid", exhibitionUuid);
+
+  if (deleteError) throw deleteError;
+
+  if (ticketTypes.length === 0) {
+    return;
+  }
+
+  const now = getIsoTimestr();
+  const rows = ticketTypes.map((item, index) => ({
+    uuid: item.uuid || getUuid(),
+    exhibition_uuid: exhibitionUuid,
+    name: item.name,
+    description: item.description || "",
+    price: normalizeNumber(item.price, { min: 0, max: 999999 }) || 0,
+    quantity: normalizeNumber(item.quantity, { min: 0, max: 1000000 }) || 0,
+    sort_order: normalizeNumber(item.sort_order, { min: 0, max: 9999 }) ?? index,
+    created_at: now,
+    updated_at: now,
+  }));
+
+  const { error: insertError } = await supabase
+    .from("offline_exhibition_ticket_types")
+    .insert(rows);
+
+  if (insertError) throw insertError;
 }
 
 export function validateOfflineExhibitionPayload(input: Partial<OfflineExhibition>) {
@@ -355,6 +543,7 @@ export function validateOfflineExhibitionPayload(input: Partial<OfflineExhibitio
   const submission_materials = normalizeStringArray(input.submission_materials, 12);
   const schedule_items = normalizeScheduleItems(input.schedule_items);
   const external_links = normalizeExternalLinks(input.external_links);
+  const ticket_types = normalizeTicketTypes(input.ticket_types);
   const admission_fee = normalizeNumber(input.admission_fee, {
     min: 0,
     max: 999999,
@@ -441,6 +630,7 @@ export function validateOfflineExhibitionPayload(input: Partial<OfflineExhibitio
     submission_materials,
     schedule_items,
     external_links,
+    ticket_types,
     review_note,
   };
 }
@@ -512,6 +702,8 @@ export async function createOfflineExhibition(
 
   if (error) throw error;
 
+  await replaceOfflineExhibitionTicketTypes(exhibition.uuid, payload.ticket_types);
+
   return findOfflineExhibitionByUuid(exhibition.uuid, exhibition.user_uuid);
 }
 
@@ -554,6 +746,8 @@ export async function updateOfflineExhibition(
 
   if (error) throw error;
 
+  await replaceOfflineExhibitionTicketTypes(uuid, payload.ticket_types);
+
   return findOfflineExhibitionByUuid(uuid, user_uuid);
 }
 
@@ -590,7 +784,8 @@ export async function findOfflineExhibitionByUuid(
 ) {
   const exhibition = await findOfflineExhibitionRowByUuid(uuid);
   if (!exhibition) return undefined;
-  const [result] = await attachOwners([exhibition]);
+  const withTicketTypes = await attachTicketTypes([exhibition]);
+  const [result] = await attachOwners(withTicketTypes);
   if (
     result.status !== "published" &&
     result.user_uuid !== currentUserUuid
@@ -611,6 +806,23 @@ export async function listOfflineExhibitions(params?: {
   q?: string;
   limit?: number;
 }) {
+  const searchFields = [
+    "title",
+    "subtitle",
+    "summary",
+    "description",
+    "organizer_name",
+    "curator_name",
+    "sponsor_name",
+    "venue_name",
+    "province",
+    "city",
+    "district",
+    "street",
+    "address_detail",
+    "formatted_address",
+    "map_note",
+  ];
   const supabase = getSupabaseClient();
   let query = supabase
     .from("offline_exhibitions")
@@ -640,10 +852,12 @@ export async function listOfflineExhibitions(params?: {
     query = query.neq("status", "deleted");
   }
 
-  const keyword = normalizeString(params?.q, 80).replace(/[%]/g, "");
-  if (keyword) {
+  const searchTerms = buildSearchTerms(params?.q);
+  for (const term of searchTerms) {
     query = query.or(
-      `title.ilike.%${keyword}%,organizer_name.ilike.%${keyword}%,venue_name.ilike.%${keyword}%,city.ilike.%${keyword}%`
+      searchFields
+        .map((field) => `${field}.ilike.%${term}%`)
+        .join(",")
     );
   }
 
@@ -654,5 +868,9 @@ export async function listOfflineExhibitions(params?: {
   const { data, error } = await query;
   if (error || !data) return [];
 
-  return attachOwners((data as OfflineExhibitionRow[]).map(toOfflineExhibition));
+  const exhibitions = await attachTicketTypes(
+    (data as OfflineExhibitionRow[]).map(toOfflineExhibition)
+  );
+
+  return attachOwners(exhibitions);
 }

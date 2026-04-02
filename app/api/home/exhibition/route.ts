@@ -7,6 +7,8 @@ import {
 } from "@/models/offline-exhibition";
 import { getUserInfo, getUserUuid } from "@/services/user";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

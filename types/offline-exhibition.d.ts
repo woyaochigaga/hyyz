@@ -32,6 +32,15 @@ export interface OfflineExhibitionExternalLink {
   url: string;
 }
 
+export interface OfflineExhibitionTicketType {
+  uuid?: string;
+  name: string;
+  description?: string;
+  price?: number;
+  quantity?: number;
+  sort_order?: number;
+}
+
 export interface OfflineExhibition {
   id?: number;
   uuid: string;
@@ -81,6 +90,7 @@ export interface OfflineExhibition {
   submission_materials?: string[];
   schedule_items?: OfflineExhibitionScheduleItem[];
   external_links?: OfflineExhibitionExternalLink[];
+  ticket_types?: OfflineExhibitionTicketType[];
   review_note?: string;
   created_at?: string;
   updated_at?: string;

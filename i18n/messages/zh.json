@@ -114,6 +114,8 @@
   },
   "home": {
     "categories_nav": "内容分类",
+    "sidebar_collapse": "收起导航",
+    "sidebar_expand": "展开导航",
     "category": {
       "all": "全部",
       "open_class": "公开课",
@@ -128,9 +130,9 @@
       "sports": "体育"
     },
     "ai_chat": {
-      "meta_title": "AI 提问 · 杭艺云展",
-      "greeting": "你好，欢迎使用 AI 搜索",
-      "placeholder": "问 AI、找答案",
+      "meta_title": "小云AI · 杭艺云展",
+      "greeting": "你好，欢迎使用小云 AI 搜索",
+      "placeholder": "问 小云、找答案",
       "new_chat": "新建对话",
       "history": "历史对话",
       "selection_manage": "管理",
@@ -178,8 +180,8 @@
       "settings_coming": "该功能即将推出"
     },
     "feed": {
-      "hero_label": "杭艺世界",
-      "hero_title": "看见大家正在分享的作品与灵感",
+      "hero_label": "杭艺社区",
+      "hero_title": "杭艺社区·看看大家正在分享的作品与灵感",
       "hero_desc": "这里像一张持续展开的杭艺地图，汇集大家最新发布的图文、作品、记录与讨论。",
       "stats_posts": "公开内容",
       "stats_creators": "活跃创作者",

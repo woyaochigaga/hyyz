@@ -13,6 +13,8 @@ import {
   HomePostAiTargetField,
 } from "@/types/home-post-ai-assist";
 
+export const dynamic = "force-dynamic";
+
 function normalizeTags(input: unknown) {
   if (!Array.isArray(input)) return [];
 
@@ -54,6 +56,7 @@ function normalizePatch(input: unknown): HomePostAiPatch | undefined {
 function normalizeTargetField(input: unknown): HomePostAiTargetField | undefined {
   const value = String(input || "").trim();
   if (
+    value === "combined" ||
     value === "title" ||
     value === "excerpt" ||
     value === "content" ||
@@ -101,7 +104,7 @@ function normalizeConversation(
   const uuid = String(raw?.uuid || "").trim();
   const post_uuid = String(raw?.post_uuid || "").trim();
   const locale = String(raw?.locale || "").trim();
-  const title = String(raw?.title || "").trim() || "AI助理";
+  const title = String(raw?.title || "").trim() || "小云AI操作台";
   const updated_at = String(raw?.updated_at || "").trim() || getIsoTimestr();
   const created_at = String(raw?.created_at || "").trim() || updated_at;
   const messages = normalizeMessages(raw?.messages);

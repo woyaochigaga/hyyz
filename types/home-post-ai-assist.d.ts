@@ -1,4 +1,9 @@
-export type HomePostAiTargetField = "title" | "excerpt" | "content" | "tags";
+export type HomePostAiTargetField =
+  | "combined"
+  | "title"
+  | "excerpt"
+  | "content"
+  | "tags";
 export type HomePostAiMessageRole = "user" | "assistant";
 export type HomePostAiDecision = "pending" | "applied" | "rejected";
 
