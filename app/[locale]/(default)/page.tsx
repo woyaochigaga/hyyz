@@ -1,17 +1,9 @@
 import Branding from "@/components/blocks/branding";
-import CTA from "@/components/blocks/cta";
-import FAQ from "@/components/blocks/faq";
-import Feature from "@/components/blocks/feature";
 import Feature1 from "@/components/blocks/feature1";
 import Feature2 from "@/components/blocks/feature2";
-import Feature3 from "@/components/blocks/feature3";
 import Hero from "@/components/blocks/hero";
-import Pricing from "@/components/blocks/pricing";
-import Showcase from "@/components/blocks/showcase";
-import Stats from "@/components/blocks/stats";
-import Testimonial from "@/components/blocks/testimonial";
 import { getLandingPage } from "@/services/page";
-
+import CinematicStackedTransition from "@/components/blocks/cinematic-stacked-transition";
 export async function generateMetadata({
   params: { locale },
 }: {
@@ -53,10 +45,10 @@ export default async function LandingPage({
         </div>
       )}
 
-      
+      <CinematicStackedTransition locale={locale} />
+{/* 
       {page.introduce && <Feature1 section={page.introduce} />}
-      {page.benefit && <Feature2 section={page.benefit} />}
-      
+      {page.benefit && <Feature2 section={page.benefit} />} */}
     </>
   );
 }
