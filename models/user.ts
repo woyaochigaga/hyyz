@@ -2,6 +2,8 @@ import { User } from "@/types/user";
 import { getIsoTimestr } from "@/lib/time";
 import { getSupabaseClient } from "./db";
 
+export const PUBLIC_USER_PROFILE_SELECT = "uuid,nickname,avatar_url,role";
+
 export async function insertUser(user: User) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.from("users").insert(user);
@@ -69,6 +71,22 @@ export async function getUsers(
   return data;
 }
 
+/** 分页拉取 users 表全部记录（每批最多 pageSize 条） */
+export async function getAllUsers(pageSize: number = 500): Promise<User[]> {
+  const all: User[] = [];
+  let page = 1;
+
+  for (;;) {
+    const batch = await getUsers(page, pageSize);
+    if (!batch?.length) break;
+    all.push(...batch);
+    if (batch.length < pageSize) break;
+    page += 1;
+  }
+
+  return all;
+}
+
 export async function updateUserInviteCode(
   user_uuid: string,
   invite_code: string
@@ -105,17 +123,24 @@ export async function updateUserInvitedBy(
   return data;
 }
 
-export async function getUsersByUuids(user_uuids: string[]): Promise<User[]> {
+export async function getUsersByUuids(
+  user_uuids: string[],
+  columns: string = "*"
+): Promise<User[]> {
+  if (user_uuids.length === 0) {
+    return [];
+  }
+
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("users")
-    .select("*")
+    .select(columns)
     .in("uuid", user_uuids);
   if (error) {
     return [];
   }
 
-  return data as User[];
+  return data as unknown as User[];
 }
 
 export async function updateUserNickname(
@@ -149,6 +174,14 @@ export async function updateUserProfile(
       | "gender"
       | "signature"
       | "address"
+      | "artisan_category"
+      | "artisan_specialties"
+      | "artisan_years_experience"
+      | "artisan_shop_name"
+      | "artisan_shop_address"
+      | "artisan_service_area"
+      | "artisan_contact_wechat"
+      | "artisan_bio"
     >
   >
 ) {

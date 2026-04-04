@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -92,43 +93,87 @@ function buildMapUrl(exhibition: OfflineExhibition) {
   return `https://uri.amap.com/search?keyword=${name}%20${address}&src=hangyi&coordinate=gaode&callnative=0`;
 }
 
-export function OfflineExhibitionListView({ locale }: { locale: string }) {
+export function OfflineExhibitionListView({
+  locale,
+  initialList = [],
+}: {
+  locale: string;
+  initialList?: OfflineExhibition[];
+}) {
   const [keyword, setKeyword] = React.useState("");
   const [cityFilter, setCityFilter] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
-  const [list, setList] = React.useState<OfflineExhibition[]>([]);
+  const [loading, setLoading] = React.useState(initialList.length === 0);
+  const [list, setList] = React.useState<OfflineExhibition[]>(initialList);
 
-  const loadList = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("locale", locale);
-      params.set("limit", "36");
-      if (keyword.trim()) {
-        params.set("q", keyword.trim());
-      }
-      if (cityFilter.trim()) {
-        params.set("city", cityFilter.trim());
-      }
+  const loadList = React.useCallback(
+    async (options?: { keyword?: string; city?: string }) => {
+      const nextKeyword = String(options?.keyword ?? keyword).trim();
+      const nextCity = String(options?.city ?? cityFilter).trim();
 
-      const response = await fetch(`/api/home/exhibition?${params.toString()}`);
-      const result = await response.json();
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("locale", locale);
+        params.set("limit", "18");
+        if (nextKeyword) {
+          params.set("q", nextKeyword);
+        }
+        if (nextCity) {
+          params.set("city", nextCity);
+        }
 
-      if (result.code === 0) {
-        setList(Array.isArray(result.data) ? result.data : []);
-      } else {
-        toast.error(result.message || "加载展览列表失败");
+        const response = await fetch(`/api/home/exhibition?${params.toString()}`);
+        const result = await response.json();
+
+        if (result.code === 0) {
+          setList(Array.isArray(result.data) ? result.data : []);
+        } else {
+          toast.error(result.message || "加载展览列表失败");
+        }
+      } catch {
+        toast.error("加载展览列表失败");
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      toast.error("加载展览列表失败");
-    } finally {
-      setLoading(false);
-    }
-  }, [cityFilter, keyword, locale]);
+    },
+    [cityFilter, keyword, locale]
+  );
 
   React.useEffect(() => {
+    setList(initialList);
+    setLoading(initialList.length === 0);
+  }, [initialList]);
+
+  React.useEffect(() => {
+    if (initialList.length > 0) {
+      return;
+    }
+
+    void loadList();
+  }, [initialList.length, loadList]);
+
+  const handleSearch = React.useCallback(() => {
     void loadList();
   }, [loadList]);
+
+  const handleCityChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      const nextCity = event.target.value;
+      setCityFilter(nextCity);
+      void loadList({ city: nextCity });
+    },
+    [loadList]
+  );
+
+  const handleKeywordKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void loadList();
+      }
+    },
+    [loadList]
+  );
 
   const cityOptions = React.useMemo(() => {
     return Array.from(
@@ -176,13 +221,14 @@ export function OfflineExhibitionListView({ locale }: { locale: string }) {
             <Input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
+              onKeyDown={handleKeywordKeyDown}
               placeholder="搜索展览名、简介、主办方、场馆、城市或地址"
               className="h-11 rounded-[14px] border-[#d5e0dc] pl-9 dark:border-[#31443e] dark:bg-[#0e1513] dark:text-[#edf5f2]"
             />
           </div>
           <select
             value={cityFilter}
-            onChange={(event) => setCityFilter(event.target.value)}
+            onChange={handleCityChange}
             className="h-11 rounded-[14px] border border-[#d5e0dc] bg-white px-3 text-sm text-[#223733] outline-none dark:border-[#31443e] dark:bg-[#0e1513] dark:text-[#edf5f2]"
           >
             <option value="">全部城市</option>
@@ -192,7 +238,7 @@ export function OfflineExhibitionListView({ locale }: { locale: string }) {
               </option>
             ))}
           </select>
-          <Button type="button" variant="outline" onClick={() => void loadList()}>
+          <Button type="button" variant="outline" onClick={handleSearch}>
             刷新列表
           </Button>
         </section>
@@ -222,16 +268,20 @@ export function OfflineExhibitionListView({ locale }: { locale: string }) {
                 >
                   <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
                     <div className="relative overflow-hidden rounded-[18px] border border-black/5 bg-[#f3f4f6] sm:w-[220px] sm:shrink-0 dark:border-white/10 dark:bg-white/[0.05]">
-                      <div
-                        className="h-[140px] w-full sm:h-full sm:min-h-[168px]"
-                        style={{
-                          backgroundImage: cover
-                            ? `linear-gradient(180deg, rgba(18,28,26,0.06), rgba(18,28,26,0.72)), url(${cover})`
-                            : "linear-gradient(135deg, rgba(252,252,251,0.99), rgba(245,245,244,0.96))",
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                        }}
-                      />
+                      <div className="relative h-[140px] w-full sm:h-full sm:min-h-[168px]">
+                        {cover ? (
+                          <Image
+                            src={cover}
+                            alt={item.title || "线下展览封面"}
+                            fill
+                            sizes="(min-width: 640px) 220px, 100vw"
+                            className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                          />
+                        ) : (
+                          <div className="h-full w-full bg-[linear-gradient(135deg,rgba(252,252,251,0.99),rgba(245,245,244,0.96))]" />
+                        )}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,28,26,0.06),rgba(18,28,26,0.72))]" />
+                      </div>
                       <div className="absolute left-3 top-3 flex items-center gap-2">
                         <Badge className={cn("bg-white/90", statusTone(item.status))} variant="outline">
                           {statusLabel(item.status)}

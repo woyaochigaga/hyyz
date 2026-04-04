@@ -1,4 +1,9 @@
-import { PostStatus, findPostBySlug, insertPost } from "@/models/post";
+import {
+  PostStatus,
+  findPostBySlug,
+  findPostByUuid,
+  updatePost,
+} from "@/models/post";
 import { localeNames, locales } from "@/i18n/locale";
 
 import Empty from "@/components/blocks/empty";
@@ -7,7 +12,6 @@ import { Form as FormSlotType } from "@/types/slots/form";
 import { Post } from "@/types/post";
 import { getIsoTimestr } from "@/lib/time";
 import { getUserInfo } from "@/services/user";
-import { getUuid } from "@/lib/hash";
 
 function isValidSlug(slug: string) {
   // Keep it URL-safe and single-segment. (No spaces, no slashes/backslashes)
@@ -15,22 +19,31 @@ function isValidSlug(slug: string) {
   return /^[a-z0-9][a-z0-9._,-]*$/i.test(slug) && !slug.includes("/") && !slug.includes("\\");
 }
 
-export default async function () {
+export default async function AdminAnnouncementEditPage({
+  params,
+}: {
+  params: { locale: string; uuid: string };
+}) {
   const user = await getUserInfo();
   if (!user || !user.uuid) {
     return <Empty message="请先登录" />;
   }
 
+  const post = await findPostByUuid(params.uuid);
+  if (!post) {
+    return <Empty message="公告不存在" />;
+  }
+
   const form: FormSlotType = {
-    title: "新增文章",
+    title: "编辑公告",
     crumb: {
       items: [
         {
-          title: "文章管理",
-          url: "/admin/posts",
+          title: "公告",
+          url: `/${params.locale}/admin/announcement`,
         },
         {
-          title: "新增文章",
+          title: "编辑公告",
           is_active: true,
         },
       ],
@@ -40,7 +53,7 @@ export default async function () {
         name: "title",
         title: "标题",
         type: "text",
-        placeholder: "请输入文章标题",
+        placeholder: "请输入公告标题",
         validation: {
           required: true,
         },
@@ -53,7 +66,7 @@ export default async function () {
         validation: {
           required: true,
         },
-        tip: "文章别名必须唯一，访问路径示例：/posts/hangzhou-art-intro",
+        tip: "公告别名必须唯一，访问路径示例：/posts/hangzhou-art-intro",
       },
       {
         name: "locale",
@@ -69,22 +82,43 @@ export default async function () {
         },
       },
       {
+        name: "status",
+        title: "状态",
+        type: "select",
+        options: Object.values(PostStatus).map((status: string) => {
+          const title =
+            status === PostStatus.Online
+              ? "已上线"
+              : status === PostStatus.Offline
+                ? "已下线"
+                : status === PostStatus.Deleted
+                  ? "已删除"
+                  : "草稿";
+
+          return {
+            title,
+            value: status,
+          };
+        }),
+        value: PostStatus.Created,
+      },
+      {
         name: "description",
         title: "描述",
         type: "textarea",
-        placeholder: "请输入文章摘要或简介",
+        placeholder: "请输入公告摘要或简介",
       },
       {
         name: "cover_url",
         title: "封面图",
         type: "image",
-        placeholder: "上传文章封面图",
+        placeholder: "上传公告封面图",
       },
       {
         name: "video_url",
         title: "视频",
         type: "video",
-        placeholder: "上传文章视频",
+        placeholder: "上传公告视频",
       },
       {
         name: "author_name",
@@ -102,12 +136,17 @@ export default async function () {
         name: "content",
         title: "正文内容",
         type: "textarea",
-        placeholder: "请输入文章正文",
+        placeholder: "请输入公告正文",
         attributes: {
           rows: 10,
         },
       },
     ],
+    data: post,
+    passby: {
+      user,
+      post,
+    },
     submit: {
       button: {
         title: "提交",
@@ -115,9 +154,15 @@ export default async function () {
       handler: async (data: FormData, passby: any) => {
         "use server";
 
+        const { user, post } = passby;
+        if (!user || !post || !post.uuid) {
+          throw new Error("参数错误");
+        }
+
         const title = data.get("title") as string;
         const slug = data.get("slug") as string;
         const locale = data.get("locale") as string;
+        const status = data.get("status") as string;
         const description = data.get("description") as string;
         const cover_url = data.get("cover_url") as string;
         const video_url = data.get("video_url") as string;
@@ -143,33 +188,32 @@ export default async function () {
         }
 
         const existPost = await findPostBySlug(slug, locale);
-        if (existPost) {
-          throw new Error("已存在相同别名的文章");
+        if (existPost && existPost.uuid !== post.uuid) {
+          throw new Error("已存在相同别名的公告");
         }
 
-        const post: Post = {
-          uuid: getUuid(),
-          user_uuid: user.uuid,
-          created_at: getIsoTimestr(),
-          status: PostStatus.Created,
+        const updatedPost: Partial<Post> = {
+          updated_at: getIsoTimestr(),
+          user_uuid: post.user_uuid || undefined,
+          status,
           title,
           slug,
           locale,
           description,
           cover_url,
           video_url,
-          author_name: author_name || user.nickname || "",
-          author_avatar_url: author_avatar_url || user.avatar_url || "",
+          author_name,
+          author_avatar_url,
           content,
         };
 
         try {
-          await insertPost(post);
+          await updatePost(post.uuid, updatedPost);
 
           return {
             status: "success",
-            message: "文章已新增",
-            redirect_url: "/admin/posts",
+            message: "公告已更新",
+            redirect_url: `/${params.locale}/admin/announcement`,
           };
         } catch (err: any) {
           throw new Error(err.message);

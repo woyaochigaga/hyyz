@@ -16,32 +16,6 @@
           "title": "首页",
           "url": "/",
           "icon": "HiOutlineSparkles"
-        },
-        {
-          "title": "匠人风采",
-          "url": "/#showcase",
-          "icon": "BiCube",
-          "children": [
-            {
-              "title": "xxx",
-              "description": "AI壁纸生成器",
-              "icon": "MdOutlineWallpaper",
-              "url": "",
-              "target": "_blank"
-            },
-            {
-              "title": "xxx",
-              "description": "AI封面生成器",
-              "icon": "",
-              "url": "",
-              "target": "_blank"
-            }
-          ]
-        },
-        {
-          "title": "手工艺分类",
-          "url": "/#pricing",
-          "icon": "MdPayment"
         }
 
       ]

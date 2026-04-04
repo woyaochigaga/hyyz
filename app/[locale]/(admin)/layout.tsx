@@ -7,8 +7,10 @@ import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
   children,
+  params: { locale },
 }: {
   children: ReactNode;
+  params: { locale: string };
 }) {
   const userInfo = await getUserInfo();
   if (!userInfo || !userInfo.email) {
@@ -20,6 +22,9 @@ export default async function AdminLayout({
     return <Empty message="无权限访问后台" />;
   }
 
+  const adminPath = (path: string) => `/${locale}/admin${path}`;
+  const homePath = (path: string) => `/${locale}${path}`;
+
   const sidebar: Sidebar = {
     brand: {
       title: "杭艺云展",
@@ -27,14 +32,34 @@ export default async function AdminLayout({
         src: "/logo.png",
         alt: "杭艺云展",
       },
-      url: "/admin",
+      url: adminPath(""),
     },
     nav: {
       items: [
         {
+          title: "云展管理",
+          url: adminPath("/cloud-exhibition"),
+          icon: "RiGalleryLine",
+        },
+        {
           title: "用户管理",
-          url: "/admin/users",
+          url: adminPath("/users"),
           icon: "RiUserLine",
+        },
+        {
+          title: "帖子管理",
+          url: adminPath("/community-posts"),
+          icon: "RiFileList3Line",
+        },
+        {
+          title: "论坛管理",
+          url: adminPath("/forum-posts"),
+          icon: "RiChat3Line",
+        },
+        {
+          title: "展览管理",
+          url: adminPath("/offline-exhibitions"),
+          icon: "RiMapPinLine",
         },
         {
           title: "订单管理",
@@ -43,13 +68,13 @@ export default async function AdminLayout({
           children: [
             {
               title: "已支付订单",
-              url: "/admin/paid-orders",
+              url: adminPath("/paid-orders"),
             },
           ],
         },
         {
-          title: "文章管理",
-          url: "/admin/posts",
+          title: "公告管理",
+          url: adminPath("/announcement"),
           icon: "RiArticleLine",
         },
       ],
@@ -58,25 +83,25 @@ export default async function AdminLayout({
       items: [
         {
           title: "前台首页",
-          url: "/",
+          url: homePath(""),
           target: "_blank",
           icon: "RiHomeLine",
         },
         {
           title: "云展首页",
-          url: "/home/world",
+          url: homePath("/home"),
           target: "_self",
           icon: "RiHomeLine",
         },
         {
           title: "云展大厅",
-          url: "/home/world",
+          url: homePath("/home/community"),
           target: "_self",
           icon: "RiGalleryLine",
         },
         {
           title: "AI 提问",
-          url: "/home/ai-chat",
+          url: homePath("/home/ai-chat"),
           target: "_self",
           icon: "RiRobot2Line",
         },

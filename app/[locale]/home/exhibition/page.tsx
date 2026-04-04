@@ -1,4 +1,7 @@
 import { OfflineExhibitionListView } from "@/components/home/offline-exhibition-list-view";
+import { listPublicOfflineExhibitionsCached } from "@/models/offline-exhibition";
+
+export const revalidate = 60;
 
 export async function generateMetadata({
   params: { locale },
@@ -24,7 +27,7 @@ export default async function LandingPage({
 }: {
   params: { locale: string };
 }) {
-  return (
-    <OfflineExhibitionListView locale={locale} />
-  );
+  const exhibitions = await listPublicOfflineExhibitionsCached(locale, 18);
+
+  return <OfflineExhibitionListView locale={locale} initialList={exhibitions} />;
 }

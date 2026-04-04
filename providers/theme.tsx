@@ -1,14 +1,21 @@
 "use client";
 
-import Analytics from "@/components/analytics";
 import { CacheKey } from "@/services/constant";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import SignModal from "@/components/sign/modal";
 import type { ThemeProviderProps } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { cacheGet } from "@/lib/cache";
 import { useAppContext } from "@/contexts/app";
+import dynamic from "next/dynamic";
 import { useEffect } from "react";
+
+const Analytics = dynamic(() => import("@/components/analytics"), {
+  ssr: false,
+});
+
+const SignModal = dynamic(() => import("@/components/sign/modal"), {
+  ssr: false,
+});
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   const { theme, setTheme } = useAppContext();
@@ -36,6 +43,14 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     const handleChange = () => {
       setTheme(mediaQuery.matches ? "dark" : "light");
     };
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => {
+        mediaQuery.removeEventListener("change", handleChange);
+      };
+    }
+
     mediaQuery.addListener(handleChange);
 
     return () => {

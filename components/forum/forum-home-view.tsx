@@ -54,9 +54,72 @@ export function ForumHomeView({
   const [submittingBar, setSubmittingBar] = React.useState(false);
   const [followingBarId, setFollowingBarId] = React.useState("");
   const [postDialogOpen, setPostDialogOpen] = React.useState(false);
+  const leftBarsNavRef = React.useRef<HTMLElement | null>(null);
+  const leftBarItemRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [leftBarIndicator, setLeftBarIndicator] = React.useState({
+    top: 0,
+    height: 0,
+    opacity: 0,
+  });
 
   React.useEffect(() => {
     if (!selectedBarId && bars[0]?.id) setSelectedBarId(bars[0].id);
+  }, [bars, selectedBarId]);
+
+  React.useEffect(() => {
+    const syncSelectedBarFromHash = () => {
+      const hash = window.location.hash;
+      if (!hash.startsWith("#bar-card-")) return;
+      const barId = decodeURIComponent(hash.slice("#bar-card-".length));
+      if (barId && bars.some((bar) => bar.id === barId)) {
+        setSelectedBarId(barId);
+      }
+    };
+
+    syncSelectedBarFromHash();
+    window.addEventListener("hashchange", syncSelectedBarFromHash);
+
+    return () => {
+      window.removeEventListener("hashchange", syncSelectedBarFromHash);
+    };
+  }, [bars]);
+
+  React.useEffect(() => {
+    const syncIndicator = () => {
+      const nav = leftBarsNavRef.current;
+      const activeItem = leftBarItemRefs.current[selectedBarId];
+
+      if (!nav || !activeItem) {
+        setLeftBarIndicator((current) =>
+          current.opacity === 0 ? current : { ...current, opacity: 0 }
+        );
+        return;
+      }
+
+      setLeftBarIndicator({
+        top: activeItem.offsetTop,
+        height: activeItem.offsetHeight,
+        opacity: 1,
+      });
+    };
+
+    syncIndicator();
+
+    const nav = leftBarsNavRef.current;
+    if (!nav) return;
+
+    const resizeObserver = new ResizeObserver(syncIndicator);
+    resizeObserver.observe(nav);
+
+    const activeItem = leftBarItemRefs.current[selectedBarId];
+    if (activeItem) resizeObserver.observe(activeItem);
+
+    window.addEventListener("resize", syncIndicator);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", syncIndicator);
+    };
   }, [bars, selectedBarId]);
 
   const handleCreatePost = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -83,8 +146,9 @@ export function ForumHomeView({
       setPostContent("");
       setPostDialogOpen(false);
       toast.success(isZh ? "帖子已发布" : "Post published");
-      router.push(`/${locale}/home/forum/post/${result.data.id}`);
-      router.refresh();
+      React.startTransition(() => {
+        router.push(`/${locale}/home/forum/post/${result.data.id}`);
+      });
     } catch (error: any) {
       toast.error(error?.message || (isZh ? "发帖失败" : "Failed to publish"));
     } finally {
@@ -116,8 +180,9 @@ export function ForumHomeView({
       setBarDescription("");
       setBarCover("");
       toast.success(isZh ? "吧创建成功" : "Bar created");
-      router.push(`/${locale}/home/forum/bar/${result.data.id}`);
-      router.refresh();
+      React.startTransition(() => {
+        router.push(`/${locale}/home/forum/bar/${result.data.id}`);
+      });
     } catch (error: any) {
       toast.error(error?.message || (isZh ? "创建吧失败" : "Failed to create bar"));
     } finally {
@@ -126,7 +191,28 @@ export function ForumHomeView({
   };
 
   const handleToggleFollow = async (barId: string) => {
+    const previousBar = bars.find((item) => item.id === barId);
+    if (!previousBar) return;
+
+    const optimisticFollowed = !previousBar.followed;
+    const optimisticFollowCount = Math.max(
+      0,
+      previousBar.follow_count + (optimisticFollowed ? 1 : -1)
+    );
+
     setFollowingBarId(barId);
+    setBars((current) =>
+      current.map((item) =>
+        item.id === barId
+          ? {
+              ...item,
+              followed: optimisticFollowed,
+              follow_count: optimisticFollowCount,
+            }
+          : item
+      )
+    );
+
     try {
       const resp = await fetch("/api/forum/bar/follow", {
         method: "POST",
@@ -151,6 +237,9 @@ export function ForumHomeView({
         )
       );
     } catch (error: any) {
+      setBars((current) =>
+        current.map((item) => (item.id === barId ? previousBar : item))
+      );
       toast.error(error?.message || (isZh ? "关注失败" : "Follow failed"));
     } finally {
       setFollowingBarId("");
@@ -267,7 +356,20 @@ export function ForumHomeView({
 
               <section className={cn(sectionClass, "p-4")}> 
                 <h3 className="text-sm font-semibold">{isZh ? "推荐讨论吧" : "Suggested bars"}</h3>
-                <nav className="mt-3 space-y-0.5" aria-label={isZh ? "吧列表" : "Bar list"}>
+                <nav
+                  ref={leftBarsNavRef}
+                  className="relative mt-3 space-y-0.5"
+                  aria-label={isZh ? "吧列表" : "Bar list"}
+                >
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-0 right-0 rounded-lg border border-primary/20 bg-primary/10 shadow-sm transition-[top,height,opacity] duration-300 ease-out"
+                    style={{
+                      top: leftBarIndicator.top,
+                      height: leftBarIndicator.height,
+                      opacity: leftBarIndicator.opacity,
+                    }}
+                  />
                   {bars.map((bar) => {
                     const cover = bar.cover_image
                       ? proxifyAvatarUrl(bar.cover_image) || bar.cover_image
@@ -276,8 +378,17 @@ export function ForumHomeView({
                     return (
                       <Link
                         key={bar.id}
-                        href={`/${locale}/home/forum/bar/${bar.id}`}
-                        className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                        ref={(node) => {
+                          leftBarItemRefs.current[bar.id] = node;
+                        }}
+                        href={`#bar-card-${bar.id}`}
+                        onClick={() => setSelectedBarId(bar.id)}
+                        className={cn(
+                          "relative z-10 flex items-center gap-2.5 rounded-lg px-2 py-2 text-foreground transition",
+                          selectedBarId === bar.id
+                            ? "text-primary"
+                            : "hover:bg-accent/70 hover:text-accent-foreground"
+                        )}
                       >
                         <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted">
                           {cover ? (
@@ -355,7 +466,8 @@ export function ForumHomeView({
                   return (
                     <div
                       key={bar.id}
-                      className="rounded-xl border border-border bg-background/80 p-4 transition hover:border-primary/30 hover:bg-accent/40"
+                      id={`bar-card-${bar.id}`}
+                      className="scroll-mt-24 rounded-xl border border-border bg-background/80 p-4 transition hover:border-primary/30 hover:bg-accent/40"
                     >
                       <div className="flex items-start gap-3">
                         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">

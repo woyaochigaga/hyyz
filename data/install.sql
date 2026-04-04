@@ -18,6 +18,14 @@ CREATE TABLE users (
     gender VARCHAR(20) NOT NULL default '',
     signature VARCHAR(200) NOT NULL default '',
     address VARCHAR(255) NOT NULL default '',
+    artisan_category VARCHAR(100) NOT NULL default '',
+    artisan_specialties VARCHAR(255) NOT NULL default '',
+    artisan_years_experience INT NOT NULL default 0,
+    artisan_shop_name VARCHAR(120) NOT NULL default '',
+    artisan_shop_address VARCHAR(255) NOT NULL default '',
+    artisan_service_area VARCHAR(120) NOT NULL default '',
+    artisan_contact_wechat VARCHAR(100) NOT NULL default '',
+    artisan_bio TEXT NOT NULL default '',
     UNIQUE (email, signin_provider)
 );
 

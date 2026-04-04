@@ -478,13 +478,15 @@ export function PostCreateView({ locale }: { locale: string }) {
   return (
     <div
       className={cn(
-        "min-w-0 gap-6 overflow-y-auto lg:grid lg:h-[min(100%,calc(100dvh-5.75rem))] lg:min-h-[480px] lg:max-h-[calc(100dvh-5.75rem)] lg:overflow-hidden",
-        activeDrawer ? "lg:grid-cols-[minmax(0,1fr)_440px]" : "grid-cols-1"
+        "flex w-full min-w-0 flex-col gap-4 lg:grid lg:min-h-0 lg:h-full lg:max-h-[min(calc(100dvh-5.75rem),100%)] lg:gap-6 lg:overflow-hidden",
+        activeDrawer
+          ? "lg:grid-cols-[minmax(0,1fr)_min(440px,40vw)]"
+          : "lg:grid-cols-1"
       )}
     >
-      <section className="relative min-h-0 rounded-[30px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] p-6 shadow-[0_26px_80px_rgba(43,60,55,0.08)] lg:h-full lg:overflow-y-auto dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))]">
+      <section className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[30px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] p-6 shadow-[0_26px_80px_rgba(43,60,55,0.08)] lg:min-h-[min(480px,calc(100dvh-5.75rem))] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))]">
         <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(108,134,126,0.24),rgba(176,188,184,0.22),transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(117,144,136,0.24),rgba(86,104,99,0.20),transparent)]" />
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="mb-6 shrink-0 flex flex-wrap items-start justify-between gap-4 lg:mb-8">
           <div>
             <div className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-[#6b827c] dark:text-[#92aea7]">
               创作中心
@@ -521,7 +523,8 @@ export function PostCreateView({ locale }: { locale: string }) {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] pr-0.5">
+        <div className="space-y-6 pb-2">
           <div className="rounded-[26px] border border-[#9cb1ab]/16 bg-white/68 p-5 shadow-[0_14px_40px_rgba(35,55,49,0.05)] dark:border-white/10 dark:bg-white/[0.03]">
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b827c] dark:text-[#92aea7]">
               发布类型
@@ -631,7 +634,7 @@ export function PostCreateView({ locale }: { locale: string }) {
 
           {type === "image" && (
             <div className="rounded-[26px] border border-[#9cb1ab]/16 bg-white/68 p-5 shadow-[0_14px_40px_rgba(35,55,49,0.05)] dark:border-white/10 dark:bg-white/[0.03]">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
                     图片
@@ -640,12 +643,12 @@ export function PostCreateView({ locale }: { locale: string }) {
                     首图默认作为社区封面；更多图可点「添加图片」。
                   </p>
                 </div>
-                  <Button type="button" variant="outline" size="sm" onClick={addImageSlot}>
-                    <Plus className="mr-1 h-4 w-4" />
-                    添加图片
-                  </Button>
-                </div>
-                <div className="grid gap-3 xl:grid-cols-2">
+                <Button type="button" variant="outline" size="sm" onClick={addImageSlot}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  添加图片
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
                   {imageUrls.map((value, index) => (
                     <div
                       key={`image-${index}`}
@@ -662,9 +665,9 @@ export function PostCreateView({ locale }: { locale: string }) {
                       <ImageUpload value={value} onChange={(url) => setImageAt(index, url)} />
                     </div>
                   ))}
-                </div>
               </div>
-            )}
+            </div>
+          )}
 
             {type === "video" && (
               <div className="rounded-[26px] border border-[#9cb1ab]/16 bg-white/68 p-5 shadow-[0_14px_40px_rgba(35,55,49,0.05)] dark:border-white/10 dark:bg-white/[0.03]">
@@ -756,7 +759,10 @@ export function PostCreateView({ locale }: { locale: string }) {
             </div>
           </div>
 
-          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 rounded-[24px] border border-[#94a7a1]/14 bg-[linear-gradient(180deg,rgba(253,253,252,0.92),rgba(246,248,247,0.96))] px-4 py-4 backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(28,32,32,0.88),rgba(24,28,28,0.94))]">
+        </div>
+        </div>
+
+        <div className="mt-4 flex shrink-0 flex-wrap items-center justify-end gap-3 rounded-[24px] border border-[#94a7a1]/14 bg-[linear-gradient(180deg,rgba(253,253,252,0.96),rgba(246,248,247,0.98))] px-4 py-4 backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(28,32,32,0.94),rgba(24,28,28,0.98))]">
             <Button
               type="button"
               onClick={() => void handleSave("draft")}
@@ -774,14 +780,13 @@ export function PostCreateView({ locale }: { locale: string }) {
               <BadgePlus className="mr-2 h-4 w-4" />
               {submitting ? "发布中..." : editingDraftId ? "发布草稿" : "立即发布"}
             </Button>
-          </div>
         </div>
       </section>
 
       {activeDrawer ? (
         <aside
           className={cn(
-            "min-h-0 overflow-hidden rounded-[30px] border shadow-[0_24px_64px_rgba(15,23,42,0.10)] lg:flex lg:h-full lg:flex-col",
+            "min-h-0 min-w-0 overflow-hidden rounded-[30px] border shadow-[0_24px_64px_rgba(15,23,42,0.10)] lg:flex lg:h-full lg:max-h-full lg:min-h-0 lg:flex-col lg:shrink-0",
             activeDrawer === "assist"
               ? "border-[#2d2d2d] bg-[#1e1e1e]"
               : "border-black/5 bg-[linear-gradient(180deg,rgba(251,252,252,0.98),rgba(243,246,245,0.97))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(27,31,31,0.98),rgba(22,26,26,0.98))]"

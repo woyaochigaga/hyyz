@@ -96,17 +96,23 @@ function getTextCardTone(index: number) {
   return tones[index % tones.length];
 }
 
-export function HomePostFeedView({ locale }: { locale: string }) {
+export function HomePostFeedView({
+  locale,
+  initialPosts = [],
+}: {
+  locale: string;
+  initialPosts?: HomePost[];
+}) {
   const t = useTranslations("home");
-  const [posts, setPosts] = React.useState<HomePost[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [posts, setPosts] = React.useState<HomePost[]>(initialPosts);
+  const [loading, setLoading] = React.useState(initialPosts.length === 0);
   const [currentType, setCurrentType] = React.useState<TypeFilter>("all");
   const [currentTag, setCurrentTag] = React.useState("all");
 
   const loadFeed = React.useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await fetch(`/api/home/post?locale=${locale}`);
+      const resp = await fetch(`/api/home/post?locale=${locale}&limit=18`);
       const result = await resp.json();
       if (result.code === 0) {
         setPosts(Array.isArray(result.data) ? result.data : []);
@@ -121,8 +127,17 @@ export function HomePostFeedView({ locale }: { locale: string }) {
   }, [locale, t]);
 
   React.useEffect(() => {
+    setPosts(initialPosts);
+    setLoading(initialPosts.length === 0);
+  }, [initialPosts]);
+
+  React.useEffect(() => {
+    if (initialPosts.length > 0) {
+      return;
+    }
+
     void loadFeed();
-  }, [loadFeed]);
+  }, [initialPosts.length, loadFeed]);
 
   const tags = React.useMemo(() => uniqueTags(posts), [posts]);
 
@@ -309,7 +324,7 @@ export function HomePostFeedView({ locale }: { locale: string }) {
                         </span>
                       </div>
                       <p className="line-clamp-4 pl-1 text-[14px] font-normal leading-[1.7] tracking-[-0.01em] text-stone-800 dark:text-stone-100">
-                        {post.excerpt || getHomePostExcerpt(post.content, 140)}
+                        {post.excerpt || post.title || ""}
                       </p>
                     </div>
                   ) : (

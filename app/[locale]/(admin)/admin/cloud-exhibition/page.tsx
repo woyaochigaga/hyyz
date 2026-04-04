@@ -1,6 +1,6 @@
 import { AdminOverview } from "@/components/admin/admin-overview";
 
-export default function AdminPage({
+export default function AdminCloudExhibitionPage({
   params: { locale },
 }: {
   params: { locale: string };
@@ -8,8 +8,8 @@ export default function AdminPage({
   return (
     <AdminOverview
       locale={locale}
-      title="管理后台"
-      description="查看杭艺云展后台核心数据、快捷入口和最近内容动态。"
+      title="云展管理"
+      description="集中查看社区帖子、论坛帖子、线下展览、公告和订单等内容运营数据。"
     />
   );
 }

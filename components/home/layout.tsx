@@ -42,7 +42,7 @@ export default function HomeLayout({
 
           <section
             data-home-content="true"
-            className="min-h-0 w-full min-w-0 max-w-none flex-1 overflow-y-auto overflow-x-hidden"
+            className="flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col overflow-y-auto overflow-x-hidden"
           >
             {children}
           </section>

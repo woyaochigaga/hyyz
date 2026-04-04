@@ -1,5 +1,8 @@
 import { getSupabaseClient } from "@/models/db";
-import { getUsersByUuids } from "@/models/user";
+import {
+  PUBLIC_USER_PROFILE_SELECT,
+  getUsersByUuids,
+} from "@/models/user";
 import {
   HomePost,
   HomePostAuthor,
@@ -14,6 +17,7 @@ import {
 } from "@/types/home-post";
 import { getIsoTimestr } from "@/lib/time";
 import { getHomePostExcerpt } from "@/lib/home-post-content";
+import { unstable_cache } from "next/cache";
 
 type HomePostRow = {
   id?: number;
@@ -61,6 +65,27 @@ type HomePostCommentRow = {
   created_at?: string;
   updated_at?: string;
 };
+
+const HOME_POST_FULL_SELECT = "*";
+
+const HOME_POST_FEED_SELECT = [
+  "id",
+  "uuid",
+  "user_uuid",
+  "locale",
+  "type",
+  "title",
+  "excerpt",
+  "cover_url",
+  "images",
+  "video_url",
+  "status",
+  "like_count",
+  "comment_count",
+  "created_at",
+  "updated_at",
+  "published_at",
+].join(", ");
 
 function normalizeStringArray(input: unknown): string[] {
   if (Array.isArray(input)) {
@@ -276,7 +301,10 @@ function buildCommentTree(comments: HomePostComment[]) {
 }
 
 async function buildAuthors(userUuids: string[]) {
-  const users = await getUsersByUuids(Array.from(new Set(userUuids.filter(Boolean))));
+  const users = await getUsersByUuids(
+    Array.from(new Set(userUuids.filter(Boolean))),
+    PUBLIC_USER_PROFILE_SELECT
+  );
   const map = new Map<string, HomePostAuthor>();
 
   for (const user of users) {
@@ -519,6 +547,59 @@ export async function updateHomePost(
   return findHomePostByUuid(uuid, user_uuid);
 }
 
+export async function adminUpdateHomePost(
+  uuid: string,
+  patch: Partial<HomePost> & { tags?: string[] }
+) {
+  const current = await findHomePostRowByUuid(uuid);
+  if (!current) {
+    return undefined;
+  }
+
+  const supabase = getSupabaseClient();
+  const updatePayload: Record<string, any> = {
+    updated_at: getIsoTimestr(),
+  };
+
+  if (patch.type) updatePayload.type = patch.type;
+  if (typeof patch.title === "string") updatePayload.title = patch.title;
+  if (typeof patch.excerpt === "string") updatePayload.excerpt = patch.excerpt;
+  if (typeof patch.content === "string") updatePayload.content = patch.content;
+  if (patch.content_format) updatePayload.content_format = patch.content_format;
+  if (patch.editor_mode) updatePayload.editor_mode = patch.editor_mode;
+  if (patch.content_blocks) {
+    updatePayload.content_blocks = normalizeRecordArray(patch.content_blocks);
+  }
+  if (patch.attachments) {
+    updatePayload.attachments = normalizeAttachments(patch.attachments);
+  }
+  if (patch.display_settings) {
+    updatePayload.display_settings = normalizeDisplaySettings(patch.display_settings);
+  }
+  if (typeof patch.cover_url === "string") updatePayload.cover_url = patch.cover_url;
+  if (patch.images) updatePayload.images = JSON.stringify(normalizeImages(patch.images));
+  if (typeof patch.video_url === "string") updatePayload.video_url = patch.video_url;
+  if (patch.status) {
+    updatePayload.status = patch.status;
+    if (patch.status === "published") {
+      updatePayload.published_at = getIsoTimestr();
+    }
+  }
+
+  const { error } = await supabase
+    .from("home_posts")
+    .update(updatePayload)
+    .eq("uuid", uuid);
+
+  if (error) throw error;
+
+  if (patch.tags) {
+    await replaceHomePostTags(uuid, patch.tags);
+  }
+
+  return findHomePostByUuid(uuid, current.user_uuid);
+}
+
 export async function softDeleteHomePost(uuid: string, user_uuid: string) {
   const supabase = getSupabaseClient();
   const { error } = await supabase
@@ -529,6 +610,19 @@ export async function softDeleteHomePost(uuid: string, user_uuid: string) {
     })
     .eq("uuid", uuid)
     .eq("user_uuid", user_uuid);
+
+  if (error) throw error;
+}
+
+export async function adminSoftDeleteHomePost(uuid: string) {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("home_posts")
+    .update({
+      status: "deleted",
+      updated_at: getIsoTimestr(),
+    })
+    .eq("uuid", uuid);
 
   if (error) throw error;
 }
@@ -559,15 +653,21 @@ export async function listHomePosts(params?: {
   user_uuid?: string;
   includeDraft?: boolean;
   includeDeleted?: boolean;
+  limit?: number;
+  summaryOnly?: boolean;
 }) {
   const supabase = getSupabaseClient();
   let query = supabase
     .from("home_posts")
-    .select("*")
+    .select(params?.summaryOnly ? HOME_POST_FEED_SELECT : HOME_POST_FULL_SELECT)
     .order("created_at", { ascending: false });
 
   if (params?.user_uuid) {
     query = query.eq("user_uuid", params.user_uuid);
+  }
+
+  if (params?.locale) {
+    query = query.eq("locale", params.locale);
   }
 
   if (!params?.includeDeleted) {
@@ -578,13 +678,43 @@ export async function listHomePosts(params?: {
     query = query.eq("status", "published");
   }
 
+  if (typeof params?.limit === "number" && params.limit > 0) {
+    query = query.limit(params.limit);
+  }
+
   const { data, error } = await query;
   if (error || !data) return [];
 
   return attachPostMeta(
-    (data as HomePostRow[]).map(toHomePost),
+    (data as unknown as HomePostRow[]).map(toHomePost),
     params?.currentUserUuid
   );
+}
+
+export const listPublicHomePostsCached = unstable_cache(
+  async (locale: string, limit: number = 18) =>
+    listHomePosts({
+      locale,
+      limit,
+      summaryOnly: true,
+    }),
+  ["public-home-post-feed"],
+  {
+    revalidate: 60,
+  }
+);
+
+/** 管理后台：拉取 home_posts 全表（含草稿、已发布、已删除） */
+export async function listHomePostsForAdmin() {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("home_posts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return attachPostMeta((data as HomePostRow[]).map(toHomePost), undefined);
 }
 
 export async function replaceHomePostTags(post_uuid: string, tags: string[]) {

@@ -3,21 +3,30 @@ import { respData, respErr, respJson } from "@/lib/resp";
 import { getUserUuid } from "@/services/user";
 import {
   createHomePost,
+  listPublicHomePostsCached,
   listHomePosts,
   validateHomePostPayload,
 } from "@/models/home-post";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const currentUserUuid = await getUserUuid();
     const mine = searchParams.get("mine") === "1";
     const locale = String(searchParams.get("locale") || "").trim();
+    const limit = Number.parseInt(String(searchParams.get("limit") || "18"), 10);
+    const currentUserUuid = mine ? await getUserUuid() : "";
 
     if (mine && !currentUserUuid) {
       return respJson(-2, "no auth");
+    }
+
+    if (!mine) {
+      const posts = await listPublicHomePostsCached(
+        locale,
+        Number.isFinite(limit) && limit > 0 ? limit : 18
+      );
+
+      return respData(posts);
     }
 
     const posts = await listHomePosts({
@@ -26,6 +35,8 @@ export async function GET(req: Request) {
       user_uuid: mine ? currentUserUuid : undefined,
       includeDraft: mine,
       includeDeleted: false,
+      limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+      summaryOnly: !mine,
     });
 
     return respData(posts);

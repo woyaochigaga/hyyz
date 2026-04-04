@@ -1091,9 +1091,7 @@ export default function AiChatView({ locale }: { locale: string }) {
   return (
     <div
       className={cn(
-        "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[30px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] text-zinc-900 shadow-[0_26px_80px_rgba(43,60,55,0.08)] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))] dark:text-zinc-100",
-        "h-[min(100%,calc(100dvh-5.75rem))] min-h-[480px] max-h-[calc(100dvh-5.75rem)]"
-      )}
+       "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-[30px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] text-zinc-900 shadow-[0_26px_80px_rgba(43,60,55,0.08)] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))] dark:text-zinc-100"    )}
     >
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(108,134,126,0.24),rgba(176,188,184,0.22),transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(117,144,136,0.24),rgba(86,104,99,0.20),transparent)]" />
       <header className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-5 py-5 lg:px-6">
@@ -1153,7 +1151,7 @@ export default function AiChatView({ locale }: { locale: string }) {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 gap-4 px-4 pb-4 lg:px-6 lg:pb-6">
+      <div className="flex min-h-0 flex-1 gap-4 px-4 pb-0 lg:px-6 lg:pb-0">
         <div
           className={cn(
             "hidden shrink-0 overflow-hidden transition-[width] duration-200 ease-out lg:block",
@@ -1200,10 +1198,10 @@ export default function AiChatView({ locale }: { locale: string }) {
             </div>
           ) : (
             <>
-              <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_auto]">
+              <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_auto]">
                 <div
                   ref={scrollRef}
-                  className="min-h-0 space-y-6 overflow-y-auto px-4 py-6 lg:pr-2"
+                  className="min-h-0 space-y-6 overflow-y-auto overscroll-contain px-4 py-6 lg:pr-2"
                 >
                   {messages.map((m) => (
                     <div
@@ -1323,7 +1321,7 @@ export default function AiChatView({ locale }: { locale: string }) {
                 </aside>
               </div>
 
-              <div className="shrink-0 bg-gradient-to-t from-[rgba(243,246,245,0.98)] via-[rgba(243,246,245,0.92)] to-transparent px-4 pb-5 pt-2 backdrop-blur-sm dark:from-[rgba(27,31,31,0.98)] dark:via-[rgba(27,31,31,0.9)]">
+              <div className="shrink-0 bg-gradient-to-t from-[rgba(243,246,245,0.98)] via-[rgba(243,246,245,0.92)] to-transparent px-4 pb-3 pt-2 backdrop-blur-sm dark:from-[rgba(27,31,31,0.98)] dark:via-[rgba(27,31,31,0.9)]">
                 <div className="mx-auto w-full max-w-3xl">
                   <Composer
                     compact

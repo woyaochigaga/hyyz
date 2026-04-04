@@ -1,6 +1,9 @@
 import { getIsoTimestr } from "@/lib/time";
 import { getSupabaseClient } from "@/models/db";
-import { getUsersByUuids } from "@/models/user";
+import {
+  PUBLIC_USER_PROFILE_SELECT,
+  getUsersByUuids,
+} from "@/models/user";
 import {
   ForumAuthor,
   ForumBar,
@@ -94,7 +97,10 @@ function toForumReply(row: ForumReplyRow): ForumReply {
 }
 
 async function buildAuthors(userUuids: string[]) {
-  const users = await getUsersByUuids(Array.from(new Set(userUuids.filter(Boolean))));
+  const users = await getUsersByUuids(
+    Array.from(new Set(userUuids.filter(Boolean))),
+    PUBLIC_USER_PROFILE_SELECT
+  );
   const map = new Map<string, ForumAuthor>();
 
   for (const user of users) {
@@ -456,6 +462,19 @@ export async function listForumFeed(params?: {
     ),
     following_bar_ids,
   };
+}
+
+/** 管理后台：拉取 forum_posts 全表（不按关注过滤） */
+export async function listForumPostsForAdmin() {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("forum_posts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return attachPostsMeta((data as ForumPostRow[]).map(toForumPost), undefined);
 }
 
 export async function listForumPostsByBarId(

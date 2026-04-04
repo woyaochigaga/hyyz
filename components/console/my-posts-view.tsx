@@ -121,7 +121,7 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
   };
 
   return (
-    <div className="grid min-h-[calc(100vh-9rem)] grid-rows-[minmax(220px,1fr)_minmax(0,3fr)] gap-6">
+    <div className="grid min-h-[calc(100vh-9rem)] grid-rows-[auto_minmax(0,1fr)] gap-6">
       <section className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f4f6fb)] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.16),transparent_30%),linear-gradient(135deg,rgba(24,24,27,1),rgba(39,39,42,0.96))]">
         <div className="flex h-full flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div className="flex items-center gap-5">

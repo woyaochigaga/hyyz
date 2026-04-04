@@ -28,13 +28,13 @@ export default async function ({
   const posts = await getAllPosts();
 
   const table: TableSlotType = {
-    title: "文章管理",
+    title: "公告管理",
     toolbar: {
       items: [
         {
-          title: "新增文章",
+          title: "新增公告",
           icon: "RiAddLine",
-          url: `/${locale}/admin/posts/add`,
+          url: `/${locale}/admin/announcement/add`,
         },
       ],
     },
@@ -81,13 +81,13 @@ export default async function ({
             {
               title: "编辑",
               icon: "RiEditLine",
-              url: `/${locale}/admin/posts/${item.uuid}/edit`,
+              url: `/${locale}/admin/announcement/${item.uuid}/edit`,
             },
             {
               title: "查看",
               icon: "RiEyeLine",
-              url: `/${locale}/posts/${encodeURIComponent(slug)}`,
-              target: "_self",
+              url: `/${item.locale || locale}/posts/${encodeURIComponent(slug)}`,
+              target: "_blank",
             },
           ];
 
@@ -96,7 +96,7 @@ export default async function ({
       },
     ],
     data: posts,
-    empty_message: "暂无文章",
+    empty_message: "暂无公告",
   };
 
   return <TableSlot {...table} />;

@@ -20,9 +20,30 @@ export default function ({ ...table }: TableSlotType) {
           </p>
         )}
         {table.toolbar && <Toolbar items={table.toolbar.items} />}
-        <div className="overflow-x-auto">
-          <TableBlock columns={table.columns} data={table.data} />
-        </div>
+        {table.groups && table.groups.length > 0 ? (
+          <div className="space-y-12">
+            {table.groups.map((group, index) => (
+              <div key={`${group.title}-${index}`}>
+                <h2 className="mb-4 text-lg font-medium text-foreground">{group.title}</h2>
+                <div className="overflow-x-auto">
+                  <TableBlock
+                    columns={table.columns}
+                    data={group.data}
+                    empty_message={group.empty_message ?? table.empty_message ?? "暂无数据"}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <TableBlock
+              columns={table.columns}
+              data={table.data}
+              empty_message={table.empty_message}
+            />
+          </div>
+        )}
       </div>
     </>
   );

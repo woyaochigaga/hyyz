@@ -2,26 +2,34 @@ import { getUuid } from "@/lib/hash";
 import { respData, respErr, respJson } from "@/lib/resp";
 import {
   createOfflineExhibition,
+  listPublicOfflineExhibitionsCached,
   listOfflineExhibitions,
   validateOfflineExhibitionPayload,
 } from "@/models/offline-exhibition";
 import { getUserInfo, getUserUuid } from "@/services/user";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const currentUserUuid = await getUserUuid();
     const mine = searchParams.get("mine") === "1";
     const locale = String(searchParams.get("locale") || "").trim();
     const city = String(searchParams.get("city") || "").trim();
     const q = String(searchParams.get("q") || "").trim();
     const status = String(searchParams.get("status") || "").trim();
     const limit = Number.parseInt(String(searchParams.get("limit") || "24"), 10);
+    const currentUserUuid = mine ? await getUserUuid() : "";
 
     if (mine && !currentUserUuid) {
       return respJson(-2, "no auth");
+    }
+
+    if (!mine && !city && !q && !status) {
+      const exhibitions = await listPublicOfflineExhibitionsCached(
+        locale,
+        Number.isFinite(limit) && limit > 0 ? limit : 24
+      );
+
+      return respData(exhibitions);
     }
 
     const exhibitions = await listOfflineExhibitions({
@@ -41,6 +49,7 @@ export async function GET(req: Request) {
           ? status
           : undefined,
       limit: Number.isFinite(limit) ? limit : 24,
+      summaryOnly: !mine,
     });
 
     return respData(exhibitions);

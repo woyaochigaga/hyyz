@@ -1,4 +1,7 @@
 import { HomePostFeedView } from "@/components/home/post-feed-view";
+import { listPublicHomePostsCached } from "@/models/home-post";
+
+export const revalidate = 60;
 
 export async function generateMetadata({
   params: { locale },
@@ -18,10 +21,12 @@ export async function generateMetadata({
   };
 }
 
-export default function WorldPage({
-  params,
+export default async function WorldPage({
+  params: { locale },
 }: {
   params: { locale: string };
 }) {
-  return <HomePostFeedView locale={params.locale} />;
+  const posts = await listPublicHomePostsCached(locale, 18);
+
+  return <HomePostFeedView locale={locale} initialPosts={posts} />;
 }

@@ -1,7 +1,11 @@
 import { getUuid } from "@/lib/hash";
 import { getIsoTimestr } from "@/lib/time";
 import { getSupabaseClient } from "@/models/db";
-import { getUsersByUuids } from "@/models/user";
+import {
+  PUBLIC_USER_PROFILE_SELECT,
+  getUsersByUuids,
+} from "@/models/user";
+import { unstable_cache } from "next/cache";
 import type {
   OfflineExhibition,
   OfflineExhibitionAdmissionType,
@@ -82,6 +86,37 @@ type OfflineExhibitionTicketTypeRow = {
   created_at?: string | null;
   updated_at?: string | null;
 };
+
+const OFFLINE_EXHIBITION_FULL_SELECT = "*";
+
+const OFFLINE_EXHIBITION_LIST_SELECT = [
+  "id",
+  "uuid",
+  "user_uuid",
+  "locale",
+  "applicant_role",
+  "status",
+  "title",
+  "subtitle",
+  "summary",
+  "description",
+  "curator_name",
+  "organizer_name",
+  "venue_name",
+  "city",
+  "address_detail",
+  "formatted_address",
+  "start_at",
+  "end_at",
+  "admission_type",
+  "cover_url",
+  "poster_url",
+  "gallery_images",
+  "tags",
+  "created_at",
+  "updated_at",
+  "published_at",
+].join(", ");
 
 function normalizeString(input: unknown, maxLength?: number) {
   const value = String(input || "").trim().replace(/\s+/g, " ");
@@ -378,7 +413,10 @@ function toOfflineExhibition(row: OfflineExhibitionRow): OfflineExhibition {
 }
 
 async function buildOwners(userUuids: string[]) {
-  const users = await getUsersByUuids(Array.from(new Set(userUuids.filter(Boolean))));
+  const users = await getUsersByUuids(
+    Array.from(new Set(userUuids.filter(Boolean))),
+    PUBLIC_USER_PROFILE_SELECT
+  );
   const map = new Map<string, OfflineExhibitionOwner>();
 
   for (const user of users) {
@@ -805,6 +843,7 @@ export async function listOfflineExhibitions(params?: {
   city?: string;
   q?: string;
   limit?: number;
+  summaryOnly?: boolean;
 }) {
   const searchFields = [
     "title",
@@ -826,7 +865,11 @@ export async function listOfflineExhibitions(params?: {
   const supabase = getSupabaseClient();
   let query = supabase
     .from("offline_exhibitions")
-    .select("*")
+    .select(
+      params?.summaryOnly
+        ? OFFLINE_EXHIBITION_LIST_SELECT
+        : OFFLINE_EXHIBITION_FULL_SELECT
+    )
     .order("start_at", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
@@ -866,6 +909,43 @@ export async function listOfflineExhibitions(params?: {
   }
 
   const { data, error } = await query;
+  if (error || !data) return [];
+
+  const exhibitions = (data as unknown as OfflineExhibitionRow[]).map(
+    toOfflineExhibition
+  );
+
+  if (params?.summaryOnly) {
+    return attachOwners(exhibitions);
+  }
+
+  const exhibitionsWithTickets = await attachTicketTypes(exhibitions);
+
+  return attachOwners(exhibitionsWithTickets);
+}
+
+export const listPublicOfflineExhibitionsCached = unstable_cache(
+  async (locale: string, limit: number = 18) =>
+    listOfflineExhibitions({
+      locale,
+      limit,
+      summaryOnly: true,
+    }),
+  ["public-offline-exhibitions"],
+  {
+    revalidate: 60,
+  }
+);
+
+/** 管理后台：拉取 offline_exhibitions 全表（所有状态） */
+export async function listOfflineExhibitionsForAdmin() {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("offline_exhibitions")
+    .select("*")
+    .order("start_at", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
   if (error || !data) return [];
 
   const exhibitions = await attachTicketTypes(

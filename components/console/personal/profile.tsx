@@ -5,6 +5,13 @@ import { User, UserGender } from "@/types/user";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,17 +22,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getCurrentAmapAddress } from "@/lib/amap-client";
 import { notify } from "@/lib/notify";
 import { proxifyAvatarUrl } from "@/lib/avatar";
 import { signIn } from "next-auth/react";
 import {
   CalendarDays,
   Loader2,
+  LocateFixed,
   Mail,
   MapPin,
   Pencil,
   Phone,
+  Store,
   ShieldCheck,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
@@ -33,6 +44,17 @@ import { SiGoogle } from "react-icons/si";
 const USER_ROLE_STORAGE_KEY = "user_role";
 
 type UserRole = "user" | "artisan" | "admin";
+
+type ArtisanFormState = {
+  artisan_category: string;
+  artisan_specialties: string;
+  artisan_years_experience: string;
+  artisan_shop_name: string;
+  artisan_shop_address: string;
+  artisan_service_area: string;
+  artisan_contact_wechat: string;
+  artisan_bio: string;
+};
 
 function normalizeRole(value: unknown): UserRole {
   return value === "artisan" || value === "admin" ? value : "user";
@@ -66,6 +88,31 @@ function formatDate(date?: string) {
   }).format(value);
 }
 
+function buildAmapUrl(address?: string) {
+  const value = String(address || "").trim();
+  if (!value) return "";
+  return `https://uri.amap.com/search?keyword=${encodeURIComponent(
+    value
+  )}&src=hangyi&coordinate=gaode&callnative=0`;
+}
+
+function createArtisanForm(user: User): ArtisanFormState {
+  return {
+    artisan_category: user.artisan_category || "",
+    artisan_specialties: user.artisan_specialties || "",
+    artisan_years_experience:
+      typeof user.artisan_years_experience === "number" &&
+      user.artisan_years_experience > 0
+        ? String(user.artisan_years_experience)
+        : "",
+    artisan_shop_name: user.artisan_shop_name || "",
+    artisan_shop_address: user.artisan_shop_address || "",
+    artisan_service_area: user.artisan_service_area || "",
+    artisan_contact_wechat: user.artisan_contact_wechat || "",
+    artisan_bio: user.artisan_bio || "",
+  };
+}
+
 export function PersonalProfile({ user }: { user: User }) {
   const [nickname, setNickname] = useState(user.nickname || "");
   const [email, setEmail] = useState(user.email || "");
@@ -75,16 +122,42 @@ export function PersonalProfile({ user }: { user: User }) {
   const [signature, setSignature] = useState(user.signature || "");
   const [address, setAddress] = useState(user.address || "");
   const [role, setRole] = useState<UserRole>(normalizeRole(user.role));
+  const [artisanForm, setArtisanForm] = useState<ArtisanFormState>(() =>
+    createArtisanForm(user)
+  );
+  const [artisanDialogOpen, setArtisanDialogOpen] = useState(false);
+  const [locatingTarget, setLocatingTarget] = useState<
+    null | "profile_address" | "artisan_shop_address"
+  >(null);
   const [editingField, setEditingField] = useState<
     null | "avatar" | "nickname" | "email" | "password" | "details"
   >(null);
   const [loadingField, setLoadingField] = useState<
-    null | "avatar" | "nickname" | "email" | "password" | "details"
+    null | "avatar" | "nickname" | "email" | "password" | "details" | "role"
   >(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const googleBound =
     user.signin_provider === "google" || user.signin_type === "google";
+  const addressMapUrl = buildAmapUrl(address);
+  const canApplyArtisan = role === "user";
+  const canEditArtisan = role === "artisan";
+  const hasArtisanProfile =
+    role === "artisan" ||
+    role === "admin" ||
+    [
+      artisanForm.artisan_category,
+      artisanForm.artisan_specialties,
+      artisanForm.artisan_years_experience,
+      artisanForm.artisan_shop_name,
+      artisanForm.artisan_shop_address,
+      artisanForm.artisan_service_area,
+      artisanForm.artisan_contact_wechat,
+      artisanForm.artisan_bio,
+    ].some((value) => String(value || "").trim().length > 0);
+  const artisanShopAddressMapUrl = buildAmapUrl(
+    artisanForm.artisan_shop_address
+  );
 
   useEffect(() => {
     try {
@@ -140,6 +213,10 @@ export function PersonalProfile({ user }: { user: User }) {
     setGender(normalizeGender(user.gender));
     setSignature(user.signature || "");
     setAddress(user.address || "");
+  };
+
+  const resetArtisanForm = () => {
+    setArtisanForm(createArtisanForm(user));
   };
 
   const saveNickname = async () => {
@@ -281,8 +358,315 @@ export function PersonalProfile({ user }: { user: User }) {
     }
   };
 
+  const locateCurrentAddress = async (
+    target: "profile_address" | "artisan_shop_address"
+  ) => {
+    try {
+      setLocatingTarget(target);
+      const result = await getCurrentAmapAddress();
+      const formattedAddress = String(result.formattedAddress || "").trim();
+      if (!formattedAddress) {
+        notify("error", "未获取到可用地址，请稍后重试");
+        return;
+      }
+
+      if (target === "profile_address") {
+        setAddress(formattedAddress);
+      } else {
+        setArtisanForm((current) => ({
+          ...current,
+          artisan_shop_address: formattedAddress,
+        }));
+      }
+
+      notify("success", "当前位置已获取并回填");
+    } catch (error: any) {
+      notify(
+        "error",
+        error?.message === "missing_amap_key"
+          ? "缺少 NEXT_PUBLIC_AMAP_KEY，无法使用高德定位"
+          : error?.message || "定位失败"
+      );
+    } finally {
+      setLocatingTarget(null);
+    }
+  };
+
+  const submitArtisanProfile = async () => {
+    try {
+      setLoadingField("role");
+      const resp = await fetch("/api/user/update/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: "artisan",
+          artisan_category: artisanForm.artisan_category,
+          artisan_specialties: artisanForm.artisan_specialties,
+          artisan_years_experience: artisanForm.artisan_years_experience,
+          artisan_shop_name: artisanForm.artisan_shop_name,
+          artisan_shop_address: artisanForm.artisan_shop_address,
+          artisan_service_area: artisanForm.artisan_service_area,
+          artisan_contact_wechat: artisanForm.artisan_contact_wechat,
+          artisan_bio: artisanForm.artisan_bio,
+        }),
+      });
+      const { code, message } = await resp.json();
+      if (code !== 0) {
+        notify("error", message || "申请匠人身份失败");
+        return;
+      }
+
+      setRole("artisan");
+      try {
+        window.localStorage.setItem(USER_ROLE_STORAGE_KEY, "artisan");
+      } catch {
+        // ignore localStorage errors
+      }
+      notify("success", canApplyArtisan ? "匠人资料已提交" : "匠人资料已更新");
+      setArtisanDialogOpen(false);
+    } catch {
+      notify("error", canApplyArtisan ? "申请匠人身份失败" : "更新匠人资料失败");
+    } finally {
+      setLoadingField(null);
+    }
+  };
+
   return (
     <div className="grid gap-6">
+      <Dialog
+        open={artisanDialogOpen}
+        onOpenChange={(open) => {
+          setArtisanDialogOpen(open);
+          if (!open) {
+            resetArtisanForm();
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {canApplyArtisan ? "申请成为匠人" : "编辑匠人资料"}
+            </DialogTitle>
+            <DialogDescription>
+              填写你的工艺方向、店铺信息和简介。店铺地址支持高德定位回填。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  你是什么工匠
+                </div>
+                <Input
+                  value={artisanForm.artisan_category}
+                  onChange={(e) =>
+                    setArtisanForm((current) => ({
+                      ...current,
+                      artisan_category: e.target.value,
+                    }))
+                  }
+                  placeholder="例如：木作匠人、陶艺师、银饰手作"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  从业年限
+                </div>
+                <Input
+                  type="number"
+                  min={0}
+                  max={80}
+                  value={artisanForm.artisan_years_experience}
+                  onChange={(e) =>
+                    setArtisanForm((current) => ({
+                      ...current,
+                      artisan_years_experience: e.target.value,
+                    }))
+                  }
+                  placeholder="例如：8"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                擅长工艺 / 代表作品类型
+              </div>
+              <Input
+                value={artisanForm.artisan_specialties}
+                onChange={(e) =>
+                  setArtisanForm((current) => ({
+                    ...current,
+                    artisan_specialties: e.target.value,
+                  }))
+                }
+                placeholder="例如：榫卯家具、青瓷器皿、手工皮具"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  店铺 / 工作室名称
+                </div>
+                <Input
+                  value={artisanForm.artisan_shop_name}
+                  onChange={(e) =>
+                    setArtisanForm((current) => ({
+                      ...current,
+                      artisan_shop_name: e.target.value,
+                    }))
+                  }
+                  placeholder="请输入店铺或工作室名称"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  服务区域
+                </div>
+                <Input
+                  value={artisanForm.artisan_service_area}
+                  onChange={(e) =>
+                    setArtisanForm((current) => ({
+                      ...current,
+                      artisan_service_area: e.target.value,
+                    }))
+                  }
+                  placeholder="例如：杭州 / 江浙沪 / 线上接单"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                店铺地址
+              </div>
+              <Textarea
+                value={artisanForm.artisan_shop_address}
+                onChange={(e) =>
+                  setArtisanForm((current) => ({
+                    ...current,
+                    artisan_shop_address: e.target.value,
+                  }))
+                }
+                placeholder="请输入可被高德地图识别的店铺地址或工作室位置"
+                maxLength={255}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
+                <span>支持直接获取当前位置并回填，也可以手动输入完整地址。</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 rounded-full px-3 text-xs"
+                    onClick={() => locateCurrentAddress("artisan_shop_address")}
+                    disabled={locatingTarget === "artisan_shop_address"}
+                  >
+                    {locatingTarget === "artisan_shop_address" ? (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <LocateFixed className="mr-1 h-3.5 w-3.5" />
+                    )}
+                    使用当前位置
+                  </Button>
+                  {artisanShopAddressMapUrl ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 rounded-full px-3 text-xs"
+                      onClick={() =>
+                        window.open(
+                          artisanShopAddressMapUrl,
+                          "_blank",
+                          "noopener,noreferrer"
+                        )
+                      }
+                    >
+                      <MapPin className="mr-1 h-3.5 w-3.5" />
+                      高德预览
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  联系微信
+                </div>
+                <Input
+                  value={artisanForm.artisan_contact_wechat}
+                  onChange={(e) =>
+                    setArtisanForm((current) => ({
+                      ...current,
+                      artisan_contact_wechat: e.target.value,
+                    }))
+                  }
+                  placeholder="方便平台或用户联系你"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  联系手机
+                </div>
+                <Input value={phoneNumber} disabled placeholder="请在基础资料里维护手机号" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                匠人简介
+              </div>
+              <Textarea
+                value={artisanForm.artisan_bio}
+                onChange={(e) =>
+                  setArtisanForm((current) => ({
+                    ...current,
+                    artisan_bio: e.target.value,
+                  }))
+                }
+                placeholder="介绍你的工艺背景、风格、服务方式或代表作品"
+                maxLength={1000}
+                rows={5}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  resetArtisanForm();
+                  setArtisanDialogOpen(false);
+                }}
+                disabled={loadingField === "role"}
+              >
+                取消
+              </Button>
+              <Button
+                type="button"
+                onClick={submitArtisanProfile}
+                disabled={loadingField === "role"}
+              >
+                {loadingField === "role" ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-1 h-4 w-4" />
+                )}
+                {canApplyArtisan ? "提交申请" : "保存资料"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <section className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f4f6fb)] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.16),transparent_30%),linear-gradient(135deg,rgba(24,24,27,1),rgba(39,39,42,0.96))]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end">
           <div className="flex items-center gap-6">
@@ -545,9 +929,29 @@ export function PersonalProfile({ user }: { user: User }) {
                         </div>
                       </div>
                       <div className="rounded-2xl border border-black/5 bg-white/80 px-4 py-3 sm:col-span-2 dark:border-white/10 dark:bg-white/[0.04]">
-                        <div className="mb-1 flex items-center gap-2 text-xs text-zinc-500">
-                          <MapPin className="h-3.5 w-3.5" />
-                          详细地址
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 text-xs text-zinc-500">
+                            <MapPin className="h-3.5 w-3.5" />
+                            详细地址
+                          </div>
+                          {addressMapUrl ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 rounded-full px-3 text-xs"
+                              onClick={() =>
+                                window.open(
+                                  addressMapUrl,
+                                  "_blank",
+                                  "noopener,noreferrer"
+                                )
+                              }
+                            >
+                              <LocateFixed className="mr-1 h-3.5 w-3.5" />
+                              高德打开
+                            </Button>
+                          ) : null}
                         </div>
                         <div className="whitespace-pre-wrap text-sm font-medium text-zinc-900 dark:text-white">
                           {address || "未设置"}
@@ -609,9 +1013,47 @@ export function PersonalProfile({ user }: { user: User }) {
                         <Textarea
                           value={address}
                           onChange={(e) => setAddress(e.target.value)}
-                          placeholder="请输入详细地址"
+                          placeholder="请输入可被高德地图识别的详细地址或场馆名"
                           maxLength={255}
                         />
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
+                          <span>建议填写完整街道、门牌或场馆名，便于直接拉起高德地图。</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 rounded-full px-3 text-xs"
+                              onClick={() => locateCurrentAddress("profile_address")}
+                              disabled={locatingTarget === "profile_address"}
+                            >
+                              {locatingTarget === "profile_address" ? (
+                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <LocateFixed className="mr-1 h-3.5 w-3.5" />
+                              )}
+                              使用当前位置
+                            </Button>
+                            {addressMapUrl ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 rounded-full px-3 text-xs"
+                                onClick={() =>
+                                  window.open(
+                                    addressMapUrl,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  )
+                                }
+                              >
+                                <MapPin className="mr-1 h-3.5 w-3.5" />
+                                预览高德
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="flex gap-2">
@@ -760,12 +1202,134 @@ export function PersonalProfile({ user }: { user: User }) {
               <div className="rounded-2xl border border-black/5 bg-white/60 p-5 dark:border-white/10 dark:bg-white/[0.04]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm font-medium text-muted-foreground">账户角色</span>
-                  <div className="flex items-center gap-2 text-sm font-medium text-zinc-900 dark:text-white">
-                    <ShieldCheck className="h-4 w-4 text-zinc-500" />
-                    {getRoleLabel(role)}
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-zinc-900 dark:text-white">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-zinc-500" />
+                      {getRoleLabel(role)}
+                    </div>
+                    {canApplyArtisan ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => {
+                          resetArtisanForm();
+                          setArtisanDialogOpen(true);
+                        }}
+                        disabled={loadingField === "role"}
+                      >
+                        {loadingField === "role" ? (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 h-4 w-4" />
+                        )}
+                        申请匠人身份
+                      </Button>
+                    ) : null}
+                    {canEditArtisan ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => {
+                          resetArtisanForm();
+                          setArtisanDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-1 h-4 w-4" />
+                        编辑匠人资料
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
+                {canApplyArtisan ? (
+                  <p className="mt-3 text-xs leading-6 text-zinc-500">
+                    切换后可按匠人身份参与投稿与展览申请。管理员账号不需要申请。
+                  </p>
+                ) : null}
               </div>
+
+              {hasArtisanProfile ? (
+                <div className="rounded-2xl border border-black/5 bg-white/60 p-5 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="mb-4 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Store className="h-4 w-4" />
+                    匠人资料
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <div className="text-xs text-zinc-500">工匠类型</div>
+                      <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_category || "未填写"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-500">从业年限</div>
+                      <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_years_experience
+                          ? `${artisanForm.artisan_years_experience} 年`
+                          : "未填写"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-500">店铺 / 工作室</div>
+                      <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_shop_name || "未填写"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-500">服务区域</div>
+                      <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_service_area || "未填写"}
+                      </div>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <div className="text-xs text-zinc-500">擅长工艺</div>
+                      <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_specialties || "未填写"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-500">联系微信</div>
+                      <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_contact_wechat || "未填写"}
+                      </div>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-xs text-zinc-500">店铺地址</div>
+                        {artisanShopAddressMapUrl ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 rounded-full px-3 text-xs"
+                            onClick={() =>
+                              window.open(
+                                artisanShopAddressMapUrl,
+                                "_blank",
+                                "noopener,noreferrer"
+                              )
+                            }
+                          >
+                            <LocateFixed className="mr-1 h-3.5 w-3.5" />
+                            高德打开
+                          </Button>
+                        ) : null}
+                      </div>
+                      <div className="mt-1 whitespace-pre-wrap text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_shop_address || "未填写"}
+                      </div>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <div className="text-xs text-zinc-500">匠人简介</div>
+                      <div className="mt-1 whitespace-pre-wrap text-sm font-medium text-zinc-900 dark:text-white">
+                        {artisanForm.artisan_bio || "未填写"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

@@ -23,6 +23,14 @@ export interface User {
   gender?: UserGender;
   signature?: string;
   address?: string;
+  artisan_category?: string;
+  artisan_specialties?: string;
+  artisan_years_experience?: number;
+  artisan_shop_name?: string;
+  artisan_shop_address?: string;
+  artisan_service_area?: string;
+  artisan_contact_wechat?: string;
+  artisan_bio?: string;
 }
 
 export interface UserCredits {
