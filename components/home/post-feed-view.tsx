@@ -58,18 +58,6 @@ function getTypeLabel(post: HomePost, t: ReturnType<typeof useTranslations>) {
   return t("feed.type_text");
 }
 
-function getWorldCardMediaAspect(post: HomePost, index: number) {
-  if (post.type === "video") {
-    return "aspect-video";
-  }
-
-  if (post.type === "image") {
-    return index % 3 === 0 ? "aspect-[4/3]" : "aspect-square";
-  }
-
-  return "aspect-[13/6]";
-}
-
 function getWorldCardShell(post: HomePost) {
   if (post.type === "video") {
     return "bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(239,245,242,0.98))] shadow-[0_12px_28px_rgba(110,134,126,0.08)] dark:bg-[linear-gradient(180deg,rgba(27,31,35,0.98),rgba(22,25,29,0.96))]";
@@ -184,20 +172,20 @@ export function HomePostFeedView({
     <>
       <div className="flex w-full min-w-0 max-w-none flex-col gap-4 pb-6 pt-2">
         <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              <h1 className="truncate text-base font-semibold text-zinc-900 sm:text-lg dark:text-zinc-50">
                 {t("feed.hero_title")}
               </h1>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="-mx-1 flex shrink-0 items-center gap-1.5 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-2 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
               {typeTabs.map((item) => (
                 <button
                   key={item.value}
                   type="button"
                   onClick={() => setCurrentType(item.value)}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition sm:text-sm",
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] transition sm:gap-2 sm:px-3 sm:text-xs md:text-sm",
                     currentType === item.value
                       ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                       : "bg-zinc-100 text-zinc-600 hover:bg-white hover:text-zinc-900 dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:bg-white/[0.08] dark:hover:text-white"
@@ -323,7 +311,7 @@ export function HomePostFeedView({
                   {post.type === "text" ? (
                     <div
                       className={cn(
-                        "relative flex aspect-[16/10] flex-col overflow-hidden rounded-[18px] px-4 pb-4 pt-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]",
+                        "relative flex aspect-[2/1] flex-col overflow-hidden rounded-[18px] px-3 pb-3 pt-2.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] sm:aspect-[16/10] sm:px-4 sm:pb-4 sm:pt-3 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]",
                         getTextCardTone(shellIndex)
                       )}
                     >
@@ -346,7 +334,7 @@ export function HomePostFeedView({
                     <PostMediaGallery
                       post={post}
                       className="overflow-hidden rounded-[18px]"
-                      aspectClassName="aspect-[16/10]"
+                      aspectClassName="aspect-video sm:aspect-[16/10]"
                       showBadge={false}
                       preferVideoPlayback={false}
                       imageFit="contain"
@@ -426,7 +414,7 @@ export function HomePostFeedView({
                     router.push(getPostHref(locale, post.uuid));
                   }}
                   className={cn(
-                    "group flex min-h-[320px] flex-col rounded-[20px] p-2 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.075)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                    "group flex min-h-0 flex-col rounded-[20px] p-2 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.075)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 max-sm:min-h-[220px] sm:min-h-[260px] xl:min-h-[300px]",
                     useFeaturedLayout && "xl:h-full xl:min-h-0",
                     getWorldCardShell(post)
                   )}

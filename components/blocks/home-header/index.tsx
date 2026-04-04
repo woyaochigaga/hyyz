@@ -30,12 +30,20 @@ import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 
 export default function HomeHeader({ header }: { header: HeaderType }) {
-  const { theme } = useAppContext();
+  const { theme, showSignModal } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname?.split("/")?.[1] || "";
 
   const [query, setQuery] = React.useState("");
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (showSignModal) {
+      setMobileNavOpen(false);
+    }
+  }, [showSignModal]);
+
   if (header.disabled) {
     return null;
   }
@@ -157,7 +165,11 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
             <div className="flex min-w-0 items-center gap-1.5">
               {header.brand?.logo?.src && (
                 <img
-                  src={header.brand.logo.src}
+                  src={
+                    theme === "dark"
+                      ? "/logo-black.png"
+                      : header.brand.logo.src
+                  }
                   alt={header.brand.logo.alt || header.brand.title}
                   className="h-7 w-7 shrink-0"
                 />
@@ -172,32 +184,41 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
               <div className="scale-[0.88] origin-right sm:scale-90">
                 <NotificationCenter />
               </div>
-              <Sheet>
+              <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="default" size="icon" className="h-8 w-8">
-                    <Menu className="size-[15px]" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 rounded-lg border-2 border-primary/50 bg-primary text-primary-foreground shadow-[0_2px_10px_rgba(0,0,0,0.2)] hover:bg-primary/90 hover:text-primary-foreground dark:border-primary/40 dark:shadow-[0_2px_14px_rgba(0,0,0,0.45)]"
+                  >
+                    <Menu className="size-[17px]" strokeWidth={2.5} />
                   </Button>
                 </SheetTrigger>
-                <SheetContent className="overflow-y-auto">
+                <SheetContent className="w-[min(100vw-1rem,22rem)] overflow-y-auto sm:max-w-sm">
                   <SheetHeader>
                     <SheetTitle>
                       <div className="flex items-center gap-2">
                         {header.brand?.logo?.src && (
                           <img
-                            src={header.brand.logo.src}
+                            src={
+                              theme === "dark"
+                                ? "/logo-black.png"
+                                : header.brand.logo.src
+                            }
                             alt={header.brand.logo.alt || header.brand.title}
-                            className="w-8"
+                            className="h-8 w-8 shrink-0"
                           />
                         )}
                         {header.brand?.title && (
-                          <span className="text-xl font-bold">
+                          <span className="text-base font-bold sm:text-lg">
                             {header.brand?.title || ""}
                           </span>
                         )}
                       </div>
                     </SheetTitle>
                   </SheetHeader>
-                  <div className="mb-8 mt-8 flex flex-col gap-4">
+                  <div className="mb-6 mt-5 flex flex-col gap-2 sm:mb-8 sm:mt-6 sm:gap-4">
                     <Accordion type="single" collapsible className="w-full">
                       {header.nav?.items?.map((item, i) => {
                         if (item.children && item.children.length > 0) {
@@ -207,15 +228,15 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                               value={item.title || ""}
                               className="border-b-0"
                             >
-                              <AccordionTrigger className="mb-4 py-0 font-semibold hover:no-underline text-xl text-left">
+                              <AccordionTrigger className="py-2 text-left text-base font-semibold hover:no-underline sm:mb-2 sm:text-lg">
                                 {item.title}
                               </AccordionTrigger>
-                              <AccordionContent className="mt-2">
+                              <AccordionContent className="mt-1">
                                 {item.children.map((iitem, ii) => (
                                   <a
                                     key={ii}
                                     className={cn(
-                                      "flex select-none gap-4 rounded-md p-3 leading-none outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                      "flex select-none gap-3 rounded-md p-2.5 leading-none outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground sm:gap-4 sm:p-3"
                                     )}
                                     href={iitem.url}
                                     target={iitem.target}
@@ -226,11 +247,11 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                                         className="size-4 shrink-0"
                                       />
                                     )}
-                                    <div>
-                                      <div className="text-[2.12rem] font-semibold ">
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-semibold sm:text-base">
                                         {iitem.title}
                                       </div>
-                                      <p className="text-sm leading-snug text-muted-foreground">
+                                      <p className="mt-0.5 text-xs leading-snug text-muted-foreground sm:text-sm">
                                         {iitem.description}
                                       </p>
                                     </div>
@@ -245,7 +266,7 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                             key={i}
                             href={item.url}
                             target={item.target}
-                            className="font-semibold my-4 flex items-center gap-2"
+                            className="my-2 flex items-center gap-2 text-base font-semibold sm:my-3"
                           >
                             {item.title}
                             {item.icon && (
@@ -260,8 +281,8 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                     </Accordion>
                   </div>
                   <div className="flex-1"></div>
-                  <div className="pt-4">
-                    <div className="mt-2 flex flex-col gap-3">
+                  <div className="pt-3 sm:pt-4">
+                    <div className="mt-2 flex flex-col gap-2 sm:gap-3">
                       {header.buttons?.map((item, i) => {
                         return (
                           <Button key={i} variant={item.variant}>
