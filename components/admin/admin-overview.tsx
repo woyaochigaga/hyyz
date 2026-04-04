@@ -177,6 +177,9 @@ export async function AdminOverview({
 
   const adminCount = allUsers.filter((item) => item.role === "admin").length;
   const artisanCount = allUsers.filter((item) => item.role === "artisan").length;
+  const pendingArtisanVerificationCount = allUsers.filter(
+    (item) => item.artisan_shop_verification_status === "pending"
+  ).length;
   const publishedHomePostCount = allHomePosts.filter((item) => item.status === "published").length;
   const draftHomePostCount = allHomePosts.filter((item) => item.status === "draft").length;
   const deletedHomePostCount = allHomePosts.filter((item) => item.status === "deleted").length;
@@ -233,6 +236,12 @@ export async function AdminOverview({
             href={buildAdminHref(locale, "/users")}
           />
           <MetricCard
+            title="店铺认证"
+            value={String(pendingArtisanVerificationCount)}
+            description="待审核的淘宝店铺认证记录"
+            href={buildAdminHref(locale, "/artisan-verifications")}
+          />
+          <MetricCard
             title="社区帖子"
             value={String(allHomePosts.length)}
             description={`已发布 ${publishedHomePostCount}，草稿 ${draftHomePostCount}，已删除 ${deletedHomePostCount}`}
@@ -286,6 +295,11 @@ export async function AdminOverview({
               title="用户管理"
               description="按管理员、匠人、普通用户分组查看并处理账号。"
               href={buildAdminHref(locale, "/users")}
+            />
+            <ShortcutCard
+              title="店铺认证审核"
+              description="审核匠人提交的淘宝店铺资料与证明材料。"
+              href={buildAdminHref(locale, "/artisan-verifications")}
             />
             <ShortcutCard
               title="社区帖子"

@@ -54,7 +54,7 @@ export function ForumBarView({
       toast.success(isZh ? "帖子已发布" : "Post published");
       setTitle("");
       setContent("");
-      router.push(`/${locale}/home/forum/post/${result.data.id}`);
+      router.push(`/${locale}/home/forum?post=${encodeURIComponent(result.data.id)}`);
       router.refresh();
     } catch (error: any) {
       toast.error(error?.message || (isZh ? "发帖失败" : "Failed to publish"));

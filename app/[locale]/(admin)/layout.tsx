@@ -47,6 +47,11 @@ export default async function AdminLayout({
           icon: "RiUserLine",
         },
         {
+          title: "店铺认证",
+          url: adminPath("/artisan-verifications"),
+          icon: "RiShieldCheckLine",
+        },
+        {
           title: "帖子管理",
           url: adminPath("/community-posts"),
           icon: "RiFileList3Line",
@@ -76,6 +81,11 @@ export default async function AdminLayout({
           title: "公告管理",
           url: adminPath("/announcement"),
           icon: "RiArticleLine",
+        },
+        {
+          title: "消息中心",
+          url: adminPath("/notifications"),
+          icon: "RiNotification3Line",
         },
       ],
     },

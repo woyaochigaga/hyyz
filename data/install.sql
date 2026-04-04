@@ -26,6 +26,18 @@ CREATE TABLE users (
     artisan_service_area VARCHAR(120) NOT NULL default '',
     artisan_contact_wechat VARCHAR(100) NOT NULL default '',
     artisan_bio TEXT NOT NULL default '',
+    artisan_shop_platform VARCHAR(30) NOT NULL default '',
+    artisan_shop_url VARCHAR(500) NOT NULL default '',
+    artisan_shop_owner_name VARCHAR(120) NOT NULL default '',
+    artisan_shop_contact_phone VARCHAR(30) NOT NULL default '',
+    artisan_shop_verification_status VARCHAR(20) NOT NULL default 'none',
+    artisan_shop_verification_note TEXT NOT NULL default '',
+    artisan_shop_verification_submitted_at timestamptz,
+    artisan_shop_verification_reviewed_at timestamptz,
+    artisan_shop_verification_reviewer VARCHAR(255) NOT NULL default '',
+    artisan_shop_screenshot_url VARCHAR(500) NOT NULL default '',
+    artisan_shop_owner_proof_url VARCHAR(500) NOT NULL default '',
+    artisan_shop_supporting_proof_url VARCHAR(500) NOT NULL default '',
     UNIQUE (email, signin_provider)
 );
 
@@ -262,10 +274,46 @@ CREATE TABLE forum_posts (
 CREATE TABLE forum_replies (
     id VARCHAR(255) PRIMARY KEY,
     content TEXT NOT NULL DEFAULT '',
+    image_url VARCHAR(500) NOT NULL DEFAULT '',
     author_id VARCHAR(255) NOT NULL,
     post_id VARCHAR(255) NOT NULL,
+    reply_to_reply_id VARCHAR(255) NOT NULL DEFAULT '',
+    reply_to_author_id VARCHAR(255) NOT NULL DEFAULT '',
     like_count INT NOT NULL DEFAULT 0,
     created_at timestamptz
+);
+
+CREATE TABLE notification_events (
+    uuid VARCHAR(255) PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'system',
+    title VARCHAR(255) NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    sender_uuid VARCHAR(255) NOT NULL DEFAULT '',
+    source_type VARCHAR(50) NOT NULL DEFAULT '',
+    source_uuid VARCHAR(255) NOT NULL DEFAULT '',
+    action_url VARCHAR(500) NOT NULL DEFAULT '',
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    audience_type VARCHAR(30) NOT NULL DEFAULT 'direct',
+    audience_value VARCHAR(255) NOT NULL DEFAULT '',
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    published_at timestamptz,
+    expires_at timestamptz,
+    dedupe_key VARCHAR(255) NOT NULL DEFAULT ''
+);
+
+CREATE TABLE notification_receipts (
+    id SERIAL PRIMARY KEY,
+    notification_uuid VARCHAR(255) NOT NULL REFERENCES notification_events(uuid) ON DELETE CASCADE,
+    user_uuid VARCHAR(255) NOT NULL,
+    read_at timestamptz,
+    seen_at timestamptz,
+    archived_at timestamptz,
+    deleted_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (notification_uuid, user_uuid)
 );
 
 CREATE INDEX bars_creator_id_idx ON bars(creator_id);
@@ -277,6 +325,12 @@ CREATE INDEX forum_posts_last_reply_at_idx ON forum_posts(last_reply_at DESC);
 CREATE INDEX forum_posts_bar_last_reply_at_idx ON forum_posts(bar_id, last_reply_at DESC);
 CREATE INDEX forum_replies_post_id_idx ON forum_replies(post_id);
 CREATE INDEX forum_replies_post_created_at_idx ON forum_replies(post_id, created_at ASC);
+CREATE INDEX forum_replies_reply_to_reply_id_idx ON forum_replies(reply_to_reply_id);
+CREATE INDEX notification_events_created_idx ON notification_events(created_at DESC);
+CREATE INDEX notification_events_type_idx ON notification_events(type);
+CREATE INDEX notification_events_category_idx ON notification_events(category);
+CREATE INDEX notification_receipts_user_created_idx ON notification_receipts(user_uuid, created_at DESC);
+CREATE INDEX notification_receipts_user_unread_idx ON notification_receipts(user_uuid, read_at, created_at DESC);
 
 create table affiliates (
     id SERIAL PRIMARY KEY,

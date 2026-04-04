@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { User, UserGender } from "@/types/user";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,13 @@ import {
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import {
+  getArtisanShopVerificationStatusLabel,
+  hasArtisanShopVerificationDraft,
+  isArtisanShopVerificationEditable,
+  normalizeArtisanShopVerificationStatus,
+  type ArtisanShopVerificationStatus,
+} from "@/lib/artisan-shop";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,6 +36,8 @@ import { proxifyAvatarUrl } from "@/lib/avatar";
 import { signIn } from "next-auth/react";
 import {
   CalendarDays,
+  ExternalLink,
+  FileCheck2,
   Loader2,
   LocateFixed,
   Mail,
@@ -54,6 +64,15 @@ type ArtisanFormState = {
   artisan_service_area: string;
   artisan_contact_wechat: string;
   artisan_bio: string;
+};
+
+type ArtisanShopVerificationFormState = {
+  artisan_shop_url: string;
+  artisan_shop_owner_name: string;
+  artisan_shop_contact_phone: string;
+  artisan_shop_screenshot_url: string;
+  artisan_shop_owner_proof_url: string;
+  artisan_shop_supporting_proof_url: string;
 };
 
 function normalizeRole(value: unknown): UserRole {
@@ -88,6 +107,35 @@ function formatDate(date?: string) {
   }).format(value);
 }
 
+function formatDateTime(date?: string | null) {
+  if (!date) return "-";
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return "-";
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(value);
+}
+
+function getVerificationBadgeClass(status: ArtisanShopVerificationStatus) {
+  switch (status) {
+    case "approved":
+      return "bg-emerald-600 text-white";
+    case "pending":
+      return "bg-amber-500 text-white";
+    case "rejected":
+      return "bg-red-600 text-white";
+    case "expired":
+      return "bg-zinc-700 text-white";
+    case "none":
+    default:
+      return "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900";
+  }
+}
+
 function buildAmapUrl(address?: string) {
   const value = String(address || "").trim();
   if (!value) return "";
@@ -113,6 +161,20 @@ function createArtisanForm(user: User): ArtisanFormState {
   };
 }
 
+function createArtisanShopVerificationForm(
+  user: User
+): ArtisanShopVerificationFormState {
+  return {
+    artisan_shop_url: user.artisan_shop_url || "",
+    artisan_shop_owner_name: user.artisan_shop_owner_name || "",
+    artisan_shop_contact_phone: user.artisan_shop_contact_phone || "",
+    artisan_shop_screenshot_url: user.artisan_shop_screenshot_url || "",
+    artisan_shop_owner_proof_url: user.artisan_shop_owner_proof_url || "",
+    artisan_shop_supporting_proof_url:
+      user.artisan_shop_supporting_proof_url || "",
+  };
+}
+
 export function PersonalProfile({ user }: { user: User }) {
   const [nickname, setNickname] = useState(user.nickname || "");
   const [email, setEmail] = useState(user.email || "");
@@ -126,6 +188,32 @@ export function PersonalProfile({ user }: { user: User }) {
     createArtisanForm(user)
   );
   const [artisanDialogOpen, setArtisanDialogOpen] = useState(false);
+  const [shopVerificationDialogOpen, setShopVerificationDialogOpen] =
+    useState(false);
+  const [savedShopVerificationForm, setSavedShopVerificationForm] =
+    useState<ArtisanShopVerificationFormState>(() =>
+      createArtisanShopVerificationForm(user)
+    );
+  const [shopVerificationForm, setShopVerificationForm] =
+    useState<ArtisanShopVerificationFormState>(() =>
+      createArtisanShopVerificationForm(user)
+    );
+  const [shopVerificationStatus, setShopVerificationStatus] =
+    useState<ArtisanShopVerificationStatus>(() =>
+      normalizeArtisanShopVerificationStatus(
+        user.artisan_shop_verification_status
+      )
+    );
+  const [shopVerificationNote, setShopVerificationNote] = useState(
+    user.artisan_shop_verification_note || ""
+  );
+  const [shopVerificationSubmittedAt, setShopVerificationSubmittedAt] =
+    useState<string | null>(user.artisan_shop_verification_submitted_at || null);
+  const [shopVerificationReviewedAt, setShopVerificationReviewedAt] =
+    useState<string | null>(user.artisan_shop_verification_reviewed_at || null);
+  const [shopVerificationReviewer, setShopVerificationReviewer] = useState(
+    user.artisan_shop_verification_reviewer || ""
+  );
   const [locatingTarget, setLocatingTarget] = useState<
     null | "profile_address" | "artisan_shop_address"
   >(null);
@@ -135,6 +223,8 @@ export function PersonalProfile({ user }: { user: User }) {
   const [loadingField, setLoadingField] = useState<
     null | "avatar" | "nickname" | "email" | "password" | "details" | "role"
   >(null);
+  const [shopVerificationSubmitting, setShopVerificationSubmitting] =
+    useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const googleBound =
@@ -142,6 +232,10 @@ export function PersonalProfile({ user }: { user: User }) {
   const addressMapUrl = buildAmapUrl(address);
   const canApplyArtisan = role === "user";
   const canEditArtisan = role === "artisan";
+  const canSubmitShopVerification = role === "artisan";
+  const shopVerificationEditable =
+    canSubmitShopVerification &&
+    isArtisanShopVerificationEditable(shopVerificationStatus);
   const hasArtisanProfile =
     role === "artisan" ||
     role === "admin" ||
@@ -157,6 +251,9 @@ export function PersonalProfile({ user }: { user: User }) {
     ].some((value) => String(value || "").trim().length > 0);
   const artisanShopAddressMapUrl = buildAmapUrl(
     artisanForm.artisan_shop_address
+  );
+  const hasShopVerificationDraft = hasArtisanShopVerificationDraft(
+    savedShopVerificationForm
   );
 
   useEffect(() => {
@@ -185,6 +282,28 @@ export function PersonalProfile({ user }: { user: User }) {
 
         if (!cancelled) {
           setRole(dbRole);
+          const verificationForm = createArtisanShopVerificationForm(
+            result?.data || user
+          );
+          setSavedShopVerificationForm(verificationForm);
+          setShopVerificationForm(verificationForm);
+          setShopVerificationStatus(
+            normalizeArtisanShopVerificationStatus(
+              result?.data?.artisan_shop_verification_status
+            )
+          );
+          setShopVerificationNote(
+            String(result?.data?.artisan_shop_verification_note || "")
+          );
+          setShopVerificationSubmittedAt(
+            result?.data?.artisan_shop_verification_submitted_at || null
+          );
+          setShopVerificationReviewedAt(
+            result?.data?.artisan_shop_verification_reviewed_at || null
+          );
+          setShopVerificationReviewer(
+            String(result?.data?.artisan_shop_verification_reviewer || "")
+          );
         }
       } catch {
         // ignore fetch errors and keep current role
@@ -217,6 +336,63 @@ export function PersonalProfile({ user }: { user: User }) {
 
   const resetArtisanForm = () => {
     setArtisanForm(createArtisanForm(user));
+  };
+
+  const resetShopVerificationForm = () => {
+    setShopVerificationForm(savedShopVerificationForm);
+  };
+
+  const submitShopVerification = async () => {
+    if (!canSubmitShopVerification) {
+      notify("error", "请先成为匠人再提交淘宝认证");
+      return;
+    }
+    if (!shopVerificationEditable) {
+      notify("info", "店铺认证正在审核中，暂时不能修改");
+      return;
+    }
+
+    try {
+      setShopVerificationSubmitting(true);
+      const resp = await fetch("/api/user/update/artisan-shop-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artisan_shop_url: shopVerificationForm.artisan_shop_url,
+          artisan_shop_owner_name:
+            shopVerificationForm.artisan_shop_owner_name,
+          artisan_shop_contact_phone:
+            shopVerificationForm.artisan_shop_contact_phone,
+          artisan_shop_screenshot_url:
+            shopVerificationForm.artisan_shop_screenshot_url,
+          artisan_shop_owner_proof_url:
+            shopVerificationForm.artisan_shop_owner_proof_url,
+          artisan_shop_supporting_proof_url:
+            shopVerificationForm.artisan_shop_supporting_proof_url,
+        }),
+      });
+      const result = await resp.json();
+      if (result.code !== 0) {
+        notify("error", result.message || "提交淘宝店铺认证失败");
+        return;
+      }
+
+      const submittedAt =
+        result?.data?.artisan_shop_verification_submitted_at ||
+        new Date().toISOString();
+      setSavedShopVerificationForm(shopVerificationForm);
+      setShopVerificationStatus("pending");
+      setShopVerificationNote("");
+      setShopVerificationSubmittedAt(submittedAt);
+      setShopVerificationReviewedAt(null);
+      setShopVerificationReviewer("");
+      setShopVerificationDialogOpen(false);
+      notify("success", "淘宝店铺认证资料已提交，等待管理员审核");
+    } catch {
+      notify("error", "提交淘宝店铺认证失败");
+    } finally {
+      setShopVerificationSubmitting(false);
+    }
   };
 
   const saveNickname = async () => {
@@ -667,6 +843,184 @@ export function PersonalProfile({ user }: { user: User }) {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={shopVerificationDialogOpen}
+        onOpenChange={(open) => {
+          setShopVerificationDialogOpen(open);
+          if (!open) {
+            resetShopVerificationForm();
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>淘宝店铺认证</DialogTitle>
+            <DialogDescription>
+              提交淘宝店铺链接与证明材料后，管理员会人工审核并给你的匠人身份加上认证标识。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="rounded-2xl border border-black/5 bg-zinc-50/80 p-4 text-sm text-zinc-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={`rounded-full px-3 py-1 ${getVerificationBadgeClass(shopVerificationStatus)}`}>
+                  {getArtisanShopVerificationStatusLabel(shopVerificationStatus)}
+                </Badge>
+                <span>仅支持淘宝或天猫店铺链接。</span>
+              </div>
+              {shopVerificationStatus === "pending" ? (
+                <p className="mt-3 text-xs leading-6 text-zinc-500">
+                  当前资料正在审核中，如需修改请等待审核结果后重新提交。
+                </p>
+              ) : null}
+              {shopVerificationNote ? (
+                <p className="mt-3 text-xs leading-6 text-red-600 dark:text-red-300">
+                  审核备注：{shopVerificationNote}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                店铺链接
+              </div>
+              <Input
+                value={shopVerificationForm.artisan_shop_url}
+                onChange={(e) =>
+                  setShopVerificationForm((current) => ({
+                    ...current,
+                    artisan_shop_url: e.target.value,
+                  }))
+                }
+                disabled={!shopVerificationEditable}
+                placeholder="https://shopxxxx.taobao.com 或 https://xxxxx.tmall.com"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  店主 / 经营者
+                </div>
+                <Input
+                  value={shopVerificationForm.artisan_shop_owner_name}
+                  onChange={(e) =>
+                    setShopVerificationForm((current) => ({
+                      ...current,
+                      artisan_shop_owner_name: e.target.value,
+                    }))
+                  }
+                  disabled={!shopVerificationEditable}
+                  placeholder="请输入店主姓名或品牌主体"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  审核联系手机
+                </div>
+                <Input
+                  value={shopVerificationForm.artisan_shop_contact_phone}
+                  onChange={(e) =>
+                    setShopVerificationForm((current) => ({
+                      ...current,
+                      artisan_shop_contact_phone: e.target.value,
+                    }))
+                  }
+                  disabled={!shopVerificationEditable}
+                  placeholder="管理员核验时可联系你"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  店铺首页截图
+                </div>
+                <ImageUpload
+                  value={shopVerificationForm.artisan_shop_screenshot_url}
+                  onChange={(url) =>
+                    setShopVerificationForm((current) => ({
+                      ...current,
+                      artisan_shop_screenshot_url: url,
+                    }))
+                  }
+                  disabled={!shopVerificationEditable}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  店铺归属证明
+                </div>
+                <ImageUpload
+                  value={shopVerificationForm.artisan_shop_owner_proof_url}
+                  onChange={(url) =>
+                    setShopVerificationForm((current) => ({
+                      ...current,
+                      artisan_shop_owner_proof_url: url,
+                    }))
+                  }
+                  disabled={!shopVerificationEditable}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                  补充证明材料
+                </div>
+                <ImageUpload
+                  value={shopVerificationForm.artisan_shop_supporting_proof_url}
+                  onChange={(url) =>
+                    setShopVerificationForm((current) => ({
+                      ...current,
+                      artisan_shop_supporting_proof_url: url,
+                    }))
+                  }
+                  disabled={!shopVerificationEditable}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-black/10 px-4 py-3 text-xs leading-6 text-zinc-500 dark:border-white/10">
+              <div>建议材料：</div>
+              <div>1. 店铺首页截图</div>
+              <div>2. 能证明店铺归属的后台、旺旺或经营主体截图</div>
+              <div>3. 补充佐证图，例如品牌证明、手持说明或营业执照</div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  resetShopVerificationForm();
+                  setShopVerificationDialogOpen(false);
+                }}
+                disabled={shopVerificationSubmitting}
+              >
+                关闭
+              </Button>
+              {shopVerificationEditable ? (
+                <Button
+                  type="button"
+                  onClick={submitShopVerification}
+                  disabled={shopVerificationSubmitting}
+                >
+                  {shopVerificationSubmitting ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileCheck2 className="mr-1 h-4 w-4" />
+                  )}
+                  提交审核
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <section className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f4f6fb)] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.16),transparent_30%),linear-gradient(135deg,rgba(24,24,27,1),rgba(39,39,42,0.96))]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end">
           <div className="flex items-center gap-6">
@@ -705,6 +1059,13 @@ export function PersonalProfile({ user }: { user: User }) {
                 <Badge className="rounded-full bg-zinc-900 px-3 py-1 text-white dark:bg-white dark:text-zinc-900">
                   {getRoleLabel(role)}
                 </Badge>
+                {role === "artisan" ? (
+                  <Badge className={`rounded-full px-3 py-1 ${getVerificationBadgeClass(shopVerificationStatus)}`}>
+                    {shopVerificationStatus === "approved"
+                      ? "淘宝店铺已认证"
+                      : getArtisanShopVerificationStatusLabel(shopVerificationStatus)}
+                  </Badge>
+                ) : null}
                 <span className="text-sm text-zinc-500">{email || "未设置邮箱"}</span>
               </div>
             </div>
@@ -745,7 +1106,7 @@ export function PersonalProfile({ user }: { user: User }) {
       </section>
 
       {editingField === "avatar" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[121] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-md rounded-[28px] border border-black/5 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[rgb(32,34,44)]">
             <h3 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-white">
               更换头像
@@ -1241,11 +1602,36 @@ export function PersonalProfile({ user }: { user: User }) {
                         编辑匠人资料
                       </Button>
                     ) : null}
+                    {canSubmitShopVerification ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => {
+                          resetShopVerificationForm();
+                          setShopVerificationDialogOpen(true);
+                        }}
+                      >
+                        <FileCheck2 className="mr-1 h-4 w-4" />
+                        {shopVerificationStatus === "none"
+                          ? "提交淘宝认证"
+                          : shopVerificationStatus === "pending"
+                            ? "查看淘宝认证"
+                            : shopVerificationStatus === "approved"
+                              ? "更新认证材料"
+                              : "重新提交认证"}
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
                 {canApplyArtisan ? (
                   <p className="mt-3 text-xs leading-6 text-zinc-500">
                     切换后可按匠人身份参与投稿与展览申请。管理员账号不需要申请。
+                  </p>
+                ) : canSubmitShopVerification ? (
+                  <p className="mt-3 text-xs leading-6 text-zinc-500">
+                    匠人可提交淘宝店铺链接和证明材料，通过人工审核后会显示“淘宝店铺已认证”。
                   </p>
                 ) : null}
               </div>
@@ -1328,6 +1714,142 @@ export function PersonalProfile({ user }: { user: User }) {
                       </div>
                     </div>
                   </div>
+                </div>
+              ) : null}
+
+              {canSubmitShopVerification || hasShopVerificationDraft ? (
+                <div className="rounded-2xl border border-black/5 bg-white/60 p-5 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <ShieldCheck className="h-4 w-4" />
+                      淘宝店铺认证
+                    </div>
+                    <Badge className={`rounded-full px-3 py-1 ${getVerificationBadgeClass(shopVerificationStatus)}`}>
+                      {shopVerificationStatus === "approved"
+                        ? "淘宝店铺已认证"
+                        : getArtisanShopVerificationStatusLabel(shopVerificationStatus)}
+                    </Badge>
+                  </div>
+
+                  {hasShopVerificationDraft ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <div className="text-xs text-zinc-500">平台</div>
+                        <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                          {user.artisan_shop_platform ||
+                          savedShopVerificationForm.artisan_shop_url
+                            ? "淘宝"
+                            : "未填写"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-500">店主 / 经营者</div>
+                        <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                          {savedShopVerificationForm.artisan_shop_owner_name || "未填写"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-500">审核联系手机</div>
+                        <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                          {savedShopVerificationForm.artisan_shop_contact_phone || "未填写"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-500">提交时间</div>
+                        <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                          {formatDateTime(shopVerificationSubmittedAt)}
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-xs text-zinc-500">店铺链接</div>
+                          {savedShopVerificationForm.artisan_shop_url ? (
+                            <Button asChild size="sm" variant="outline" className="h-7 rounded-full px-3 text-xs">
+                              <Link
+                                href={savedShopVerificationForm.artisan_shop_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                                打开店铺
+                              </Link>
+                            </Button>
+                          ) : null}
+                        </div>
+                        <div className="mt-1 break-all text-sm font-medium text-zinc-900 dark:text-white">
+                          {savedShopVerificationForm.artisan_shop_url || "未填写"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-500">审核时间</div>
+                        <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                          {formatDateTime(shopVerificationReviewedAt)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-500">审核人</div>
+                        <div className="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                          {shopVerificationReviewer || "—"}
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <div className="text-xs text-zinc-500">审核备注</div>
+                        <div className="mt-1 whitespace-pre-wrap text-sm font-medium text-zinc-900 dark:text-white">
+                          {shopVerificationNote || "暂无"}
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <div className="text-xs text-zinc-500">认证材料</div>
+                        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                          {[
+                            {
+                              label: "店铺首页截图",
+                              url: savedShopVerificationForm.artisan_shop_screenshot_url,
+                            },
+                            {
+                              label: "归属证明",
+                              url: savedShopVerificationForm.artisan_shop_owner_proof_url,
+                            },
+                            {
+                              label: "补充材料",
+                              url: savedShopVerificationForm.artisan_shop_supporting_proof_url,
+                            },
+                          ].map((item) => (
+                            <div
+                              key={item.label}
+                              className="overflow-hidden rounded-2xl border border-black/5 bg-white/80 dark:border-white/10 dark:bg-white/[0.04]"
+                            >
+                              <div className="border-b border-black/5 px-3 py-2 text-xs text-zinc-500 dark:border-white/10">
+                                {item.label}
+                              </div>
+                              {item.url ? (
+                                <a
+                                  href={item.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
+                                  <img
+                                    src={item.url}
+                                    alt={item.label}
+                                    className="h-40 w-full object-cover"
+                                  />
+                                </a>
+                              ) : (
+                                <div className="flex h-40 items-center justify-center px-3 text-xs text-zinc-400">
+                                  未上传
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-black/10 px-4 py-6 text-sm text-zinc-500 dark:border-white/10">
+                      还没有提交淘宝店铺认证。提交后，管理员审核通过会显示“淘宝店铺已认证”。
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>

@@ -45,8 +45,11 @@ type ForumPostRow = {
 type ForumReplyRow = {
   id: string;
   content?: string;
+  image_url?: string;
   author_id: string;
   post_id: string;
+  reply_to_reply_id?: string;
+  reply_to_author_id?: string;
   like_count?: number;
   created_at?: string;
 };
@@ -89,8 +92,11 @@ function toForumReply(row: ForumReplyRow): ForumReply {
   return {
     id: row.id,
     content: String(row.content || ""),
+    image_url: String(row.image_url || "").trim(),
     author_id: row.author_id,
     post_id: row.post_id,
+    reply_to_reply_id: String(row.reply_to_reply_id || "").trim(),
+    reply_to_author_id: String(row.reply_to_author_id || "").trim(),
     like_count: Number(row.like_count || 0),
     created_at: row.created_at || "",
   };
@@ -198,7 +204,10 @@ async function attachPostsMeta(posts: ForumPost[], currentUserUuid?: string) {
 
 async function attachRepliesMeta(replies: ForumReply[]) {
   if (replies.length === 0) return replies;
-  const authorMap = await buildAuthors(replies.map((item) => item.author_id));
+  const authorMap = await buildAuthors([
+    ...replies.map((item) => item.author_id),
+    ...replies.map((item) => item.reply_to_author_id || ""),
+  ]);
   return replies.map((item, index) => ({
     ...item,
     floor: index + 1,
@@ -209,6 +218,14 @@ async function attachRepliesMeta(replies: ForumReply[]) {
         nickname: "未命名用户",
         avatar_url: "",
       } as ForumAuthor),
+    reply_to_author: item.reply_to_author_id
+      ? authorMap.get(item.reply_to_author_id) ||
+        ({
+          uuid: item.reply_to_author_id,
+          nickname: "未命名用户",
+          avatar_url: "",
+        } as ForumAuthor)
+      : undefined,
   }));
 }
 
@@ -266,18 +283,28 @@ export function validateForumPostPayload(input: Partial<ForumPost>) {
 export function validateForumReplyPayload(input: Partial<ForumReply>) {
   const post_id = String(input.post_id || "").trim();
   const content = String(input.content || "").trim();
+  const image_url = String(input.image_url || "").trim();
+  const reply_to_reply_id = String(input.reply_to_reply_id || "").trim();
+  const reply_to_author_id = String(input.reply_to_author_id || "").trim();
 
   if (!post_id) {
     throw new Error("post_id is required");
   }
 
-  if (!content) {
-    throw new Error("reply content is required");
+  if (!content && !image_url) {
+    throw new Error("reply content or image is required");
+  }
+
+  if (image_url.length > 500) {
+    throw new Error("reply image is too long");
   }
 
   return {
     post_id,
     content,
+    image_url,
+    reply_to_reply_id,
+    reply_to_author_id,
   };
 }
 
@@ -494,6 +521,23 @@ export async function listForumPostsByBarId(
   return attachPostsMeta((data as ForumPostRow[]).map(toForumPost), currentUserUuid);
 }
 
+export async function listForumPostsByAuthorId(
+  authorId: string,
+  currentUserUuid?: string,
+  limit: number = 20
+) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("forum_posts")
+    .select("*")
+    .eq("author_id", authorId)
+    .order("last_reply_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return attachPostsMeta((data as ForumPostRow[]).map(toForumPost), currentUserUuid);
+}
+
 export async function findForumPostRowById(id: string) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
@@ -614,8 +658,11 @@ export async function listForumReplies(postId: string) {
 export async function createForumReply(input: {
   id: string;
   content: string;
+  image_url?: string;
   author_id: string;
   post_id: string;
+  reply_to_reply_id?: string;
+  reply_to_author_id?: string;
 }) {
   const supabase = getSupabaseClient();
   const now = getIsoTimestr();
@@ -626,11 +673,40 @@ export async function createForumReply(input: {
     throw new Error("post not found");
   }
 
+  let replyToAuthorId = payload.reply_to_author_id;
+  if (payload.reply_to_reply_id) {
+    const targetReply = await getSupabaseClient()
+      .from("forum_replies")
+      .select("id, author_id, post_id")
+      .eq("id", payload.reply_to_reply_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (targetReply.error) {
+      throw targetReply.error;
+    }
+
+    const targetRow = targetReply.data as
+      | { id?: string; author_id?: string; post_id?: string }
+      | null;
+
+    if (!targetRow?.id || String(targetRow.post_id || "").trim() !== payload.post_id) {
+      throw new Error("reply target not found");
+    }
+
+    if (!replyToAuthorId) {
+      replyToAuthorId = String(targetRow.author_id || "").trim();
+    }
+  }
+
   const { error } = await supabase.from("forum_replies").insert({
     id: input.id,
     content: payload.content,
+    image_url: payload.image_url,
     author_id: input.author_id,
     post_id: payload.post_id,
+    reply_to_reply_id: payload.reply_to_reply_id,
+    reply_to_author_id: replyToAuthorId,
     like_count: 0,
     created_at: now,
   });

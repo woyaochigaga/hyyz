@@ -288,6 +288,7 @@ export function ForumBarDetailSection({
                 locale={locale}
                 post={post}
                 featured={index === 0}
+                href={null}
                 onOpenPost={onOpenPost}
                 onPostChange={onPostChange}
               />

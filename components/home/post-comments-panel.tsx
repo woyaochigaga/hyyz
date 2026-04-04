@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { proxifyAvatarUrl } from "@/lib/avatar";
 import { EyeOff, MessageCircle, Send, Trash2 } from "lucide-react";
 import { HomePost, HomePostComment } from "@/types/home-post";
+import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
 
 type CommentStatus = "active" | "hidden" | "deleted";
 
@@ -199,18 +200,22 @@ export function PostCommentsPanel({
           )}
         >
           <div className="flex items-start gap-3">
-            <Avatar className="h-9 w-9 border border-black/5 dark:border-white/10">
-              <AvatarImage
-                src={proxifyAvatarUrl(comment.author?.avatar_url) || undefined}
-                alt={comment.author?.nickname || "User"}
-              />
-              <AvatarFallback>{initials(comment.author?.nickname)}</AvatarFallback>
-            </Avatar>
+            <UserPublicProfileTrigger userUuid={comment.author?.uuid || comment.user_uuid}>
+              <Avatar className="h-9 w-9 border border-black/5 dark:border-white/10">
+                <AvatarImage
+                  src={proxifyAvatarUrl(comment.author?.avatar_url) || undefined}
+                  alt={comment.author?.nickname || "User"}
+                />
+                <AvatarFallback>{initials(comment.author?.nickname)}</AvatarFallback>
+              </Avatar>
+            </UserPublicProfileTrigger>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-zinc-900 dark:text-white">
-                  {comment.author?.nickname || t("feed.unknown_author")}
-                </span>
+                <UserPublicProfileTrigger userUuid={comment.author?.uuid || comment.user_uuid}>
+                  <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                    {comment.author?.nickname || t("feed.unknown_author")}
+                  </span>
+                </UserPublicProfileTrigger>
                 {commentByAuthor ? (
                   <span className="rounded-full bg-[#e8f0ed] px-2 py-0.5 text-[10px] font-medium text-[#4d665f] dark:bg-white/[0.08] dark:text-[#d7e6e0]">
                     {t("feed.author_badge")}

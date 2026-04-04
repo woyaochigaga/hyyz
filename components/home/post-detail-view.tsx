@@ -14,6 +14,7 @@ import { PostMediaGallery } from "@/components/home/post-media-gallery";
 import Markdown from "@/components/markdown";
 import { ArrowLeft, Heart, MessageCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
 
 type UserInfoResponse = {
   code?: number;
@@ -215,18 +216,22 @@ export function PostDetailView({
             <div className="flex flex-col gap-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 border border-black/5 dark:border-white/10">
-                    <AvatarImage
-                      src={proxifyAvatarUrl(post.author?.avatar_url) || undefined}
-                      alt={post.author?.nickname || "User"}
-                    />
-                    <AvatarFallback>{initials(post.author?.nickname)}</AvatarFallback>
-                  </Avatar>
+                  <UserPublicProfileTrigger userUuid={post.author?.uuid || post.user_uuid}>
+                    <Avatar className="h-12 w-12 border border-black/5 dark:border-white/10">
+                      <AvatarImage
+                        src={proxifyAvatarUrl(post.author?.avatar_url) || undefined}
+                        alt={post.author?.nickname || "User"}
+                      />
+                      <AvatarFallback>{initials(post.author?.nickname)}</AvatarFallback>
+                    </Avatar>
+                  </UserPublicProfileTrigger>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="font-medium text-zinc-900 dark:text-white">
-                        {post.author?.nickname || t("feed.unknown_author")}
-                      </div>
+                      <UserPublicProfileTrigger userUuid={post.author?.uuid || post.user_uuid}>
+                        <div className="font-medium text-zinc-900 dark:text-white">
+                          {post.author?.nickname || t("feed.unknown_author")}
+                        </div>
+                      </UserPublicProfileTrigger>
                       <span className="rounded-full bg-[#e8f0ed] px-2 py-0.5 text-[10px] font-medium text-[#4d665f] dark:bg-white/[0.08] dark:text-[#d7e6e0]">
                         {t("feed.author_badge")}
                       </span>

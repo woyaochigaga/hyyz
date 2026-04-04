@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
 import { toast } from "sonner";
 import {
   CalendarDays,
@@ -353,7 +354,12 @@ export function OfflineExhibitionListView({
 
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                         <div className="text-xs text-[#7a8984] dark:text-[#91a49d]">
-                          发布者：{item.owner?.nickname || "未知用户"}
+                          发布者：
+                          <UserPublicProfileTrigger userUuid={item.owner?.uuid || item.user_uuid}>
+                            <span className="ml-1 inline-flex font-medium text-[#35534b] dark:text-[#d7e3de]">
+                              {item.owner?.nickname || "未知用户"}
+                            </span>
+                          </UserPublicProfileTrigger>
                         </div>
                         <div className="flex items-center gap-2">
                           <Link

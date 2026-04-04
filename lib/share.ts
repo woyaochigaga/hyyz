@@ -6,8 +6,8 @@ export async function shareForumPost(options: {
 }) {
   const url =
     typeof window !== "undefined"
-      ? new URL(`/${options.locale}/home/forum?post=${options.postId}`, window.location.origin).toString()
-      : `/${options.locale}/home/forum?post=${options.postId}`;
+      ? new URL(`/${options.locale}/home/forum/post/${options.postId}`, window.location.origin).toString()
+      : `/${options.locale}/home/forum/post/${options.postId}`;
 
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     await navigator.share({

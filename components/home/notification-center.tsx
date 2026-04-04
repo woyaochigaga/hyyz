@@ -1,0 +1,463 @@
+"use client";
+
+import * as React from "react";
+import {
+  Bell,
+  CheckCheck,
+  MessageCircleMore,
+  Megaphone,
+  ShieldCheck,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAppContext } from "@/contexts/app";
+import { notify } from "@/lib/notify";
+import { cn } from "@/lib/utils";
+import type { NotificationListItem, NotificationSummary } from "@/types/notification";
+
+type NotificationTab = "all" | "unread" | "system" | "interaction" | "review";
+
+const TABS: { key: NotificationTab; label: string }[] = [
+  { key: "all", label: "全部" },
+  { key: "unread", label: "未读" },
+  { key: "system", label: "系统" },
+  { key: "interaction", label: "互动" },
+  { key: "review", label: "审核" },
+];
+
+function formatTime(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < hour) {
+    return `${Math.max(1, Math.floor(diff / minute) || 1)} 分钟前`;
+  }
+
+  if (diff < day) {
+    return `${Math.floor(diff / hour)} 小时前`;
+  }
+
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getCategoryLabel(item: NotificationListItem) {
+  if (item.category === "interaction") return "互动";
+  if (item.category === "review") return "审核";
+  return "系统";
+}
+
+function NotificationItemIcon({ item }: { item: NotificationListItem }) {
+  if (item.category === "interaction") {
+    return <MessageCircleMore className="h-4 w-4" />;
+  }
+  if (item.category === "review") {
+    return <ShieldCheck className="h-4 w-4" />;
+  }
+  return <Megaphone className="h-4 w-4" />;
+}
+
+function NotificationItemButton({
+  item,
+  compact = false,
+  onOpen,
+}: {
+  item: NotificationListItem;
+  compact?: boolean;
+  onOpen: (item: NotificationListItem) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => void onOpen(item)}
+      className={cn(
+        "w-full rounded-2xl border border-zinc-200/80 bg-white/80 text-left transition hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.06]",
+        compact ? "p-3" : "p-4"
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+          <NotificationItemIcon item={item} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+              {getCategoryLabel(item)}
+            </span>
+            {!item.read_at ? (
+              <span className="h-2 w-2 rounded-full bg-red-500" />
+            ) : null}
+            <span className="ml-auto text-[11px] text-zinc-500 dark:text-zinc-400">
+              {formatTime(item.created_at || item.receipt_created_at)}
+            </span>
+          </div>
+          <div className="mt-2 line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {item.title}
+          </div>
+          <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+            {item.content || "点击查看详情"}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export function NotificationCenter() {
+  const router = useRouter();
+  const { user, setShowSignModal } = useAppContext();
+  const [open, setOpen] = React.useState(false);
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const [tab, setTab] = React.useState<NotificationTab>("all");
+  const [summary, setSummary] = React.useState<NotificationSummary>({
+    unread_count: 0,
+    items: [],
+  });
+  const [items, setItems] = React.useState<NotificationListItem[]>([]);
+  const [loadingSummary, setLoadingSummary] = React.useState(false);
+  const [loadingList, setLoadingList] = React.useState(false);
+  const [markingAll, setMarkingAll] = React.useState(false);
+  const previewCloseTimerRef = React.useRef<number | null>(null);
+
+  const fetchSummary = React.useCallback(async () => {
+    if (!user?.uuid) {
+      setSummary({ unread_count: 0, items: [] });
+      return;
+    }
+
+    try {
+      setLoadingSummary(true);
+      const resp = await fetch("/api/notifications/summary", {
+        cache: "no-store",
+      });
+      const result = await resp.json();
+      if (result?.code !== 0) {
+        setSummary({ unread_count: 0, items: [] });
+        return;
+      }
+      setSummary(result.data || { unread_count: 0, items: [] });
+    } catch (error) {
+      setSummary({ unread_count: 0, items: [] });
+    } finally {
+      setLoadingSummary(false);
+    }
+  }, [user?.uuid]);
+
+  const fetchList = React.useCallback(
+    async (nextTab: NotificationTab) => {
+      if (!user?.uuid) {
+        setItems([]);
+        return;
+      }
+
+      try {
+        setLoadingList(true);
+        const resp = await fetch(`/api/notifications?tab=${nextTab}&limit=40`, {
+          cache: "no-store",
+        });
+        const result = await resp.json();
+        if (result?.code !== 0) {
+          setItems([]);
+          return;
+        }
+        setItems(Array.isArray(result.data) ? result.data : []);
+      } catch (error) {
+        setItems([]);
+      } finally {
+        setLoadingList(false);
+      }
+    },
+    [user?.uuid]
+  );
+
+  React.useEffect(() => {
+    void fetchSummary();
+  }, [fetchSummary]);
+
+  React.useEffect(() => {
+    return () => {
+      if (previewCloseTimerRef.current !== null) {
+        window.clearTimeout(previewCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    void fetchList(tab);
+  }, [fetchList, open, tab]);
+
+  const ensureSignedIn = React.useCallback(() => {
+    if (user?.uuid) return true;
+    setShowSignModal(true);
+    notify("info", "请先登录后查看消息");
+    return false;
+  }, [setShowSignModal, user?.uuid]);
+
+  const refreshState = React.useCallback(
+    async (withList: boolean) => {
+      await fetchSummary();
+      if (withList) {
+        await fetchList(tab);
+      }
+    },
+    [fetchList, fetchSummary, tab]
+  );
+
+  const openNotification = React.useCallback(
+    async (item: NotificationListItem) => {
+      if (!ensureSignedIn()) return;
+
+      try {
+        if (!item.read_at) {
+          await fetch("/api/notifications/read", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              notification_uuids: [item.uuid],
+            }),
+          });
+        }
+      } catch (error) {
+        console.error("mark notification read failed:", error);
+      }
+
+      await fetchSummary();
+      setOpen(false);
+      router.push(item.action_url || "/personal_center");
+    },
+    [ensureSignedIn, fetchSummary, router]
+  );
+
+  const handleMarkAllRead = React.useCallback(async () => {
+    if (!ensureSignedIn()) return;
+
+    try {
+      setMarkingAll(true);
+      const resp = await fetch("/api/notifications/read-all", {
+        method: "POST",
+      });
+      const result = await resp.json();
+      if (result?.code !== 0) {
+        notify("error", result?.message || "全部已读失败");
+        return;
+      }
+      await refreshState(true);
+    } catch (error) {
+      notify("error", "全部已读失败");
+    } finally {
+      setMarkingAll(false);
+    }
+  }, [ensureSignedIn, refreshState]);
+
+  const previewItems = summary.items || [];
+
+  const openPreview = React.useCallback(() => {
+    if (previewCloseTimerRef.current !== null) {
+      window.clearTimeout(previewCloseTimerRef.current);
+      previewCloseTimerRef.current = null;
+    }
+    setPreviewOpen(true);
+  }, []);
+
+  const closePreviewSoon = React.useCallback(() => {
+    if (previewCloseTimerRef.current !== null) {
+      window.clearTimeout(previewCloseTimerRef.current);
+    }
+    previewCloseTimerRef.current = window.setTimeout(() => {
+      setPreviewOpen(false);
+      previewCloseTimerRef.current = null;
+    }, 140);
+  }, []);
+
+  return (
+    <>
+      <div
+        className="relative"
+        onMouseEnter={openPreview}
+        onMouseLeave={closePreviewSoon}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="relative h-9 w-9 rounded-full border border-zinc-300/80 bg-zinc-100/85 text-zinc-700 hover:bg-zinc-200 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.08]"
+          aria-label="消息中心"
+          onClick={() => {
+            if (!ensureSignedIn()) return;
+            setOpen(true);
+          }}
+        >
+          <Bell className="h-[17px] w-[17px]" strokeWidth={2.1} />
+          {summary.unread_count > 0 ? (
+            <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border border-white bg-red-500 dark:border-zinc-950" />
+          ) : null}
+        </Button>
+
+        <div
+          className={cn(
+            "absolute right-0 top-full z-[116] hidden w-[22rem] pt-3 transition duration-200 lg:block",
+            previewOpen
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-1 opacity-0"
+          )}
+        >
+          <div className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white/95 p-3 shadow-2xl shadow-black/10 backdrop-blur dark:border-white/10 dark:bg-[#11131a]/95 dark:shadow-black/40">
+            <div className="flex items-center justify-between px-1 pb-3 pt-1">
+              <div>
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  消息中心
+                </div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {summary.unread_count > 0
+                    ? `你有 ${summary.unread_count} 条未读消息`
+                    : loadingSummary
+                      ? "正在同步消息"
+                      : "暂无未读消息"}
+                </div>
+              </div>
+              {summary.unread_count > 0 ? (
+                <span className="rounded-full bg-red-50 px-2 py-1 text-[11px] font-medium text-red-600 dark:bg-red-500/12 dark:text-red-300">
+                  未读 {summary.unread_count}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              {previewItems.length > 0 ? (
+                previewItems.map((item) => (
+                  <NotificationItemButton
+                    key={`${item.receipt_id}-${item.uuid}`}
+                    item={item}
+                    compact
+                    onOpen={openNotification}
+                  />
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-400">
+                  {user?.uuid ? "最近没有新消息" : "登录后可查看公告、互动和审核通知"}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full px-3 text-xs"
+                disabled={summary.unread_count === 0 || markingAll}
+                onClick={() => void handleMarkAllRead()}
+              >
+                <CheckCheck className="h-4 w-4" />
+                全部已读
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full px-3 text-xs"
+                onClick={() => {
+                  if (!ensureSignedIn()) return;
+                  setOpen(true);
+                }}
+              >
+                查看全部
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (next && !ensureSignedIn()) {
+            return;
+          }
+          setOpen(next);
+        }}
+      >
+        <DialogContent className="max-w-2xl overflow-hidden border-zinc-200/80 p-0 dark:border-white/10">
+          <DialogHeader className="border-b border-zinc-200/70 px-6 py-5 dark:border-white/10">
+            <DialogTitle className="text-xl">消息中心</DialogTitle>
+            <DialogDescription>
+              管理员公告、互动提醒、审核结果都会集中显示在这里。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-wrap gap-2 border-b border-zinc-200/70 px-6 py-4 dark:border-white/10">
+            {TABS.map((item) => (
+              <Button
+                key={item.key}
+                type="button"
+                size="sm"
+                variant={tab === item.key ? "default" : "ghost"}
+                className="h-8 rounded-full px-3 text-xs"
+                onClick={() => setTab(item.key)}
+              >
+                {item.label}
+              </Button>
+            ))}
+            <div className="ml-auto">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 rounded-full px-3 text-xs"
+                disabled={summary.unread_count === 0 || markingAll}
+                onClick={() => void handleMarkAllRead()}
+              >
+                <CheckCheck className="h-4 w-4" />
+                全部已读
+              </Button>
+            </div>
+          </div>
+
+          <div className="max-h-[70vh] overflow-y-auto px-6 py-4">
+            {loadingList ? (
+              <div className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                正在加载消息...
+              </div>
+            ) : items.length > 0 ? (
+              <div className="space-y-3">
+                {items.map((item) => (
+                  <NotificationItemButton
+                    key={`${item.receipt_id}-${item.uuid}`}
+                    item={item}
+                    onOpen={openNotification}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                当前筛选下没有消息
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

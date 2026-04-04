@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { HomePost } from "@/types/home-post";
 import { PostMediaGallery } from "@/components/home/post-media-gallery";
+import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
 
 type TypeFilter = "all" | "text" | "image" | "video";
 
@@ -103,6 +104,7 @@ export function HomePostFeedView({
   locale: string;
   initialPosts?: HomePost[];
 }) {
+  const router = useRouter();
   const t = useTranslations("home");
   const [posts, setPosts] = React.useState<HomePost[]>(initialPosts);
   const [loading, setLoading] = React.useState(initialPosts.length === 0);
@@ -264,12 +266,21 @@ export function HomePostFeedView({
             )}
           >
             {useFeaturedLayout && featuredPost ? (
-              <Link
+              <article
                 key={`featured-${featuredPost.uuid}`}
-                href={getPostHref(locale, featuredPost.uuid)}
                 aria-label={featuredPost.title || t("feed.view_detail")}
+                role="link"
+                tabIndex={0}
+                onClick={() => router.push(getPostHref(locale, featuredPost.uuid))}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") {
+                    return;
+                  }
+                  event.preventDefault();
+                  router.push(getPostHref(locale, featuredPost.uuid));
+                }}
                 className={cn(
-                  "group relative overflow-hidden rounded-[26px] shadow-[0_18px_46px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:shadow-[0_26px_64px_rgba(15,23,42,0.14)]",
+                  "group relative overflow-hidden rounded-[26px] shadow-[0_18px_46px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:shadow-[0_26px_64px_rgba(15,23,42,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
                   getWorldCardShell(featuredPost),
                   "sm:col-span-2 xl:col-span-2 xl:row-span-2"
                 )}
@@ -286,9 +297,13 @@ export function HomePostFeedView({
                     <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1">
                       {getTypeLabel(featuredPost, t)}
                     </span>
-                    <span className="truncate opacity-90">
-                      {featuredPost.author?.nickname || t("feed.unknown_author")}
-                    </span>
+                    <UserPublicProfileTrigger
+                      userUuid={featuredPost.author?.uuid || featuredPost.user_uuid}
+                    >
+                      <span className="truncate opacity-90">
+                        {featuredPost.author?.nickname || t("feed.unknown_author")}
+                      </span>
+                    </UserPublicProfileTrigger>
                     <span className="opacity-70">{formatDate(featuredPost.created_at, locale)}</span>
                   </div>
                   <div className="line-clamp-2 text-xl font-semibold tracking-tight">
@@ -298,7 +313,7 @@ export function HomePostFeedView({
                     {featuredPost.excerpt || getHomePostExcerpt(featuredPost.content, 120)}
                   </div>
                 </div>
-              </Link>
+              </article>
             ) : null}
 
             {restPosts.map((post, index) => {
@@ -341,17 +356,21 @@ export function HomePostFeedView({
                   <article className="flex flex-1 flex-col justify-between px-1 pb-1 pt-2">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2.5">
-                        <Avatar className="h-8 w-8 shrink-0 border border-black/5 dark:border-white/10">
-                          <AvatarImage
-                            src={proxifyAvatarUrl(post.author?.avatar_url) || undefined}
-                            alt={post.author?.nickname || "User"}
-                          />
-                          <AvatarFallback>{initials(post.author?.nickname)}</AvatarFallback>
-                        </Avatar>
+                        <UserPublicProfileTrigger userUuid={post.author?.uuid || post.user_uuid}>
+                          <Avatar className="h-8 w-8 shrink-0 border border-black/5 dark:border-white/10">
+                            <AvatarImage
+                              src={proxifyAvatarUrl(post.author?.avatar_url) || undefined}
+                              alt={post.author?.nickname || "User"}
+                            />
+                            <AvatarFallback>{initials(post.author?.nickname)}</AvatarFallback>
+                          </Avatar>
+                        </UserPublicProfileTrigger>
                         <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                          <div className="truncate text-[13px] font-semibold text-zinc-900 dark:text-white">
-                            {post.author?.nickname || t("feed.unknown_author")}
-                          </div>
+                          <UserPublicProfileTrigger userUuid={post.author?.uuid || post.user_uuid}>
+                            <div className="truncate text-[13px] font-semibold text-zinc-900 dark:text-white">
+                              {post.author?.nickname || t("feed.unknown_author")}
+                            </div>
+                          </UserPublicProfileTrigger>
                           <div className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
                             <span className="inline-flex items-center gap-1.5">
                               <Heart className="h-3.5 w-3.5" />
@@ -393,18 +412,27 @@ export function HomePostFeedView({
               );
 
               return (
-                <Link
+                <article
                   key={post.uuid}
-                  href={getPostHref(locale, post.uuid)}
                   aria-label={post.title || t("feed.view_detail")}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => router.push(getPostHref(locale, post.uuid))}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") {
+                      return;
+                    }
+                    event.preventDefault();
+                    router.push(getPostHref(locale, post.uuid));
+                  }}
                   className={cn(
-                    "group flex min-h-[320px] flex-col rounded-[20px] p-2 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.075)]",
+                    "group flex min-h-[320px] flex-col rounded-[20px] p-2 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.075)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
                     useFeaturedLayout && "xl:h-full xl:min-h-0",
                     getWorldCardShell(post)
                   )}
                 >
                   {cardContent}
-                </Link>
+                </article>
               );
             })}
           </div>

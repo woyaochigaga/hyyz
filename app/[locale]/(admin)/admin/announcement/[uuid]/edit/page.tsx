@@ -4,6 +4,7 @@ import {
   findPostByUuid,
   updatePost,
 } from "@/models/post";
+import { sendAnnouncementPublishedNotification } from "@/models/notification";
 import { localeNames, locales } from "@/i18n/locale";
 
 import Empty from "@/components/blocks/empty";
@@ -209,6 +210,17 @@ export default async function AdminAnnouncementEditPage({
 
         try {
           await updatePost(post.uuid, updatedPost);
+          if (status === PostStatus.Online && post.status !== PostStatus.Online) {
+            try {
+              await sendAnnouncementPublishedNotification({
+                ...post,
+                ...updatedPost,
+                uuid: post.uuid,
+              });
+            } catch (notificationError) {
+              console.error("send announcement notification failed:", notificationError);
+            }
+          }
 
           return {
             status: "success",

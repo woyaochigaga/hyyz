@@ -1,8 +1,59 @@
-import { User } from "@/types/user";
+import { PublicUserProfile, User } from "@/types/user";
 import { getIsoTimestr } from "@/lib/time";
 import { getSupabaseClient } from "./db";
 
 export const PUBLIC_USER_PROFILE_SELECT = "uuid,nickname,avatar_url,role";
+export const PUBLIC_USER_PROFILE_CARD_SELECT = [
+  "uuid",
+  "nickname",
+  "avatar_url",
+  "role",
+  "locale",
+  "created_at",
+  "gender",
+  "signature",
+  "address",
+  "artisan_category",
+  "artisan_specialties",
+  "artisan_years_experience",
+  "artisan_shop_name",
+  "artisan_shop_address",
+  "artisan_service_area",
+  "artisan_bio",
+  "artisan_shop_platform",
+  "artisan_shop_url",
+  "artisan_shop_verification_status",
+].join(",");
+
+function toPublicUserProfile(user?: Partial<User>): PublicUserProfile | undefined {
+  const uuid = String(user?.uuid || "").trim();
+  if (!uuid) return undefined;
+
+  return {
+    uuid,
+    nickname: String(user?.nickname || "").trim() || "未命名用户",
+    avatar_url: String(user?.avatar_url || "").trim(),
+    role: user?.role,
+    locale: String(user?.locale || "").trim(),
+    created_at: user?.created_at || "",
+    gender: user?.gender,
+    signature: String(user?.signature || "").trim(),
+    address: String(user?.address || "").trim(),
+    artisan_category: String(user?.artisan_category || "").trim(),
+    artisan_specialties: String(user?.artisan_specialties || "").trim(),
+    artisan_years_experience:
+      typeof user?.artisan_years_experience === "number"
+        ? user.artisan_years_experience
+        : 0,
+    artisan_shop_name: String(user?.artisan_shop_name || "").trim(),
+    artisan_shop_address: String(user?.artisan_shop_address || "").trim(),
+    artisan_service_area: String(user?.artisan_service_area || "").trim(),
+    artisan_bio: String(user?.artisan_bio || "").trim(),
+    artisan_shop_platform: String(user?.artisan_shop_platform || "").trim(),
+    artisan_shop_url: String(user?.artisan_shop_url || "").trim(),
+    artisan_shop_verification_status: user?.artisan_shop_verification_status,
+  };
+}
 
 export async function insertUser(user: User) {
   const supabase = getSupabaseClient();
@@ -46,6 +97,23 @@ export async function findUserByUuid(uuid: string): Promise<User | undefined> {
   }
 
   return data;
+}
+
+export async function findPublicUserProfileByUuid(
+  uuid: string
+): Promise<PublicUserProfile | undefined> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("users")
+    .select(PUBLIC_USER_PROFILE_CARD_SELECT)
+    .eq("uuid", uuid)
+    .single();
+
+  if (error || !data) {
+    return undefined;
+  }
+
+  return toPublicUserProfile(data as Partial<User>);
 }
 
 export async function getUsers(
@@ -182,6 +250,18 @@ export async function updateUserProfile(
       | "artisan_service_area"
       | "artisan_contact_wechat"
       | "artisan_bio"
+      | "artisan_shop_platform"
+      | "artisan_shop_url"
+      | "artisan_shop_owner_name"
+      | "artisan_shop_contact_phone"
+      | "artisan_shop_verification_status"
+      | "artisan_shop_verification_note"
+      | "artisan_shop_verification_submitted_at"
+      | "artisan_shop_verification_reviewed_at"
+      | "artisan_shop_verification_reviewer"
+      | "artisan_shop_screenshot_url"
+      | "artisan_shop_owner_proof_url"
+      | "artisan_shop_supporting_proof_url"
     >
   >
 ) {

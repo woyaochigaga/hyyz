@@ -1,5 +1,6 @@
 import { getUuid } from "@/lib/hash";
 import { respData, respErr, respJson } from "@/lib/resp";
+import { sendHomePostCommentNotification } from "@/models/notification";
 import { getUserUuid } from "@/services/user";
 import {
   createHomePostComment,
@@ -7,6 +8,7 @@ import {
   findHomePostCommentByUuid,
   listHomePostComments,
 } from "@/models/home-post";
+import { findUserByUuid } from "@/models/user";
 
 export const dynamic = "force-dynamic";
 
@@ -63,13 +65,32 @@ export async function POST(
       }
     }
 
+    const commentUuid = getUuid();
     const comment = await createHomePostComment({
-      uuid: getUuid(),
+      uuid: commentUuid,
       post_uuid: params.uuid,
       user_uuid,
       parent_uuid,
       content,
     });
+
+    try {
+      const actor = await findUserByUuid(user_uuid);
+      await sendHomePostCommentNotification({
+        locale: post.locale,
+        post_uuid: post.uuid,
+        post_title: post.title,
+        post_author_uuid: post.user_uuid,
+        comment_uuid: commentUuid,
+        comment_content: content,
+        actor_uuid: user_uuid,
+        actor_name: actor?.nickname,
+        parent_comment_author_uuid: parent_uuid ? parent?.user_uuid : undefined,
+        parent_uuid,
+      });
+    } catch (notificationError) {
+      console.error("send home post comment notification failed:", notificationError);
+    }
 
     return respData(comment);
   } catch (error) {

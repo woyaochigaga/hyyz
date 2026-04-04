@@ -44,12 +44,16 @@ export interface ForumPost {
 export interface ForumReply {
   id: string;
   content: string;
+  image_url?: string;
   author_id: string;
   post_id: string;
+  reply_to_reply_id?: string;
+  reply_to_author_id?: string;
   like_count: number;
   created_at?: string;
   floor?: number;
   author?: ForumAuthor;
+  reply_to_author?: ForumAuthor;
 }
 
 export interface ForumFeedResult {

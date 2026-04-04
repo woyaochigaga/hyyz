@@ -31,6 +31,7 @@ import LocaleToggle from "@/components/locale/toggle";
 import { Menu } from "lucide-react";
 import { Search } from "lucide-react";
 import SignToggle from "@/components/sign/toggle";
+import { NotificationCenter } from "@/components/home/notification-center";
 import ThemeToggle from "@/components/theme/toggle";
 import { useAppContext } from "@/contexts/app";
 import { cn } from "@/lib/utils";
@@ -67,7 +68,7 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
     "inline-flex shrink-0 items-center gap-1 border-l border-zinc-300/90 bg-zinc-200/80 px-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-300/80 hover:text-zinc-900 dark:border-white/[0.12] dark:bg-transparent dark:text-zinc-200 dark:hover:bg-white/[0.06] dark:hover:text-white";
 
   return (
-    <section className="z-40 w-full shrink-0 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/55">
+    <section className="relative z-[115] isolate w-full shrink-0 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/55">
       <div className="mx-auto w-full px-3 lg:px-6">
         <nav className="flex h-14 items-center gap-3 lg:gap-4 w-full">
           <div className="flex min-w-0 shrink-0 items-center gap-6">
@@ -122,9 +123,12 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
           </div>
 
           <div className="ml-auto flex shrink-0 gap-1.5 items-center">
-            {header.show_locale && <LocaleToggle />}
+            {/* {header.show_locale && <LocaleToggle />} */}
             <div className="scale-90 origin-right">
               {header.show_theme && <ThemeToggle />}
+            </div>
+            <div className="scale-90 origin-right">
+              <NotificationCenter />
             </div>
 
             {header.buttons?.map((item, i) => {
@@ -170,103 +174,81 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                 </span>
               )}
             </div>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="default" size="icon">
-                  <Menu className="size-2" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>
-                    <div className="flex items-center gap-2">
-                      {header.brand?.logo?.src && (
-                        <img
-                          src={header.brand.logo.src}
-                          alt={header.brand.logo.alt || header.brand.title}
-                          className="w-8"
-                        />
-                      )}
-                      {header.brand?.title && (
-                        <span className="text-xl font-bold">
-                          {header.brand?.title || ""}
-                        </span>
-                      )}
-                    </div>
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mb-8 mt-8 flex flex-col gap-4">
-                  <Accordion type="single" collapsible className="w-full">
-                    {header.nav?.items?.map((item, i) => {
-                      if (item.children && item.children.length > 0) {
-                        return (
-                          <AccordionItem
-                            key={i}
-                            value={item.title || ""}
-                            className="border-b-0"
-                          >
-                            <AccordionTrigger className="mb-4 py-0 font-semibold hover:no-underline text-xl text-left">
-                              {item.title}
-                            </AccordionTrigger>
-                            <AccordionContent className="mt-2">
-                              {item.children.map((iitem, ii) => (
-                                <a
-                                  key={ii}
-                                  className={cn(
-                                    "flex select-none gap-4 rounded-md p-3 leading-none outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                  )}
-                                  href={iitem.url}
-                                  target={iitem.target}
-                                >
-                                  {iitem.icon && (
-                                    <Icon
-                                      name={iitem.icon}
-                                      className="size-4 shrink-0"
-                                    />
-                                  )}
-                                  <div>
-                                    <div className="text-[2.12rem] font-semibold ">
-                                      {iitem.title}
+            <div className="flex items-center gap-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="default" size="icon">
+                    <Menu className="size-2" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>
+                      <div className="flex items-center gap-2">
+                        {header.brand?.logo?.src && (
+                          <img
+                            src={header.brand.logo.src}
+                            alt={header.brand.logo.alt || header.brand.title}
+                            className="w-8"
+                          />
+                        )}
+                        {header.brand?.title && (
+                          <span className="text-xl font-bold">
+                            {header.brand?.title || ""}
+                          </span>
+                        )}
+                      </div>
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="mb-8 mt-8 flex flex-col gap-4">
+                    <Accordion type="single" collapsible className="w-full">
+                      {header.nav?.items?.map((item, i) => {
+                        if (item.children && item.children.length > 0) {
+                          return (
+                            <AccordionItem
+                              key={i}
+                              value={item.title || ""}
+                              className="border-b-0"
+                            >
+                              <AccordionTrigger className="mb-4 py-0 font-semibold hover:no-underline text-xl text-left">
+                                {item.title}
+                              </AccordionTrigger>
+                              <AccordionContent className="mt-2">
+                                {item.children.map((iitem, ii) => (
+                                  <a
+                                    key={ii}
+                                    className={cn(
+                                      "flex select-none gap-4 rounded-md p-3 leading-none outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                    )}
+                                    href={iitem.url}
+                                    target={iitem.target}
+                                  >
+                                    {iitem.icon && (
+                                      <Icon
+                                        name={iitem.icon}
+                                        className="size-4 shrink-0"
+                                      />
+                                    )}
+                                    <div>
+                                      <div className="text-[2.12rem] font-semibold ">
+                                        {iitem.title}
+                                      </div>
+                                      <p className="text-sm leading-snug text-muted-foreground">
+                                        {iitem.description}
+                                      </p>
                                     </div>
-                                    <p className="text-sm leading-snug text-muted-foreground">
-                                      {iitem.description}
-                                    </p>
-                                  </div>
-                                </a>
-                              ))}
-                            </AccordionContent>
-                          </AccordionItem>
-                        );
-                      }
-                      return (
-                        <a
-                          key={i}
-                          href={item.url}
-                          target={item.target}
-                          className="font-semibold my-4 flex items-center gap-2"
-                        >
-                          {item.title}
-                          {item.icon && (
-                            <Icon
-                              name={item.icon}
-                              className="size-4 shrink-0"
-                            />
-                          )}
-                        </a>
-                      );
-                    })}
-                  </Accordion>
-                </div>
-                <div className="flex-1"></div>
-                <div className="pt-4">
-                  <div className="mt-2 flex flex-col gap-3">
-                    {header.buttons?.map((item, i) => {
-                      return (
-                        <Button key={i} variant={item.variant}>
-                          <Link
-                            href={item.url || ""}
-                            target={item.target || ""}
-                            className="flex items-center gap-1"
+                                  </a>
+                                ))}
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        }
+                        return (
+                          <a
+                            key={i}
+                            href={item.url}
+                            target={item.target}
+                            className="font-semibold my-4 flex items-center gap-2"
                           >
                             {item.title}
                             {item.icon && (
@@ -275,23 +257,47 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
                                 className="size-4 shrink-0"
                               />
                             )}
-                          </Link>
-                        </Button>
-                      );
-                    })}
-
-                    {header.show_sign && <SignToggle />}
+                          </a>
+                        );
+                      })}
+                    </Accordion>
                   </div>
+                  <div className="flex-1"></div>
+                  <div className="pt-4">
+                    <div className="mt-2 flex flex-col gap-3">
+                      {header.buttons?.map((item, i) => {
+                        return (
+                          <Button key={i} variant={item.variant}>
+                            <Link
+                              href={item.url || ""}
+                              target={item.target || ""}
+                              className="flex items-center gap-1"
+                            >
+                              {item.title}
+                              {item.icon && (
+                                <Icon
+                                  name={item.icon}
+                                  className="size-4 shrink-0"
+                                />
+                              )}
+                            </Link>
+                          </Button>
+                        );
+                      })}
 
-                  <div className="mt-4 flex items-center gap-2">
-                    {header.show_locale && <LocaleToggle />}
-                    <div className="flex-1"></div>
+                      {header.show_sign && <SignToggle />}
+                    </div>
 
-                    {header.show_theme && <ThemeToggle />}
+                    <div className="mt-4 flex items-center gap-2">
+                      {header.show_locale && <LocaleToggle />}
+                      <div className="flex-1"></div>
+
+                      {header.show_theme && <ThemeToggle />}
+                    </div>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
           <form onSubmit={submitSearch} className={searchShellBase}>
             <input

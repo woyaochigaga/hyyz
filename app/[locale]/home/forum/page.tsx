@@ -6,9 +6,14 @@ export const dynamic = "force-dynamic";
 
 export default async function ForumPage({
   params: { locale },
+  searchParams,
 }: {
   params: { locale: string };
+  searchParams?: { bar?: string; post?: string };
 }) {
+  const initialBarId = String(searchParams?.bar || "").trim();
+  const initialPostId = String(searchParams?.post || "").trim();
+
   const currentUserUuid = await getUserUuid();
   const [feed, bars] = await Promise.all([
     listForumFeed({
@@ -27,6 +32,8 @@ export default async function ForumPage({
       initialBars={bars}
       initialPosts={feed.posts}
       followingBarIds={feed.following_bar_ids}
+      initialBarId={initialBarId}
+      initialPostId={initialPostId}
     />
   );
 }

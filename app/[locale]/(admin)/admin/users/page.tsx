@@ -6,6 +6,10 @@ import type { User } from "@/types/user";
 import moment from "moment";
 import { proxifyAvatarUrl } from "@/lib/avatar";
 import { DeleteUserButton } from "@/components/admin/users/delete-user-button";
+import {
+  getArtisanShopVerificationStatusLabel,
+  normalizeArtisanShopVerificationStatus,
+} from "@/lib/artisan-shop";
 
 function roleLabel(role: User["role"] | undefined): string {
   if (role === "admin") return "管理员";
@@ -35,6 +39,18 @@ export default async function AdminUsersPage() {
       callback: (row: User) => (
         <img src={proxifyAvatarUrl(row.avatar_url)} className="h-10 w-10 rounded-full" alt="" />
       ),
+    },
+    {
+      name: "artisan_shop_verification_status",
+      title: "店铺认证",
+      callback: (row: User) =>
+        row.role === "artisan"
+          ? getArtisanShopVerificationStatusLabel(
+              normalizeArtisanShopVerificationStatus(
+                row.artisan_shop_verification_status
+              )
+            )
+          : "—",
     },
     {
       name: "created_at",

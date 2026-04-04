@@ -7,5 +7,5 @@ export default async function ForumBarPage({
 }: {
   params: { locale: string; id: string };
 }) {
-  redirect(`/${params.locale}/home/forum?bar=${params.id}`);
+  redirect(`/${params.locale}/home/forum?bar=${encodeURIComponent(params.id)}`);
 }
