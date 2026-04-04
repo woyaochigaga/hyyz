@@ -6,16 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -58,19 +49,22 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
     router.push(`${postsUrl}?keyword=${encodeURIComponent(q)}`);
   };
 
-  const searchShellBase =
-    "flex h-9 w-full items-stretch overflow-hidden rounded-full border border-zinc-300/90 bg-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:border-white/[0.08] dark:bg-[#252632] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 hover:border-zinc-400/90 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_12px_rgba(0,0,0,0.08)] dark:hover:border-white/[0.15] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.3)] focus-within:border-zinc-400 focus-within:ring-2 focus-within:ring-zinc-400/30 dark:focus-within:border-white/20 dark:focus-within:ring-white/10";
+  const searchChrome =
+    "flex w-full items-stretch overflow-hidden rounded-full border border-zinc-300/90 bg-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:border-white/[0.08] dark:bg-[#252632] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 hover:border-zinc-400/90 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_12px_rgba(0,0,0,0.08)] dark:hover:border-white/[0.15] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.3)] focus-within:border-zinc-400 focus-within:ring-2 focus-within:ring-zinc-400/30 dark:focus-within:border-white/20 dark:focus-within:ring-white/10";
+
+  const searchShellMobile = cn(searchChrome, "h-8");
+  const searchShellDesktop = cn(searchChrome, "h-9");
 
   const searchInputClass =
-    "min-w-0 flex-1 bg-transparent py-0 pl-4 pr-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500";
+    "min-w-0 flex-1 bg-transparent py-0 pl-3 pr-1.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500 lg:pl-4 lg:pr-2 lg:text-sm";
 
   const searchSubmitClass =
-    "inline-flex shrink-0 items-center gap-1 border-l border-zinc-300/90 bg-zinc-200/80 px-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-300/80 hover:text-zinc-900 dark:border-white/[0.12] dark:bg-transparent dark:text-zinc-200 dark:hover:bg-white/[0.06] dark:hover:text-white";
+    "inline-flex shrink-0 items-center gap-0.5 border-l border-zinc-300/90 bg-zinc-200/80 px-2.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-300/80 hover:text-zinc-900 dark:border-white/[0.12] dark:bg-transparent dark:text-zinc-200 dark:hover:bg-white/[0.06] dark:hover:text-white lg:gap-1 lg:px-3.5 lg:text-sm";
 
   return (
     <section className="relative z-[115] isolate w-full shrink-0 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/55">
-      <div className="mx-auto w-full px-3 lg:px-6">
-        <nav className="flex h-14 items-center gap-3 lg:gap-4 w-full">
+      <div className="mx-auto w-full px-2 py-1.5 sm:px-3 sm:py-2 lg:px-6 lg:py-0">
+        <nav className="hidden h-14 w-full items-center gap-3 lg:flex lg:gap-4">
           <div className="flex min-w-0 shrink-0 items-center gap-6">
             <a
               href={header.brand?.url || ""}
@@ -100,7 +94,7 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
             <form
               onSubmit={submitSearch}
               className={cn(
-                searchShellBase,
+                searchShellDesktop,
                 "max-w-[min(42vw,36rem)] min-w-[16rem]"
               )}
             >
@@ -158,27 +152,30 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
           </div>
         </nav>
 
-        <div className="block space-y-2 pb-2 lg:hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="space-y-1.5 lg:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5">
               {header.brand?.logo?.src && (
                 <img
                   src={header.brand.logo.src}
                   alt={header.brand.logo.alt || header.brand.title}
-                  className="w-8"
+                  className="h-7 w-7 shrink-0"
                 />
               )}
               {header.brand?.title && (
-                <span className="text-xl font-bold">
+                <span className="truncate text-base font-bold sm:text-lg">
                   {header.brand?.title || ""}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5">
+              <div className="scale-[0.88] origin-right sm:scale-90">
+                <NotificationCenter />
+              </div>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="default" size="icon">
-                    <Menu className="size-2" />
+                  <Button variant="default" size="icon" className="h-8 w-8">
+                    <Menu className="size-[15px]" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent className="overflow-y-auto">
@@ -299,7 +296,7 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
               </Sheet>
             </div>
           </div>
-          <form onSubmit={submitSearch} className={searchShellBase}>
+          <form onSubmit={submitSearch} className={searchShellMobile}>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -312,7 +309,7 @@ export default function HomeHeader({ header }: { header: HeaderType }) {
               className={searchSubmitClass}
               aria-label="搜索"
             >
-              <Search className="size-[15px] opacity-90" strokeWidth={2.25} />
+              <Search className="size-[13px] opacity-90" strokeWidth={2.25} />
               搜索
             </button>
           </form>

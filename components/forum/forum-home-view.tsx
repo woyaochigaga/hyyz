@@ -13,7 +13,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -427,9 +426,78 @@ export function ForumHomeView({
     "shadow-sm text-foreground"
   );
 
+  const createPostDialog = (
+    <Dialog open={postDialogOpen} onOpenChange={setPostDialogOpen}>
+      <DialogContent className="max-w-[680px] rounded-2xl border-border bg-background p-0 shadow-2xl">
+        <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>{isZh ? "发布新讨论" : "Start a thread"}</DialogTitle>
+            <DialogDescription>
+              {isZh
+                ? "选一个吧，再发作品进度、布展记录、问题求助或展讯分享。"
+                : "Choose a bar, then share work in progress, exhibition notes, questions, or open calls."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form className="mt-5 space-y-3" onSubmit={handleCreatePost}>
+            <select
+              value={selectedBarId}
+              onChange={(event) => setSelectedBarId(event.target.value)}
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              {bars.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+
+            <Input
+              value={postTitle}
+              onChange={(event) => setPostTitle(event.target.value)}
+              placeholder={
+                isZh ? "标题可选，例如：油画毕业创作想听听修改建议" : "Optional title"
+              }
+              className="h-11"
+            />
+
+            <Textarea
+              value={postContent}
+              onChange={(event) => setPostContent(event.target.value)}
+              placeholder={
+                isZh
+                  ? "可以写作品构思、材料尝试、布展照片、征集信息，或你现在卡住的问题。"
+                  : "Share your concept, making notes, install shots, or the question you are stuck on."
+              }
+              className="min-h-[180px]"
+            />
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={submittingPost || !selectedBarId}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submittingPost
+                  ? isZh
+                    ? "发布中..."
+                    : "Publishing..."
+                  : isZh
+                    ? "发布帖子"
+                    : "Publish"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="min-h-full w-full bg-background text-foreground">
-      <div className="w-full px-2 pb-10 pt-3 sm:px-3 lg:px-4">
+      {createPostDialog}
+
+      <div className="w-full px-1.5 pb-8 pt-2 sm:px-3 sm:pb-10 sm:pt-3 lg:px-4">
         <div className="grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)_260px] xl:grid-cols-[220px_minmax(0,1fr)_280px] 2xl:grid-cols-[230px_minmax(0,1fr)_300px]">
           {/* Left */}
           <aside className="hidden min-w-0 lg:block">
@@ -445,80 +513,14 @@ export function ForumHomeView({
                     : "Gather studio critiques, exhibition notes, and topic-based discussions by bar."}
                 </p>
 
-                
-                <Dialog open={postDialogOpen} onOpenChange={setPostDialogOpen}>
-                    <DialogTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex min-w-[112px] items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                      >
-                        <Plus className="h-4 w-4" />
-                        {isZh ? "发布讨论" : "Publish"}
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-[680px] rounded-2xl border-border bg-background p-0 shadow-2xl">
-                      <div className="rounded-2xl border border-border bg-card p-6">
-                        <DialogHeader>
-                          <DialogTitle>{isZh ? "发布新讨论" : "Start a thread"}</DialogTitle>
-                          <DialogDescription>
-                            {isZh
-                              ? "选一个吧，再发作品进度、布展记录、问题求助或展讯分享。"
-                              : "Choose a bar, then share work in progress, exhibition notes, questions, or open calls."}
-                          </DialogDescription>
-                        </DialogHeader>
-
-                        <form className="mt-5 space-y-3" onSubmit={handleCreatePost}>
-                          <select
-                            value={selectedBarId}
-                            onChange={(event) => setSelectedBarId(event.target.value)}
-                            className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          >
-                            {bars.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name}
-                              </option>
-                            ))}
-                          </select>
-
-                          <Input
-                            value={postTitle}
-                            onChange={(event) => setPostTitle(event.target.value)}
-                            placeholder={
-                              isZh ? "标题可选，例如：油画毕业创作想听听修改建议" : "Optional title"
-                            }
-                            className="h-11"
-                          />
-
-                          <Textarea
-                            value={postContent}
-                            onChange={(event) => setPostContent(event.target.value)}
-                            placeholder={
-                              isZh
-                                ? "可以写作品构思、材料尝试、布展照片、征集信息，或你现在卡住的问题。"
-                                : "Share your concept, making notes, install shots, or the question you are stuck on."
-                            }
-                            className="min-h-[180px]"
-                          />
-
-                          <div className="flex justify-end">
-                            <button
-                              type="submit"
-                              disabled={submittingPost || !selectedBarId}
-                              className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {submittingPost
-                                ? isZh
-                                  ? "发布中..."
-                                  : "Publishing..."
-                                : isZh
-                                  ? "发布帖子"
-                                  : "Publish"}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                <button
+                  type="button"
+                  onClick={() => setPostDialogOpen(true)}
+                  className="inline-flex min-w-[112px] items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4" />
+                  {isZh ? "发布讨论" : "Publish"}
+                </button>
               </section>
 
               
@@ -636,7 +638,19 @@ export function ForumHomeView({
               <>
                 {/* Mobile: bar chips */}
                 <div className="lg:hidden">
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">{isZh ? "进入吧" : "Bars"}</p>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {isZh ? "进入吧" : "Bars"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPostDialogOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {isZh ? "发布讨论" : "Publish"}
+                    </button>
+                  </div>
                   <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 pl-1 pr-3 [scrollbar-width:thin]">
                     {bars.map((item) => (
                       <button

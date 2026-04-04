@@ -41,38 +41,93 @@ const iconMap: Record<string, LucideIcon> = {
   "pen-square": PenSquare,
 };
 
+const normalizeHomeNavPath = (value: string, locale: string) => {
+  const normalized = value.startsWith("/") ? value : `/${value}`;
+
+  if (normalized === `/${locale}`) {
+    return "/";
+  }
+
+  if (normalized.startsWith(`/${locale}/`)) {
+    return normalized.slice(locale.length + 1) || "/";
+  }
+
+  return normalized;
+};
+
+export const resolveHomeNavHref = (url: string | undefined, locale: string) => {
+  if (!url) {
+    return "#";
+  }
+
+  if (
+    url.startsWith("#") ||
+    url.startsWith("http://") ||
+    url.startsWith("https://")
+  ) {
+    return url;
+  }
+
+  const normalized = url.startsWith("/") ? url : `/${url}`;
+
+  if (normalized === `/${locale}` || normalized.startsWith(`/${locale}/`)) {
+    return normalized;
+  }
+
+  return `/${locale}${normalized}`;
+};
+
+export const isHomeNavItemActive = (
+  pathname: string | null,
+  url: string | undefined,
+  locale: string
+) => {
+  if (!pathname || !url) {
+    return false;
+  }
+
+  const currentPath = normalizeHomeNavPath(pathname, locale);
+  const targetPath = normalizeHomeNavPath(url, locale);
+
+  return targetPath === "/home"
+    ? currentPath === targetPath
+    : currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
+};
+
 export default function HomeSidebarNav({
   items,
+  locale,
   collapsed = false,
+  onNavigate,
 }: {
   items: NavItem[];
+  locale: string;
   collapsed?: boolean;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
   return (
     <TooltipProvider delayDuration={120}>
-      <nav className="space-y-2">
+      <nav className="space-y-1.5 md:space-y-2">
         {items.map((item) => {
-          const active = item.url
-            ? item.url === "/home"
-              ? pathname === item.url
-              : pathname === item.url || pathname.startsWith(`${item.url}/`)
-            : false;
-        const Icon = item.icon ? iconMap[item.icon] : null;
-        const title = item.title || item.name || "";
+          const active = isHomeNavItemActive(pathname, item.url, locale);
+          const Icon = item.icon ? iconMap[item.icon] : null;
+          const title = item.title || item.name || "";
+          const href = resolveHomeNavHref(item.url, locale);
 
           const link = (
             <Link
               key={title}
-              href={item.url || "#"}
+              href={href}
+              onClick={onNavigate}
               aria-label={collapsed ? title : undefined}
               className={cn(
-                "group relative flex items-center gap-3 overflow-hidden rounded-xl text-sm font-medium outline-none transition-all duration-200 ease-out",
+                "group relative flex items-center gap-2 overflow-hidden rounded-lg text-[0.8125rem] font-medium outline-none transition-all duration-200 ease-out md:gap-3 md:rounded-xl md:text-sm",
                 "hover:-translate-y-px active:translate-y-0",
                 collapsed
                   ? "h-11 w-11 justify-center px-0 py-0"
-                  : "justify-start px-3 py-2.5",
+                  : "justify-start px-2.5 py-2 md:px-3 md:py-2.5",
                 active
                   ? [
                       "bg-primary/[0.13] text-primary shadow-sm",
@@ -91,7 +146,7 @@ export default function HomeSidebarNav({
               {Icon && (
                 <Icon
                   className={cn(
-                    "relative z-[1] h-5 w-5 shrink-0 transition-transform duration-200 ease-out",
+                    "relative z-[1] h-4 w-4 shrink-0 transition-transform duration-200 ease-out md:h-5 md:w-5",
                     active
                       ? "text-primary [filter:drop-shadow(0_0_6px_hsl(var(--primary)_/_0.35))]"
                       : "text-muted-foreground/90 group-hover:scale-110 group-hover:text-foreground"

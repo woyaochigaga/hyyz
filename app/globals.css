@@ -13,11 +13,45 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 移动端整体略缩：Tailwind 的 rem 随根字号略减，信息密度更接近手机习惯 */
+@media (max-width: 767px) {
+  html {
+    font-size: 15px;
+  }
 }
 
 html,
 body {
   min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+@media (max-width: 767px) {
+  [data-home-main-shell="true"] {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
 }
 
 @layer components {
@@ -58,14 +92,23 @@ body {
   }
 
   .hero-subtitle {
-    font-size: 0.95rem;
-    line-height: 1.9;
-    letter-spacing: 0.16em;
+    font-size: 0.875rem;
+    line-height: 1.75;
+    letter-spacing: 0.06em;
+  }
+
+  @media (min-width: 640px) {
+    .hero-subtitle {
+      font-size: 0.95rem;
+      line-height: 1.85;
+      letter-spacing: 0.12em;
+    }
   }
 
   @media (min-width: 1024px) {
     .hero-subtitle {
       font-size: 1.05rem;
+      letter-spacing: 0.16em;
     }
   }
 
@@ -133,28 +176,40 @@ body {
     position: relative;
   }
 
+  /* 顶栏导航：小屏用正文字号，避免 2rem+ 字在窄屏竖排、挤压 Logo */
   .hero-nav-link,
   .hero-nav-trigger {
-    font-family: var(--font-display-cn);
-    font-size: 2.05rem;
-    letter-spacing: 0.16em;
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
     text-transform: none;
     padding-inline: 0;
     padding-block: 0.15rem;
     border-radius: 0;
     background-color: transparent;
+    white-space: nowrap;
   }
 
   @media (min-width: 1024px) {
     .hero-nav-link,
     .hero-nav-trigger {
+      font-family: var(--font-display-cn);
       font-size: 1.12rem;
+      font-weight: 400;
+      letter-spacing: 0.16em;
     }
   }
 
   .header-brand-title {
     font-family: var(--font-display-cn);
-    letter-spacing: 0.24em;
+    letter-spacing: 0.12em;
+  }
+
+  @media (min-width: 1024px) {
+    .header-brand-title {
+      letter-spacing: 0.24em;
+    }
   }
 
   .hero-nav-link::after,
@@ -549,6 +604,43 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+  }
+
+  /* 暗色模式下 outline 不用浅色渐变底，避免「灰白块 + 看不清图标」 */
+  .dark .ink-button-outline {
+    color: hsl(var(--primary-foreground));
+    background: linear-gradient(
+        165deg,
+        hsl(var(--primary) / 0.45),
+        hsl(var(--primary) / 0.28)
+      ),
+      radial-gradient(
+        circle at 30% 25%,
+        rgba(255, 255, 255, 0.08),
+        transparent 55%
+      );
+    border-color: hsl(var(--primary) / 0.55);
+    box-shadow:
+      0 2px 10px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .dark .ink-button-outline:hover {
+    color: hsl(var(--primary-foreground));
+    background: linear-gradient(
+        135deg,
+        hsl(var(--primary) / 0.95),
+        hsl(var(--primary) / 0.82)
+      ),
+      radial-gradient(
+        circle at 30% 30%,
+        rgba(255, 255, 255, 0.14),
+        transparent 50%
+      );
+    border-color: hsl(var(--primary) / 0.65);
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   /* Ink cloud icon styling */

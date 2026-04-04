@@ -349,6 +349,22 @@ export function PostCreateView({ locale }: { locale: string }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeDrawer]);
 
+  /** 小屏侧栏全屏覆盖时锁住背景滚动 */
+  React.useEffect(() => {
+    if (!activeDrawer || typeof window === "undefined") {
+      return;
+    }
+    const mq = window.matchMedia("(min-width: 1024px)");
+    if (mq.matches) {
+      return;
+    }
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [activeDrawer]);
+
   const applyAiPatch = React.useCallback(
     (patch: HomePostAiPatch) => {
       if (typeof patch.title === "string") {
@@ -368,7 +384,7 @@ export function PostCreateView({ locale }: { locale: string }) {
   );
 
   const draftDrawerBody = (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:p-6">
       {loadingPosts ? (
         <div className="rounded-2xl border border-dashed border-zinc-200 p-6 text-sm text-zinc-500 dark:border-white/10">
           正在加载...
@@ -484,39 +500,39 @@ export function PostCreateView({ locale }: { locale: string }) {
           : "lg:grid-cols-1"
       )}
     >
-      <section className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[30px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] p-6 shadow-[0_26px_80px_rgba(43,60,55,0.08)] lg:min-h-[min(480px,calc(100dvh-5.75rem))] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))]">
+      <section className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[22px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] p-4 shadow-[0_26px_80px_rgba(43,60,55,0.08)] sm:rounded-[30px] sm:p-6 lg:min-h-[min(480px,calc(100dvh-5.75rem))] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))]">
         <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(108,134,126,0.24),rgba(176,188,184,0.22),transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(117,144,136,0.24),rgba(86,104,99,0.20),transparent)]" />
-        <div className="mb-6 shrink-0 flex flex-wrap items-start justify-between gap-4 lg:mb-8">
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-[#6b827c] dark:text-[#92aea7]">
+        <div className="mb-4 shrink-0 flex flex-col gap-4 sm:mb-6 lg:mb-8 lg:flex-row lg:flex-wrap lg:items-start lg:justify-between lg:gap-4">
+          <div className="min-w-0">
+            <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#6b827c] dark:text-[#92aea7] sm:mb-2 sm:text-xs sm:tracking-[0.32em]">
               创作中心
             </div>
-            <h1 className="text-[2rem] font-semibold tracking-[0.01em] text-[#20312d] dark:text-[#e6efec]">
+            <h1 className="text-xl font-semibold tracking-[0.01em] text-[#20312d] sm:text-[1.65rem] sm:leading-tight md:text-[2rem] dark:text-[#e6efec]">
               杭艺云创
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5d6f6a] dark:text-[#aac0ba]">
+            <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-[#5d6f6a] sm:mt-2 sm:text-sm sm:leading-6 dark:text-[#aac0ba]">
               支持 Markdown、图文混排、表格、代码块和实时预览。标题、摘要、标签与正文分区编辑，阅读和创作都会更松一点。
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3">
             <Button
               type="button"
               onClick={() => openAssistDrawer("combined")}
-              className="h-11 rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] px-5 text-white shadow-[0_14px_34px_rgba(32,59,53,0.22)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
+              className="h-10 w-full rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] px-3 text-sm text-white shadow-[0_14px_34px_rgba(32,59,53,0.22)] hover:opacity-95 sm:h-11 sm:w-auto sm:px-5 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
             >
-              <Sparkles className="h-4 w-4" />
-              小云AI操作台
+              <Sparkles className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="truncate">小云AI</span>
             </Button>
             <Button
               type="button"
               onClick={() =>
                 setActiveDrawer((prev) => (prev === "drafts" ? null : "drafts"))
               }
-              className="h-11 rounded-full bg-[linear-gradient(135deg,#eef5f2,#dce7e2)] px-5 text-[#29413b] shadow-[0_10px_28px_rgba(43,60,55,0.08)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#314741,#425e56)] dark:text-[#eef7f3]"
+              className="h-10 w-full rounded-full bg-[linear-gradient(135deg,#eef5f2,#dce7e2)] px-3 text-sm text-[#29413b] shadow-[0_10px_28px_rgba(43,60,55,0.08)] hover:opacity-95 sm:h-11 sm:w-auto sm:px-5 dark:bg-[linear-gradient(135deg,#314741,#425e56)] dark:text-[#eef7f3]"
             >
-              <PanelRightOpen className="h-4 w-4" />
-              草稿箱
-              <span className="ml-1 rounded-full bg-white/70 px-2 py-0.5 text-[11px] text-[#4e6760] dark:bg-white/10 dark:text-[#d7e7e2]">
+              <PanelRightOpen className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="truncate">草稿箱</span>
+              <span className="ml-0.5 rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] tabular-nums text-[#4e6760] sm:ml-1 sm:px-2 sm:text-[11px] dark:bg-white/10 dark:text-[#d7e7e2]">
                 {drafts.length}
               </span>
             </Button>
@@ -563,13 +579,13 @@ export function PostCreateView({ locale }: { locale: string }) {
             </p>
           </div>
 
-          <div className="rounded-[26px] border border-[#9cb1ab]/16 bg-white/68 p-5 shadow-[0_14px_40px_rgba(35,55,49,0.05)] dark:border-white/10 dark:bg-white/[0.03]">
+          <div className="rounded-[26px] border border-[#9cb1ab]/16 bg-white/68 p-4 shadow-[0_14px_40px_rgba(35,55,49,0.05)] sm:p-5 dark:border-white/10 dark:bg-white/[0.03]">
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
                   标题
                 </label>
-                <div className="relative">
+                <div className="relative flex flex-col gap-2 sm:block">
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -578,11 +594,11 @@ export function PostCreateView({ locale }: { locale: string }) {
                         ? "给作品起名；不填将自动截取简介前约 30 字"
                         : "给作品起名；不填将自动截取正文前约 30 字"
                     }
-                    className="h-11 rounded-xl pr-28"
+                    className="h-11 rounded-xl pr-4 sm:pr-28"
                   />
                   <AiBeautifyTrigger
                     onClick={() => openAssistDrawer("title")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    className="self-start sm:absolute sm:right-2 sm:top-1/2 sm:-translate-y-1/2"
                   />
                 </div>
               </div>
@@ -741,20 +757,20 @@ export function PostCreateView({ locale }: { locale: string }) {
               </div>
             )}
 
-          <div className="rounded-[26px] border border-[#9cb1ab]/16 bg-white/68 p-5 shadow-[0_14px_40px_rgba(35,55,49,0.05)] dark:border-white/10 dark:bg-white/[0.03]">
+          <div className="rounded-[26px] border border-[#9cb1ab]/16 bg-white/68 p-4 shadow-[0_14px_40px_rgba(35,55,49,0.05)] sm:p-5 dark:border-white/10 dark:bg-white/[0.03]">
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b827c] dark:text-[#92aea7]">
               标签
             </div>
-            <div className="relative mt-4">
+            <div className="relative mt-3 flex flex-col gap-2 sm:mt-4 sm:block">
               <Input
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="多个标签用英文逗号或中文逗号分隔（最多 10 个）"
-                className="h-11 rounded-xl pr-28"
+                className="h-11 rounded-xl pr-4 sm:pr-28"
               />
               <AiBeautifyTrigger
                 onClick={() => openAssistDrawer("tags")}
-                className="absolute right-2 top-1/2 -translate-y-1/2"
+                className="self-start sm:absolute sm:right-2 sm:top-1/2 sm:-translate-y-1/2"
               />
             </div>
           </div>
@@ -762,12 +778,17 @@ export function PostCreateView({ locale }: { locale: string }) {
         </div>
         </div>
 
-        <div className="mt-4 flex shrink-0 flex-wrap items-center justify-end gap-3 rounded-[24px] border border-[#94a7a1]/14 bg-[linear-gradient(180deg,rgba(253,253,252,0.96),rgba(246,248,247,0.98))] px-4 py-4 backdrop-blur dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(28,32,32,0.94),rgba(24,28,28,0.98))]">
+        <div
+          className={cn(
+            "mt-3 flex shrink-0 flex-wrap items-stretch justify-stretch gap-2 rounded-2xl border border-[#94a7a1]/14 bg-[linear-gradient(180deg,rgba(253,253,252,0.96),rgba(246,248,247,0.98))] px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-[rgba(253,253,252,0.92)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(28,32,32,0.94),rgba(24,28,28,0.98))] dark:supports-[backdrop-filter]:bg-[rgba(28,32,32,0.92)]",
+            "max-lg:sticky max-lg:bottom-0 max-lg:z-20 max-lg:-mx-4 max-lg:shadow-[0_-10px_36px_rgba(15,23,42,0.08)] max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:mt-4 sm:gap-3 sm:rounded-[24px] sm:px-4 sm:py-4 lg:mx-0 lg:max-w-none lg:justify-end lg:shadow-none"
+          )}
+        >
             <Button
               type="button"
               onClick={() => void handleSave("draft")}
               disabled={submitting}
-              className="h-11 rounded-full bg-[linear-gradient(135deg,#eff5f2,#dde8e3)] px-6 text-[#233731] shadow-[0_12px_30px_rgba(35,55,49,0.10)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#385149,#4b685f)] dark:text-[#eef7f3]"
+              className="h-10 min-h-[44px] flex-1 rounded-full bg-[linear-gradient(135deg,#eff5f2,#dde8e3)] px-4 text-sm text-[#233731] shadow-[0_12px_30px_rgba(35,55,49,0.10)] hover:opacity-95 sm:h-11 sm:flex-none sm:px-6 dark:bg-[linear-gradient(135deg,#385149,#4b685f)] dark:text-[#eef7f3]"
             >
               {submitting ? "保存中..." : editingDraftId ? "更新草稿" : "保存草稿"}
             </Button>
@@ -775,55 +796,64 @@ export function PostCreateView({ locale }: { locale: string }) {
               type="button"
               onClick={() => void handleSave("published")}
               disabled={submitting}
-              className="h-11 rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] px-6 text-white shadow-[0_14px_34px_rgba(32,59,53,0.22)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
+              className="h-10 min-h-[44px] flex-1 rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] px-4 text-sm text-white shadow-[0_14px_34px_rgba(32,59,53,0.22)] hover:opacity-95 sm:h-11 sm:flex-none sm:px-6 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
             >
-              <BadgePlus className="mr-2 h-4 w-4" />
+              <BadgePlus className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
               {submitting ? "发布中..." : editingDraftId ? "发布草稿" : "立即发布"}
             </Button>
         </div>
       </section>
 
       {activeDrawer ? (
-        <aside
-          className={cn(
-            "min-h-0 min-w-0 overflow-hidden rounded-[30px] border shadow-[0_24px_64px_rgba(15,23,42,0.10)] lg:flex lg:h-full lg:max-h-full lg:min-h-0 lg:flex-col lg:shrink-0",
-            activeDrawer === "assist"
-              ? "border-[#2d2d2d] bg-[#1e1e1e]"
-              : "border-black/5 bg-[linear-gradient(180deg,rgba(251,252,252,0.98),rgba(243,246,245,0.97))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(27,31,31,0.98),rgba(22,26,26,0.98))]"
-          )}
-        >
-          <div
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-[128] bg-black/55 backdrop-blur-[2px] lg:hidden"
+            aria-label="关闭面板"
+            onClick={() => setActiveDrawer(null)}
+          />
+          <aside
             className={cn(
-              "flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3",
+              "fixed inset-0 z-[129] flex min-h-0 min-w-0 flex-col overflow-hidden rounded-none border-0 shadow-none lg:relative lg:inset-auto lg:z-auto lg:max-h-full lg:min-h-0 lg:shrink-0 lg:rounded-[30px] lg:border lg:shadow-[0_24px_64px_rgba(15,23,42,0.10)]",
+              "pt-[env(safe-area-inset-top)] lg:pt-0",
               activeDrawer === "assist"
-                ? "border-[#2d2d2d] bg-[#252526]"
-                : "border-zinc-200/80 dark:border-zinc-800"
+                ? "border-[#2d2d2d] bg-[#1e1e1e] lg:border-[#2d2d2d]"
+                : "bg-[linear-gradient(180deg,rgba(251,252,252,0.98),rgba(243,246,245,0.97))] dark:bg-[linear-gradient(180deg,rgba(27,31,31,0.98),rgba(22,26,26,0.98))] lg:border-black/5 dark:lg:border-white/10"
             )}
           >
-            <h2
+            <div
               className={cn(
-                "truncate text-sm font-medium",
-                activeDrawer === "assist" ? "text-[#cccccc]" : "text-zinc-900 dark:text-zinc-100"
-              )}
-            >
-              {drawerTitle}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setActiveDrawer(null)}
-              className={cn(
-                "rounded-md p-1.5 transition",
+                "flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 sm:py-3.5",
                 activeDrawer === "assist"
-                  ? "text-[#858585] hover:bg-[#2d2d2d] hover:text-[#cccccc]"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  ? "border-[#2d2d2d] bg-[#252526]"
+                  : "border-zinc-200/80 dark:border-zinc-800"
               )}
-              aria-label="关闭"
             >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-hidden">{drawerBody}</div>
-        </aside>
+              <h2
+                className={cn(
+                  "min-w-0 flex-1 truncate text-sm font-medium sm:text-base",
+                  activeDrawer === "assist" ? "text-[#cccccc]" : "text-zinc-900 dark:text-zinc-100"
+                )}
+              >
+                {drawerTitle}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setActiveDrawer(null)}
+                className={cn(
+                  "shrink-0 rounded-md p-2 transition",
+                  activeDrawer === "assist"
+                    ? "text-[#858585] hover:bg-[#2d2d2d] hover:text-[#cccccc]"
+                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                )}
+                aria-label="关闭"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">{drawerBody}</div>
+          </aside>
+        </>
       ) : null}
     </div>
   );

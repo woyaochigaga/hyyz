@@ -608,7 +608,7 @@ export function PersonalProfile({ user }: { user: User }) {
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 sm:gap-6">
       <Dialog
         open={artisanDialogOpen}
         onOpenChange={(open) => {
@@ -1021,11 +1021,11 @@ export function PersonalProfile({ user }: { user: User }) {
         </DialogContent>
       </Dialog>
 
-      <section className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f4f6fb)] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.16),transparent_30%),linear-gradient(135deg,rgba(24,24,27,1),rgba(39,39,42,0.96))]">
+      <section className="relative overflow-hidden rounded-[24px] border border-black/5 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f4f6fb)] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:rounded-[28px] sm:p-6 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.16),transparent_30%),linear-gradient(135deg,rgba(24,24,27,1),rgba(39,39,42,0.96))]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="group relative">
-              <Avatar className="h-24 w-24 border-4 border-white/80 shadow-2xl transition-all dark:border-white/10">
+              <Avatar className="h-20 w-20 border-4 border-white/80 shadow-2xl transition-all sm:h-24 sm:w-24 dark:border-white/10">
                 <AvatarImage src={proxifyAvatarUrl(avatarUrl)} alt={nickname} />
                 <AvatarFallback className="bg-zinc-200 text-2xl font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100">
                   {nickname?.slice(0, 2) || "用户"}
@@ -1034,7 +1034,7 @@ export function PersonalProfile({ user }: { user: User }) {
               <button
                 onClick={() => setEditingField("avatar")}
                 disabled={loadingField === "avatar"}
-                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity hover:opacity-100 disabled:cursor-not-allowed"
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-100 transition-opacity sm:opacity-0 sm:hover:opacity-100 sm:group-hover:opacity-100 disabled:cursor-not-allowed"
               >
                 {loadingField === "avatar" ? (
                   <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -1048,7 +1048,7 @@ export function PersonalProfile({ user }: { user: User }) {
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-zinc-500">
                 个人档案
               </div>
-              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl dark:text-white">
                 {nickname || "未设置昵称"}
               </h1>
               <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-300">
@@ -1107,7 +1107,7 @@ export function PersonalProfile({ user }: { user: User }) {
 
       {editingField === "avatar" && (
         <div className="fixed inset-0 z-[121] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-[28px] border border-black/5 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[rgb(32,34,44)]">
+          <div className="mx-4 w-full max-w-md rounded-[24px] border border-black/5 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:rounded-[28px] sm:p-6 dark:border-white/10 dark:bg-[rgb(32,34,44)]">
             <h3 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-white">
               更换头像
             </h3>
@@ -1133,9 +1133,9 @@ export function PersonalProfile({ user }: { user: User }) {
         </div>
       )}
 
-      <section className="min-h-0 overflow-hidden rounded-[28px] border border-black/5 bg-white/80 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-white/10 dark:bg-white/[0.03]">
+      <section className="min-h-0 overflow-hidden rounded-[24px] border border-black/5 bg-white/80 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur sm:rounded-[28px] sm:p-6 dark:border-white/10 dark:bg-white/[0.03]">
         <div className="mb-5">
-          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-white">
+          <h2 className="text-xl font-semibold text-zinc-900 sm:text-2xl dark:text-white">
             账户信息
           </h2>
           <p className="mt-1 text-sm text-zinc-500">
@@ -1145,12 +1145,12 @@ export function PersonalProfile({ user }: { user: User }) {
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="overflow-hidden rounded-[24px] border border-black/5 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-zinc-950/40">
-            <div className="px-8 py-6">
+            <div className="px-5 py-5 sm:px-8 sm:py-6">
               <h3 className="text-xl font-semibold text-zinc-900 dark:text-white">
                 基本资料
               </h3>
             </div>
-            <div className="space-y-6 px-8 pb-8">
+            <div className="space-y-5 px-5 pb-5 sm:space-y-6 sm:px-8 sm:pb-8">
               <div className="group rounded-2xl border border-black/5 bg-white/60 p-5 transition-all hover:bg-white/80 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.06]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm font-medium text-muted-foreground">昵称</span>
@@ -1160,7 +1160,7 @@ export function PersonalProfile({ user }: { user: User }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 opacity-0 transition-opacity group-hover:opacity-100"
+                        className="h-8 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                         onClick={() => setEditingField("nickname")}
                       >
                         <Pencil className="mr-1 h-3.5 w-3.5" />
@@ -1207,7 +1207,7 @@ export function PersonalProfile({ user }: { user: User }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        className="h-8 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                         onClick={() => setEditingField("email")}
                       >
                         <Pencil className="mr-1 h-3.5 w-3.5" />
@@ -1254,7 +1254,7 @@ export function PersonalProfile({ user }: { user: User }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        className="h-8 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                         onClick={() => setEditingField("details")}
                       >
                         <Pencil className="mr-1 h-3.5 w-3.5" />
@@ -1444,12 +1444,12 @@ export function PersonalProfile({ user }: { user: User }) {
           </div>
 
           <div className="overflow-hidden rounded-[24px] border border-black/5 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-zinc-950/40">
-            <div className="px-8 py-6">
+            <div className="px-5 py-5 sm:px-8 sm:py-6">
               <h3 className="text-xl font-semibold text-zinc-900 dark:text-white">
                 账户设置
               </h3>
             </div>
-            <div className="space-y-6 px-8 pb-8">
+            <div className="space-y-5 px-5 pb-5 sm:space-y-6 sm:px-8 sm:pb-8">
               <div className="rounded-2xl border border-black/5 bg-white/60 p-5 dark:border-white/10 dark:bg-white/[0.04]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm font-medium text-muted-foreground">账户类型</span>
@@ -1466,7 +1466,7 @@ export function PersonalProfile({ user }: { user: User }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 opacity-0 transition-opacity group-hover:opacity-100"
+                        className="h-8 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                         onClick={() => {
                           setNewPassword("");
                           setConfirmPassword("");

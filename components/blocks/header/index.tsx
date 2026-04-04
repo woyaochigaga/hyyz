@@ -41,13 +41,14 @@ export default function Header({ header }: { header: HeaderType }) {
   }
 
   return (
-    <section className="py-2 px-1 w-full">
-      <div className="w-full px-3 lg:px-6">
-        <nav className="flex justify-between w-full">
-          <div className="flex items-center gap-6">
+    <section className="relative z-[100] w-full shrink-0 border-b border-border/50 bg-background/85 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:py-2">
+      <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6">
+        {/* Desktop: brand + horizontal nav + actions */}
+        <nav className="hidden h-14 w-full items-center justify-between gap-4 lg:flex">
+          <div className="flex min-w-0 items-center gap-6">
             <a
               href={header.brand?.url || ""}
-              className="flex items-center gap-2"
+              className="flex min-w-0 shrink-0 items-center gap-2"
             >
               {header.brand?.logo?.src && (
                 <img
@@ -57,16 +58,16 @@ export default function Header({ header }: { header: HeaderType }) {
                       : header.brand.logo.src
                   }
                   alt={header.brand.logo.alt || header.brand.title}
-                  className="w-9 h-9"
+                  className="h-9 w-9 shrink-0"
                 />
               )}
               {header.brand?.title && (
-                <span className="header-brand-title text-xl font-bold">
+                <span className="header-brand-title truncate text-xl font-bold">
                   {header.brand?.title || ""}
                 </span>
               )}
             </a>
-            <div className="flex items-center">
+            <div className="flex min-w-0 items-center">
               <NavigationMenu className="hero-nav">
                 <NavigationMenuList className="hero-nav-list">
                   {header.nav?.items?.map((item, i) => {
@@ -149,7 +150,7 @@ export default function Header({ header }: { header: HeaderType }) {
               </NavigationMenu>
             </div>
           </div>
-          <div className="shrink-0 flex gap-2 items-center">
+          <div className="flex shrink-0 items-center gap-2">
             {header.show_locale && <LocaleToggle />}
             {header.show_theme && <ThemeToggle />}
 
@@ -173,28 +174,47 @@ export default function Header({ header }: { header: HeaderType }) {
           </div>
         </nav>
 
-
-        {/* Mobile menu */}
-        <div className="block lg:hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {header.brand?.logo?.src && (
-                <img
-                  src={header.brand.logo.src}
-                  alt={header.brand.logo.alt || header.brand.title}
-                  className="w-8"
-                />
-              )}
-              {header.brand?.title && (
-                <span className="text-xl font-bold">
-                  {header.brand?.title || ""}
-                </span>
-              )}
-            </div>
+        {/* Mobile: 单行顶栏，避免与桌面导航重复叠放 */}
+        <div className="flex items-center justify-between gap-1.5 py-0 lg:hidden sm:gap-2 sm:py-0.5">
+          <a
+            href={header.brand?.url || ""}
+            className="flex min-w-0 max-w-[60%] items-center gap-1.5 sm:max-w-[65%] sm:gap-2"
+          >
+            {header.brand?.logo?.src && (
+              <img
+                src={
+                  theme === "dark" ? "/logo-black.png" : header.brand.logo.src
+                }
+                alt={header.brand.logo.alt || header.brand.title}
+                className="h-7 w-7 shrink-0 sm:h-8 sm:w-8"
+              />
+            )}
+            {header.brand?.title && (
+              <span className="header-brand-title truncate text-sm font-bold tracking-wide sm:text-base md:text-lg">
+                {header.brand?.title || ""}
+              </span>
+            )}
+          </a>
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 md:gap-1.5">
+            {header.show_locale && (
+              <div className="scale-[0.88] origin-right sm:scale-95 md:scale-100">
+                <LocaleToggle />
+              </div>
+            )}
+            {header.show_theme && (
+              <div className="scale-[0.88] origin-right sm:scale-95 md:scale-100">
+                <ThemeToggle />
+              </div>
+            )}
+            {header.show_sign && (
+              <div className="scale-[0.88] origin-right sm:scale-95 md:scale-100">
+                <SignToggle />
+              </div>
+            )}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="default" size="icon">
-                  <Menu className="size-2" />
+                <Button variant="default" size="icon" className="h-8 w-8 shrink-0 sm:h-9 sm:w-9">
+                  <Menu className="size-[15px] sm:size-4" />
                 </Button>
               </SheetTrigger>
               <SheetContent className="overflow-y-auto">
@@ -245,8 +265,8 @@ export default function Header({ header }: { header: HeaderType }) {
                                       className="size-4 shrink-0"
                                     />
                                   )}
-                                  <div>
-                                    <div className="text-[2.12rem] font-semibold ">
+                                  <div className="min-w-0">
+                                    <div className="text-base font-semibold sm:text-lg">
                                       {iitem.title}
                                     </div>
                                     <p className="text-sm leading-snug text-muted-foreground">
@@ -300,15 +320,6 @@ export default function Header({ header }: { header: HeaderType }) {
                         </Button>
                       );
                     })}
-
-                    {header.show_sign && <SignToggle />}
-                  </div>
-
-                  <div className="mt-4 flex items-center gap-2">
-                    {header.show_locale && <LocaleToggle />}
-                    <div className="flex-1"></div>
-
-                    {header.show_theme && <ThemeToggle />}
                   </div>
                 </div>
               </SheetContent>

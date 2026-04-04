@@ -43,9 +43,9 @@ export default function Hero({
           <div className="hero-bg-overlay" />
         </div>
 
-        <div className="relative mx-auto w-full px-4 md:max-w-7xl">
+        <div className="relative mx-auto w-full px-3 sm:px-4 md:max-w-7xl">
           {hero.show_badge && (
-            <div className="flex items-center justify-center mb-8">
+            <div className="mb-6 flex items-center justify-center sm:mb-8">
               <img
                 src="/imgs/badges/phdaily.svg"
                 alt="phdaily"
@@ -53,25 +53,25 @@ export default function Hero({
               />
             </div>
           )}
-          <div className="mx-auto flex min-h-[420px] max-w-5xl flex-col items-center justify-center gap-6 px-4 text-center lg:min-h-[520px]">
+          <div className="mx-auto flex min-h-[min(52dvh,360px)] max-w-5xl flex-col items-center justify-center gap-4 px-2 py-8 text-center sm:min-h-[400px] sm:gap-6 sm:px-4 sm:py-12 lg:min-h-[520px] lg:gap-6">
             {texts && texts.length > 1 ? (
-              <h1 className="hero-title mx-auto text-balance text-4xl font-semibold tracking-[0.18em] lg:text-6xl">
+              <h1 className="hero-title mx-auto max-w-[22rem] text-balance text-[1.6rem] font-semibold leading-tight tracking-[0.06em] sm:max-w-none sm:text-3xl sm:tracking-[0.12em] lg:text-6xl lg:tracking-[0.18em]">
                 {texts[0]}
                 <span
-                  className="ink-highlight-img mt-[-0.7rem] mr-[-1.2rem]"
+                  className="ink-highlight-img mt-[-0.7rem] mr-[-1.2rem] inline-block align-middle max-sm:scale-90"
                   role="img"
                   aria-label={highlightText || "highlight"}
                 />
                 {texts[1]}
               </h1>
             ) : (
-              <h1 className="hero-title mx-auto text-balance text-5xl font-semibold tracking-[0.18em] lg:text-6xl">
+              <h1 className="hero-title mx-auto max-w-[20rem] text-balance text-[1.65rem] font-semibold leading-tight tracking-[0.06em] sm:max-w-none sm:text-4xl sm:tracking-[0.12em] lg:text-6xl lg:tracking-[0.18em]">
                 {hero.title}
               </h1>
             )}
 
             <p
-              className="hero-subtitle m mx-auto max-w-3xl text-slate-100/90 lg:text-xl"
+              className="hero-subtitle mx-auto max-w-3xl text-slate-100/90 lg:text-xl"
               dangerouslySetInnerHTML={{ __html: hero.description || "" }}
             />
             {hero.buttons && (

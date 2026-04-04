@@ -121,11 +121,11 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
   };
 
   return (
-    <div className="grid min-h-[calc(100vh-9rem)] grid-rows-[auto_minmax(0,1fr)] gap-6">
-      <section className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f4f6fb)] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.16),transparent_30%),linear-gradient(135deg,rgba(24,24,27,1),rgba(39,39,42,0.96))]">
+    <div className="grid min-h-[calc(100svh-8rem)] grid-rows-[auto_minmax(0,1fr)] gap-4 sm:gap-6">
+      <section className="relative overflow-hidden rounded-[24px] border border-black/5 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#ffffff,#f4f6fb)] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:rounded-[28px] sm:p-6 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.16),transparent_30%),linear-gradient(135deg,rgba(24,24,27,1),rgba(39,39,42,0.96))]">
         <div className="flex h-full flex-col justify-between gap-6 lg:flex-row lg:items-end">
-          <div className="flex items-center gap-5">
-            <Avatar className="h-24 w-24 border-4 border-white/80 shadow-2xl dark:border-white/10">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
+            <Avatar className="h-20 w-20 border-4 border-white/80 shadow-2xl sm:h-24 sm:w-24 dark:border-white/10">
               <AvatarImage
                 src={proxifyAvatarUrl(user.avatar_url) || undefined}
                 alt={user.nickname || "User"}
@@ -138,7 +138,7 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-zinc-500">
                 {t("hero_tip")}
               </div>
-              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl dark:text-white">
                 {user.nickname || "未命名用户"}
               </h1>
               <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-300">
@@ -190,10 +190,10 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
         </div>
       </section>
 
-      <section className="min-h-0 overflow-hidden rounded-[28px] border border-black/5 bg-white/80 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-white/10 dark:bg-white/[0.03]">
-        <div className="mb-5 flex items-end justify-between gap-4">
+      <section className="min-h-0 overflow-hidden rounded-[24px] border border-black/5 bg-white/80 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur sm:rounded-[28px] sm:p-6 dark:border-white/10 dark:bg-white/[0.03]">
+        <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <h2 className="text-2xl font-semibold text-zinc-900 dark:text-white">
+            <h2 className="text-xl font-semibold text-zinc-900 sm:text-2xl dark:text-white">
               {currentView === "trash" ? t("trash_title") : t("title")}
             </h2>
             <p className="mt-1 text-sm text-zinc-500">
@@ -202,7 +202,7 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
                 : t("description")}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <button
               type="button"
               onClick={() => setCurrentView("list")}
@@ -252,7 +252,7 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
             ))}
           </div>
         ) : visiblePosts.length === 0 ? (
-          <div className="flex h-[320px] flex-col items-center justify-center rounded-[24px] border border-dashed border-zinc-200 bg-zinc-50/80 text-center dark:border-white/10 dark:bg-white/[0.02]">
+          <div className="flex h-[280px] flex-col items-center justify-center rounded-[24px] border border-dashed border-zinc-200 bg-zinc-50/80 px-4 text-center sm:h-[320px] dark:border-white/10 dark:bg-white/[0.02]">
             <Clapperboard className="mb-4 h-10 w-10 text-zinc-400" />
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
               {currentView === "trash" ? t("trash_empty_title") : t("empty_title")}

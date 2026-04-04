@@ -214,7 +214,7 @@ function HistoryPanel({
   const hasSelected = selectedIds.length > 0;
 
   return (
-    <div className="flex h-full min-h-0 w-[280px] flex-col rounded-[26px] border border-[#9cb1ab]/16 bg-[linear-gradient(180deg,rgba(250,252,251,0.98),rgba(243,247,245,0.96))] shadow-[0_18px_48px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(28,32,33,0.98),rgba(23,27,28,0.98))]">
+    <div className="flex h-full min-h-0 w-full max-w-full flex-col rounded-[22px] border border-[#9cb1ab]/16 bg-[linear-gradient(180deg,rgba(250,252,251,0.98),rgba(243,247,245,0.96))] shadow-[0_18px_48px_rgba(15,23,42,0.06)] lg:w-[280px] lg:rounded-[26px] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(28,32,33,0.98),rgba(23,27,28,0.98))]">
       <div className="shrink-0 space-y-3 p-3">
         <Button
           type="button"
@@ -1091,15 +1091,15 @@ export default function AiChatView({ locale }: { locale: string }) {
   return (
     <div
       className={cn(
-       "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-[30px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] text-zinc-900 shadow-[0_26px_80px_rgba(43,60,55,0.08)] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))] dark:text-zinc-100"    )}
+       "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-[24px] border border-[#94a7a1]/16 bg-[radial-gradient(circle_at_14%_18%,rgba(130,163,153,0.14),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(226,232,229,0.78),transparent_24%),radial-gradient(circle_at_76%_80%,rgba(93,121,114,0.07),transparent_22%),linear-gradient(135deg,rgba(252,252,251,0.98),rgba(243,246,244,0.96)_54%,rgba(236,240,239,0.95))] text-zinc-900 shadow-[0_26px_80px_rgba(43,60,55,0.08)] sm:rounded-[30px] dark:border-[#6c827c]/16 dark:bg-[radial-gradient(circle_at_14%_18%,rgba(95,129,120,0.11),transparent_26%),radial-gradient(circle_at_86%_12%,rgba(83,102,98,0.16),transparent_22%),radial-gradient(circle_at_76%_80%,rgba(56,77,72,0.10),transparent_22%),linear-gradient(135deg,rgba(24,28,28,0.98),rgba(29,35,34,0.98)_54%,rgba(22,25,25,0.97))] dark:text-zinc-100"    )}
     >
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(108,134,126,0.24),rgba(176,188,184,0.22),transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(117,144,136,0.24),rgba(86,104,99,0.20),transparent)]" />
-      <header className="flex shrink-0 flex-wrap items-start justify-between gap-4 px-5 py-5 lg:px-6">
+      <header className="flex shrink-0 flex-wrap items-start justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
         <div className="min-w-0">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-[#6b827c] dark:text-[#92aea7]">
             AI
           </div>
-          <h1 className="text-[2rem] font-semibold tracking-[0.01em] text-[#20312d] dark:text-[#e6efec]">
+          <h1 className="text-[1.65rem] font-semibold tracking-[0.01em] text-[#20312d] sm:text-[2rem] dark:text-[#e6efec]">
             {t("ai_chat.meta_title")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5d6f6a] dark:text-[#aac0ba]">
@@ -1121,7 +1121,7 @@ export default function AiChatView({ locale }: { locale: string }) {
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="w-[320px] border-0 bg-transparent p-3 text-zinc-900 shadow-none dark:text-zinc-100 [&>button]:text-zinc-500 dark:[&>button]:text-zinc-400"
+              className="w-[calc(100vw-1rem)] max-w-[320px] border-0 bg-transparent p-2 sm:p-3 text-zinc-900 shadow-none dark:text-zinc-100 [&>button]:text-zinc-500 dark:[&>button]:text-zinc-400"
             >
               <SheetHeader className="sr-only">
                 <SheetTitle>{t("ai_chat.history")}</SheetTitle>
@@ -1151,7 +1151,7 @@ export default function AiChatView({ locale }: { locale: string }) {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 gap-4 px-4 pb-0 lg:px-6 lg:pb-0">
+      <div className="flex min-h-0 flex-1 gap-3 px-3 pb-3 sm:px-4 lg:gap-4 lg:px-6 lg:pb-0">
         <div
           className={cn(
             "hidden shrink-0 overflow-hidden transition-[width] duration-200 ease-out lg:block",
@@ -1161,9 +1161,9 @@ export default function AiChatView({ locale }: { locale: string }) {
           <HistoryPanel {...historyPanelProps} />
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[26px] border border-[#9cb1ab]/16 bg-[linear-gradient(180deg,rgba(251,252,252,0.98),rgba(243,246,245,0.97))] shadow-[0_24px_64px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(27,31,31,0.98),rgba(22,26,26,0.98))]">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-[#9cb1ab]/16 bg-[linear-gradient(180deg,rgba(251,252,252,0.98),rgba(243,246,245,0.97))] shadow-[0_24px_64px_rgba(15,23,42,0.10)] sm:rounded-[26px] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(27,31,31,0.98),rgba(22,26,26,0.98))]">
           {!hasStarted ? (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 pt-14 pb-8">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 pb-8 pt-10 sm:pt-14">
               <h1 className="mb-10 text-center text-2xl font-semibold tracking-tight text-zinc-900 md:text-3xl dark:text-white">
                 {t("ai_chat.greeting")}
               </h1>
@@ -1201,7 +1201,7 @@ export default function AiChatView({ locale }: { locale: string }) {
               <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_auto]">
                 <div
                   ref={scrollRef}
-                  className="min-h-0 space-y-6 overflow-y-auto overscroll-contain px-4 py-6 lg:pr-2"
+                  className="min-h-0 space-y-5 overflow-y-auto overscroll-contain px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 lg:pr-2"
                 >
                   {messages.map((m) => (
                     <div
@@ -1222,7 +1222,7 @@ export default function AiChatView({ locale }: { locale: string }) {
                       ) : null}
                       <div
                         className={cn(
-                          "max-w-[min(100%,720px)] rounded-2xl px-4 py-3 text-[15px] leading-relaxed",
+                          "max-w-[88%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed sm:max-w-[min(100%,720px)]",
                           m.role === "user"
                             ? "bg-[linear-gradient(135deg,#203b35,#31524a)] text-white shadow-[0_10px_28px_rgba(32,59,53,0.18)] dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
                             : m.error
@@ -1321,7 +1321,25 @@ export default function AiChatView({ locale }: { locale: string }) {
                 </aside>
               </div>
 
-              <div className="shrink-0 bg-gradient-to-t from-[rgba(243,246,245,0.98)] via-[rgba(243,246,245,0.92)] to-transparent px-4 pb-3 pt-2 backdrop-blur-sm dark:from-[rgba(27,31,31,0.98)] dark:via-[rgba(27,31,31,0.9)]">
+              <div className="border-t border-black/5 px-3 py-3 lg:hidden dark:border-white/10">
+                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b827c] dark:text-[#92aea7]">
+                  {t("ai_chat.followup_title")}
+                </p>
+                <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 pl-1 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {followups.map((line) => (
+                    <button
+                      key={`mobile-${line}`}
+                      type="button"
+                      onClick={() => setInput(line)}
+                      className="shrink-0 rounded-full border border-[#d8e2de] bg-white/90 px-3 py-2 text-left text-xs text-[#24433c] transition hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-[#cfe3dd] dark:hover:bg-white/[0.08]"
+                    >
+                      {line}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="shrink-0 bg-gradient-to-t from-[rgba(243,246,245,0.98)] via-[rgba(243,246,245,0.92)] to-transparent px-3 pb-3 pt-2 backdrop-blur-sm sm:px-4 dark:from-[rgba(27,31,31,0.98)] dark:via-[rgba(27,31,31,0.9)]">
                 <div className="mx-auto w-full max-w-3xl">
                   <Composer
                     compact

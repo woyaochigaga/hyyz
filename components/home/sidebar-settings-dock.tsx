@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const iconBtn =
-  "rounded-lg p-2 text-muted-foreground outline-none transition hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "rounded-md p-1.5 text-muted-foreground outline-none transition hover:bg-muted/80 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:rounded-lg sm:p-2";
 
 export default function HomeSidebarSettingsDock({
   locale,
@@ -102,7 +102,7 @@ export default function HomeSidebarSettingsDock({
   );
 
   const rowBase = cn(
-    "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm outline-none transition",
+    "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs outline-none transition sm:gap-3 sm:px-3 sm:py-2.5 sm:text-sm",
     "text-foreground hover:bg-muted/80",
     "dark:text-zinc-100 dark:hover:bg-white/[0.06]"
   );
@@ -157,8 +157,8 @@ export default function HomeSidebarSettingsDock({
 
   return (
     <div
-      className={cn(
-        "flex gap-1",
+        className={cn(
+        "flex gap-0.5 sm:gap-1",
         collapsed
           ? "flex-col items-center justify-start"
           : "items-center justify-between"
@@ -198,7 +198,7 @@ export default function HomeSidebarSettingsDock({
             setMenuOpen((open) => !open);
           }}
         >
-          <Settings className="h-[1.15rem] w-[1.15rem]" strokeWidth={2} />
+          <Settings className="h-4 w-4 sm:h-[1.15rem] sm:w-[1.15rem]" strokeWidth={2} />
         </button>
       </div>
 
@@ -214,7 +214,7 @@ export default function HomeSidebarSettingsDock({
           aria-label={t("ai_chat.settings_help")}
           onClick={coming}
         >
-          <CircleHelp className="h-[1.15rem] w-[1.15rem]" strokeWidth={2} />
+          <CircleHelp className="h-4 w-4 sm:h-[1.15rem] sm:w-[1.15rem]" strokeWidth={2} />
         </button>
         <button
           type="button"
@@ -222,7 +222,7 @@ export default function HomeSidebarSettingsDock({
           aria-label={t("ai_chat.settings_feedback")}
           onClick={coming}
         >
-          <MessageCircle className="h-[1.15rem] w-[1.15rem]" strokeWidth={2} />
+          <MessageCircle className="h-4 w-4 sm:h-[1.15rem] sm:w-[1.15rem]" strokeWidth={2} />
         </button>
       </div>
     </div>
