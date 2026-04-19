@@ -19,12 +19,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { proxifyAvatarUrl } from "@/lib/avatar";
+import {
+  DEFAULT_HOME_PREFERENCES,
+  type HomePreferences,
+  loadHomePreferences,
+} from "@/lib/home-preferences";
 import { cn } from "@/lib/utils";
 import {
   ArrowUp,
   Brain,
   Check,
   Copy,
+  ChevronDown,
   ImagePlus,
   LoaderCircle,
   Menu,
@@ -46,6 +52,8 @@ export type ChatMessage = {
   id: string;
   role: Role;
   content: string;
+  reasoning?: string;
+  model?: string;
   pending?: boolean;
   error?: boolean;
 };
@@ -59,6 +67,7 @@ export type Conversation = {
 
 type AssistantStreamResult = {
   text: string;
+  reasoning: string;
   model?: string;
 };
 
@@ -139,6 +148,8 @@ function normalizeStoredMessages(messages: unknown): ChatMessage[] {
       id: String(item.id || ""),
       role: (item.role === "assistant" ? "assistant" : "user") as Role,
       content: String(item.content || ""),
+      reasoning: String(item.reasoning || ""),
+      model: String(item.model || ""),
       error: Boolean(item.error),
     }))
     .filter((item) => item.id && item.content.trim());
@@ -337,6 +348,7 @@ function Composer({
   deepLabel,
   compact,
   sending,
+  enterBehavior = "send",
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -347,6 +359,7 @@ function Composer({
   deepLabel: string;
   compact?: boolean;
   sending?: boolean;
+  enterBehavior?: "send" | "newline";
 }) {
   const taRef = React.useRef<HTMLTextAreaElement | null>(null);
 
@@ -369,7 +382,12 @@ function Composer({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !sending) {
+            if (
+              enterBehavior === "send" &&
+              e.key === "Enter" &&
+              !e.shiftKey &&
+              !sending
+            ) {
               e.preventDefault();
               submit();
             }
@@ -438,6 +456,10 @@ export default function AiChatView({ locale }: { locale: string }) {
   const [currentUser, setCurrentUser] = React.useState<ChatProfile | null>(null);
   const [selectionMode, setSelectionMode] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [expandedReasoningIds, setExpandedReasoningIds] = React.useState<Record<string, boolean>>({});
+  const [preferences, setPreferences] = React.useState<HomePreferences>(
+    DEFAULT_HOME_PREFERENCES
+  );
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const storageKey = React.useMemo(
     () => `home-ai-chat:${locale}`,
@@ -463,6 +485,36 @@ export default function AiChatView({ locale }: { locale: string }) {
   React.useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  React.useEffect(() => {
+    const nextPreferences = loadHomePreferences();
+    setPreferences(nextPreferences);
+    setDeepThinking(nextPreferences.aiDefaultDeepThinking);
+
+    const handlePreferencesChange = (event: Event) => {
+      const customEvent = event as CustomEvent<HomePreferences>;
+      const next = customEvent.detail || loadHomePreferences();
+      setPreferences(next);
+      setDeepThinking(next.aiDefaultDeepThinking);
+    };
+
+    const handleClearHistory = () => {
+      setConversations([]);
+      setActiveId(null);
+      setInput("");
+      setSelectionMode(false);
+      setSelectedIds([]);
+      setExpandedReasoningIds({});
+      setDeepThinking(loadHomePreferences().aiDefaultDeepThinking);
+    };
+
+    window.addEventListener("home-preferences-change", handlePreferencesChange);
+    window.addEventListener("home-ai-chat-clear", handleClearHistory);
+    return () => {
+      window.removeEventListener("home-preferences-change", handlePreferencesChange);
+      window.removeEventListener("home-ai-chat-clear", handleClearHistory);
+    };
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -521,12 +573,16 @@ export default function AiChatView({ locale }: { locale: string }) {
           avatarUrl,
         });
 
-        const remoteResp = await fetch("/api/home/ai-chat/conversations");
-        const remoteResult = await remoteResp.json();
-        const remoteConversations = Array.isArray(remoteResult?.data)
-          ? remoteResult.data
-              .map((item: any) => normalizeConversationRecord(item))
-              .filter(Boolean)
+        const remoteConversations = preferences.syncHistoryToCloud
+          ? await (async () => {
+              const remoteResp = await fetch("/api/home/ai-chat/conversations");
+              const remoteResult = await remoteResp.json();
+              return Array.isArray(remoteResult?.data)
+                ? remoteResult.data
+                    .map((item: any) => normalizeConversationRecord(item))
+                    .filter(Boolean)
+                : [];
+            })()
           : [];
 
         if (cancelled) return;
@@ -544,7 +600,7 @@ export default function AiChatView({ locale }: { locale: string }) {
         setConversations(mergedConversations);
         setActiveId(nextActiveId);
 
-        if (mergedConversations.length > 0) {
+        if (preferences.syncHistoryToCloud && mergedConversations.length > 0) {
           await fetch("/api/home/ai-chat/conversations", {
             method: "POST",
             headers: {
@@ -559,10 +615,12 @@ export default function AiChatView({ locale }: { locale: string }) {
                 created_at: new Date(item.updatedAt).toISOString(),
                 messages: item.messages
                   .filter((msg) => !msg.pending)
-                  .map(({ id, role, content, error }) => ({
+                  .map(({ id, role, content, reasoning, model, error }) => ({
                     id,
                     role,
                     content,
+                    reasoning,
+                    model,
                     error,
                   })),
               })),
@@ -580,18 +638,20 @@ export default function AiChatView({ locale }: { locale: string }) {
     return () => {
       cancelled = true;
     };
-  }, [locale, storageKey]);
+  }, [locale, preferences.syncHistoryToCloud, storageKey]);
 
   const persistConversation = React.useCallback(
     async (conversation: Conversation) => {
-      if (!serverUserUuid) return;
+      if (!serverUserUuid || !preferences.syncHistoryToCloud) return;
 
       const normalizedMessages = conversation.messages
         .filter((msg) => !msg.pending && msg.content.trim())
-        .map(({ id, role, content, error }) => ({
+        .map(({ id, role, content, reasoning, model, error }) => ({
           id,
           role,
           content,
+          reasoning,
+          model,
           error,
         }));
 
@@ -616,12 +676,14 @@ export default function AiChatView({ locale }: { locale: string }) {
         }),
       });
     },
-    [locale, serverUserUuid]
+    [locale, preferences.syncHistoryToCloud, serverUserUuid]
   );
 
   const deleteConversations = React.useCallback(
     async (ids: string[]) => {
-      if (!serverUserUuid || ids.length === 0) return;
+      if (!serverUserUuid || !preferences.syncHistoryToCloud || ids.length === 0) {
+        return;
+      }
 
       await fetch("/api/home/ai-chat/conversations", {
         method: "DELETE",
@@ -633,7 +695,7 @@ export default function AiChatView({ locale }: { locale: string }) {
         }),
       });
     },
-    [serverUserUuid]
+    [preferences.syncHistoryToCloud, serverUserUuid]
   );
 
   React.useEffect(() => {
@@ -667,7 +729,7 @@ export default function AiChatView({ locale }: { locale: string }) {
   const requestAssistantReply = React.useCallback(
     async (
       chatMessages: ChatMessage[],
-      onDelta?: (text: string) => void
+      onDelta?: (state: { text: string; reasoning: string }) => void
     ): Promise<AssistantReplyResult> => {
       const response = await fetch("/api/home/ai-chat", {
         method: "POST",
@@ -695,6 +757,7 @@ export default function AiChatView({ locale }: { locale: string }) {
       const decoder = new TextDecoder();
       let buffer = "";
       let text = "";
+      let reasoning = "";
       let model = "";
 
       const parseEvent = (raw: string) => {
@@ -716,8 +779,15 @@ export default function AiChatView({ locale }: { locale: string }) {
         if (event === "delta") {
           const delta = String(payload.text || "");
           text += delta;
-          onDelta?.(text);
+          onDelta?.({ text, reasoning });
           return { type: "delta" as const, text };
+        }
+
+        if (event === "reasoning") {
+          const delta = String(payload.text || "");
+          reasoning += delta;
+          onDelta?.({ text, reasoning });
+          return { type: "reasoning" as const, text, reasoning };
         }
 
         if (event === "start") {
@@ -755,7 +825,7 @@ export default function AiChatView({ locale }: { locale: string }) {
         }
       }
 
-      return { text, model };
+      return { text, reasoning, model };
     },
     [buildRequestMessages, deepThinking, locale, t]
   );
@@ -862,6 +932,13 @@ export default function AiChatView({ locale }: { locale: string }) {
     setSelectedIds([]);
   }, []);
 
+  const toggleReasoning = React.useCallback((messageId: string) => {
+    setExpandedReasoningIds((prev) => ({
+      ...prev,
+      [messageId]: !prev[messageId],
+    }));
+  }, []);
+
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || isSending) return;
@@ -899,7 +976,8 @@ export default function AiChatView({ locale }: { locale: string }) {
       const reply = await requestAssistantReply(requestMessages, (partial) => {
         replaceMessage(convId, assistantId, (msg) => ({
           ...msg,
-          content: partial,
+          content: partial.text,
+          reasoning: partial.reasoning,
           pending: true,
           error: false,
         }));
@@ -908,6 +986,8 @@ export default function AiChatView({ locale }: { locale: string }) {
       replaceMessage(convId, assistantId, (msg) => ({
         ...msg,
         content: reply.text,
+        reasoning: reply.reasoning,
+        model: reply.model,
         pending: false,
         error: false,
       }));
@@ -916,7 +996,16 @@ export default function AiChatView({ locale }: { locale: string }) {
         id: convId,
         title,
         updatedAt: Date.now(),
-        messages: [...requestMessages, { id: assistantId, role: "assistant", content: reply.text }],
+        messages: [
+          ...requestMessages,
+          {
+            id: assistantId,
+            role: "assistant",
+            content: reply.text,
+            reasoning: reply.reasoning,
+            model: reply.model,
+          },
+        ],
       };
       void persistConversation(finalConversation);
     } catch (error: any) {
@@ -974,7 +1063,8 @@ export default function AiChatView({ locale }: { locale: string }) {
       const reply = await requestAssistantReply(requestMessages, (partial) => {
         replaceMessage(active.id, assistantId, (msg) => ({
           ...msg,
-          content: partial,
+          content: partial.text,
+          reasoning: partial.reasoning,
           pending: true,
           error: false,
         }));
@@ -983,6 +1073,8 @@ export default function AiChatView({ locale }: { locale: string }) {
       replaceMessage(active.id, assistantId, (msg) => ({
         ...msg,
         content: reply.text,
+        reasoning: reply.reasoning,
+        model: reply.model,
         pending: false,
         error: false,
       }));
@@ -997,11 +1089,15 @@ export default function AiChatView({ locale }: { locale: string }) {
                 id: assistantId,
                 role: "assistant",
                 content: reply.text,
+                reasoning: reply.reasoning,
+                model: reply.model,
               }
             : {
                 id: msg.id,
                 role: msg.role,
                 content: msg.content,
+                reasoning: msg.reasoning,
+                model: msg.model,
                 error: msg.error,
               }
         ),
@@ -1026,12 +1122,16 @@ export default function AiChatView({ locale }: { locale: string }) {
                 id: assistantId,
                 role: "assistant",
                 content: errorText,
+                reasoning: "",
+                model: "",
                 error: true,
               }
             : {
                 id: msg.id,
                 role: msg.role,
                 content: msg.content,
+                reasoning: msg.reasoning,
+                model: msg.model,
                 error: msg.error,
               }
         ),
@@ -1176,6 +1276,7 @@ export default function AiChatView({ locale }: { locale: string }) {
                 placeholder={t("ai_chat.placeholder")}
                 deepLabel={t("ai_chat.deep_thinking")}
                 sending={isSending}
+                enterBehavior={preferences.enterBehavior}
               />
               <div className="mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
                 {suggestionCards.map((card) => (
@@ -1230,14 +1331,58 @@ export default function AiChatView({ locale }: { locale: string }) {
                               : "bg-[rgba(255,255,255,0.92)] text-zinc-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] dark:bg-[rgba(46,48,60,0.92)] dark:text-zinc-100 dark:shadow-none"
                         )}
                       >
-                        {m.pending ? (
-                          <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-300">
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            <span>{t("ai_chat.thinking")}</span>
-                          </div>
-                        ) : (
-                          <p className="whitespace-pre-wrap">{m.content}</p>
-                        )}
+                        {(() => {
+                          const hasReasoning = m.role === "assistant" && Boolean(m.reasoning);
+                          const reasoningExpanded =
+                            Boolean(expandedReasoningIds[m.id]) ||
+                            (preferences.aiAutoExpandReasoning && hasReasoning);
+
+                          return (
+                        <div className="space-y-3">
+                          {hasReasoning ? (
+                            <div className="rounded-xl border border-black/5 bg-black/[0.025] text-xs text-zinc-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">
+                              <button
+                                type="button"
+                                onClick={() => toggleReasoning(m.id)}
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+                              >
+                                <span className="flex items-center gap-2 font-medium">
+                                  <Brain className="h-3.5 w-3.5" />
+                                  <span>{t("ai_chat.reasoning_title")}</span>
+                                </span>
+                                <ChevronDown
+                                  className={cn(
+                                    "h-3.5 w-3.5 transition-transform",
+                                    reasoningExpanded ? "rotate-180" : "rotate-0"
+                                  )}
+                                />
+                              </button>
+                              {reasoningExpanded ? (
+                                <div className="border-t border-black/5 px-3 py-2 dark:border-white/10">
+                                  <p className="whitespace-pre-wrap">{m.reasoning}</p>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
+
+                          {m.pending ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-300">
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                                <span>
+                                  {m.reasoning
+                                    ? t("ai_chat.thinking_deep")
+                                    : t("ai_chat.thinking")}
+                                </span>
+                              </div>
+                              {m.content ? <p className="whitespace-pre-wrap">{m.content}</p> : null}
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{m.content}</p>
+                          )}
+                        </div>
+                          );
+                        })()}
                         {m.role === "assistant" && (
                           <>
                             <div className="mt-3 flex flex-wrap items-center gap-1 pt-1">
@@ -1276,7 +1421,7 @@ export default function AiChatView({ locale }: { locale: string }) {
                               </Button>
                             </div>
                             <p className="mt-2 text-[11px] text-zinc-500">
-                              {t("ai_chat.disclaimer")}
+                              {m.model ? `${m.model} · ${t("ai_chat.disclaimer")}` : t("ai_chat.disclaimer")}
                             </p>
                           </>
                         )}
@@ -1300,44 +1445,48 @@ export default function AiChatView({ locale }: { locale: string }) {
                   ))}
                 </div>
 
-                <aside className="hidden w-[240px] shrink-0 px-3 py-6 lg:block">
-                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-[#6b827c] dark:text-[#92aea7]">
-                    {t("ai_chat.followup_title")}
-                  </p>
-                  <ul className="space-y-2">
-                    {followups.map((line) => (
-                      <li key={line}>
-                        <button
-                          type="button"
-                          onClick={() => setInput(line)}
-                          className="flex w-full gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-[#24433c] transition hover:bg-black/[0.04] dark:text-[#cfe3dd] dark:hover:bg-[rgba(255,255,255,0.05)]"
-                        >
-                          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
-                          <span>{line}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </aside>
+                {preferences.aiShowFollowups ? (
+                  <aside className="hidden w-[240px] shrink-0 px-3 py-6 lg:block">
+                    <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-[#6b827c] dark:text-[#92aea7]">
+                      {t("ai_chat.followup_title")}
+                    </p>
+                    <ul className="space-y-2">
+                      {followups.map((line) => (
+                        <li key={line}>
+                          <button
+                            type="button"
+                            onClick={() => setInput(line)}
+                            className="flex w-full gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-[#24433c] transition hover:bg-black/[0.04] dark:text-[#cfe3dd] dark:hover:bg-[rgba(255,255,255,0.05)]"
+                          >
+                            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
+                            <span>{line}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </aside>
+                ) : null}
               </div>
 
-              <div className="border-t border-black/5 px-3 py-3 lg:hidden dark:border-white/10">
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b827c] dark:text-[#92aea7]">
-                  {t("ai_chat.followup_title")}
-                </p>
-                <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 pl-1 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {followups.map((line) => (
-                    <button
-                      key={`mobile-${line}`}
-                      type="button"
-                      onClick={() => setInput(line)}
-                      className="shrink-0 rounded-full border border-[#d8e2de] bg-white/90 px-3 py-2 text-left text-xs text-[#24433c] transition hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-[#cfe3dd] dark:hover:bg-white/[0.08]"
-                    >
-                      {line}
-                    </button>
-                  ))}
+              {preferences.aiShowFollowups ? (
+                <div className="border-t border-black/5 px-3 py-3 lg:hidden dark:border-white/10">
+                  <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#6b827c] dark:text-[#92aea7]">
+                    {t("ai_chat.followup_title")}
+                  </p>
+                  <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 pl-1 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {followups.map((line) => (
+                      <button
+                        key={`mobile-${line}`}
+                        type="button"
+                        onClick={() => setInput(line)}
+                        className="shrink-0 rounded-full border border-[#d8e2de] bg-white/90 px-3 py-2 text-left text-xs text-[#24433c] transition hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-[#cfe3dd] dark:hover:bg-white/[0.08]"
+                      >
+                        {line}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               <div className="shrink-0 bg-gradient-to-t from-[rgba(243,246,245,0.98)] via-[rgba(243,246,245,0.92)] to-transparent px-3 pb-3 pt-2 backdrop-blur-sm sm:px-4 dark:from-[rgba(27,31,31,0.98)] dark:via-[rgba(27,31,31,0.9)]">
                 <div className="mx-auto w-full max-w-3xl">
@@ -1351,6 +1500,7 @@ export default function AiChatView({ locale }: { locale: string }) {
                     placeholder={t("ai_chat.placeholder")}
                     deepLabel={t("ai_chat.deep_thinking")}
                     sending={isSending}
+                    enterBehavior={preferences.enterBehavior}
                   />
                 </div>
               </div>

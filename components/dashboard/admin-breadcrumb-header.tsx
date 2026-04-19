@@ -14,6 +14,7 @@ const ADMIN_ROUTE_TITLES: Record<string, string> = {
   "paid-orders": "已支付订单",
   announcement: "公告管理",
   notifications: "消息中心",
+  feedback: "反馈管理",
 };
 
 function buildCrumb(pathname: string): Crumb | undefined {

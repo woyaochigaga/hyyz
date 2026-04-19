@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { streamText } from "ai";
+import { extractReasoningMiddleware, streamText, wrapLanguageModel } from "ai";
 import { respData, respErr } from "@/lib/resp";
 import {
   AI_CHAT_SYSTEM_PROMPT_EN,
@@ -89,8 +89,18 @@ export async function POST(req: Request) {
       baseURL,
     });
 
+    const baseModel = dashscope(modelName);
+    const model = deepThinking
+      ? (wrapLanguageModel({
+          model: baseModel as any,
+          middleware: extractReasoningMiddleware({
+            tagName: "think",
+          }),
+        }) as any)
+      : baseModel;
+
     const result = await streamText({
-      model: dashscope(modelName),
+      model,
       temperature: deepThinking ? 0.3 : 0.7,
       messages: [
         {
@@ -113,9 +123,15 @@ export async function POST(req: Request) {
         try {
           send("start", { model: modelName });
 
-          for await (const chunk of result.textStream) {
-            if (!chunk) continue;
-            send("delta", { text: chunk });
+          for await (const part of result.fullStream) {
+            if (part.type === "reasoning" && part.textDelta) {
+              send("reasoning", { text: part.textDelta });
+              continue;
+            }
+
+            if (part.type === "text-delta" && part.textDelta) {
+              send("delta", { text: part.textDelta });
+            }
           }
 
           send("done", { model: modelName });

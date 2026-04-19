@@ -88,6 +88,11 @@ export default async function AdminLayout({
           url: adminPath("/notifications"),
           icon: "RiNotification3Line",
         },
+        {
+          title: "反馈管理",
+          url: adminPath("/feedback"),
+          icon: "RiMessage2Line",
+        },
       ],
     },
     social: {

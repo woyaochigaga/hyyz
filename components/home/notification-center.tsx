@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +34,27 @@ const TABS: { key: NotificationTab; label: string }[] = [
   { key: "interaction", label: "互动" },
   { key: "review", label: "审核" },
 ];
+
+/** 通知跳转：无 action_url 时落到当前语言的个人中心；相对路径补全 locale 前缀 */
+function resolveNotificationHref(
+  actionUrl: string | undefined,
+  locale: string
+): string {
+  const raw = String(actionUrl || "").trim();
+  if (!raw) {
+    return `/${locale}/personal_center`;
+  }
+  if (/^https?:\/\//i.test(raw)) {
+    return raw;
+  }
+  if (raw.startsWith("/")) {
+    if (/^\/(zh|en)(\/|$)/.test(raw)) {
+      return raw;
+    }
+    return `/${locale}${raw}`;
+  }
+  return `/${locale}/${raw}`;
+}
 
 function formatTime(value?: string | null) {
   if (!value) return "";
@@ -84,6 +105,7 @@ function NotificationItemButton({
   onOpen,
   expanded = false,
   busy = false,
+  justMarkedRead = false,
   onToggleExpand,
   onMarkRead,
   onDelete,
@@ -93,6 +115,7 @@ function NotificationItemButton({
   onOpen: (item: NotificationListItem) => void;
   expanded?: boolean;
   busy?: boolean;
+  justMarkedRead?: boolean;
   onToggleExpand?: (item: NotificationListItem) => void;
   onMarkRead?: (item: NotificationListItem) => void;
   onDelete?: (item: NotificationListItem) => void;
@@ -102,18 +125,24 @@ function NotificationItemButton({
       <button
         type="button"
         onClick={() => void onOpen(item)}
-        className="w-full rounded-2xl border border-zinc-200/80 bg-white/80 p-3 text-left transition hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.06]"
+        className="w-full rounded-[22px] bg-white/58 p-3.5 text-left shadow-[0_10px_28px_rgba(15,23,42,0.07)] backdrop-blur-xl transition hover:bg-white/72 dark:bg-white/[0.05] dark:shadow-[0_12px_30px_rgba(0,0,0,0.26)] dark:hover:bg-white/[0.09]"
       >
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+          <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1f3a35,#35584f)] text-white shadow-[0_8px_20px_rgba(31,58,53,0.2)] dark:bg-white dark:text-zinc-900">
             <NotificationItemIcon item={item} />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+              <span className="rounded-full bg-black/[0.04] px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
                 {getCategoryLabel(item)}
               </span>
-              {!item.read_at ? <span className="h-2 w-2 rounded-full bg-red-500" /> : null}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "h-2 w-2 rounded-full bg-red-500 transition-all duration-200",
+                  item.read_at ? "scale-75 opacity-0" : "scale-100 opacity-100"
+                )}
+              />
               <span className="ml-auto text-[11px] text-zinc-500 dark:text-zinc-400">
                 {formatTime(item.created_at || item.receipt_created_at)}
               </span>
@@ -131,19 +160,23 @@ function NotificationItemButton({
   }
 
   return (
-    <div className="w-full rounded-2xl border border-zinc-200/80 bg-white/80 p-4 text-left transition dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="w-full rounded-[24px] bg-white/62 p-4 text-left shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl transition dark:bg-white/[0.05] dark:shadow-[0_16px_36px_rgba(0,0,0,0.28)]">
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+        <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1f3a35,#35584f)] text-white shadow-[0_8px_20px_rgba(31,58,53,0.2)] dark:bg-white dark:text-zinc-900">
           <NotificationItemIcon item={item} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+            <span className="rounded-full bg-black/[0.04] px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
               {getCategoryLabel(item)}
             </span>
-            {!item.read_at ? (
-              <span className="h-2 w-2 rounded-full bg-red-500" />
-            ) : null}
+            <span
+              aria-hidden="true"
+              className={cn(
+                "h-2 w-2 rounded-full bg-red-500 transition-all duration-200",
+                item.read_at ? "scale-75 opacity-0" : "scale-100 opacity-100"
+              )}
+            />
             <span className="ml-auto text-[11px] text-zinc-500 dark:text-zinc-400">
               {formatTime(item.created_at || item.receipt_created_at)}
             </span>
@@ -174,7 +207,7 @@ function NotificationItemButton({
               onClick={() => onMarkRead?.(item)}
             >
               <CheckCheck className="h-3.5 w-3.5" />
-              {item.read_at ? "已读" : "标为已读"}
+              {justMarkedRead ? "已完成" : item.read_at ? "已读" : "标为已读"}
             </Button>
             <Button
               type="button"
@@ -187,7 +220,17 @@ function NotificationItemButton({
               <Eye className="h-3.5 w-3.5" />
               {expanded ? "收起" : "查看"}
             </Button>
-           
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 rounded-md px-2 text-[11px] text-red-500 hover:text-red-500"
+              disabled={busy}
+              onClick={() => onDelete?.(item)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              删除
+            </Button>
           </div>
         </div>
       </div>
@@ -197,6 +240,9 @@ function NotificationItemButton({
 
 export function NotificationCenter() {
   const router = useRouter();
+  const params = useParams<{ locale?: string }>();
+  const locale =
+    typeof params?.locale === "string" && params.locale ? params.locale : "zh";
   const { user, setShowSignModal } = useAppContext();
   const [open, setOpen] = React.useState(false);
   const [previewOpen, setPreviewOpen] = React.useState(false);
@@ -211,7 +257,9 @@ export function NotificationCenter() {
   const [markingAll, setMarkingAll] = React.useState(false);
   const [expandedKeys, setExpandedKeys] = React.useState<Record<string, boolean>>({});
   const [busyKeys, setBusyKeys] = React.useState<Record<string, boolean>>({});
+  const [justMarkedKeys, setJustMarkedKeys] = React.useState<Record<string, boolean>>({});
   const previewCloseTimerRef = React.useRef<number | null>(null);
+  const justMarkedTimerRef = React.useRef<Record<string, number>>({});
 
   const getItemKey = React.useCallback(
     (item: NotificationListItem) => `${item.receipt_id}-${item.uuid}`,
@@ -278,6 +326,9 @@ export function NotificationCenter() {
       if (previewCloseTimerRef.current !== null) {
         window.clearTimeout(previewCloseTimerRef.current);
       }
+      Object.values(justMarkedTimerRef.current).forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
     };
   }, []);
 
@@ -325,9 +376,9 @@ export function NotificationCenter() {
 
       await fetchSummary();
       setOpen(false);
-      router.push(item.action_url || "/personal_center");
+      router.push(resolveNotificationHref(item.action_url, locale));
     },
-    [ensureSignedIn, fetchSummary, router]
+    [ensureSignedIn, fetchSummary, locale, router]
   );
 
   const handleMarkAllRead = React.useCallback(async () => {
@@ -371,6 +422,18 @@ export function NotificationCenter() {
           notify("error", result?.message || "标记已读失败");
           return;
         }
+        setJustMarkedKeys((prev) => ({ ...prev, [key]: true }));
+        if (justMarkedTimerRef.current[key] !== undefined) {
+          window.clearTimeout(justMarkedTimerRef.current[key]);
+        }
+        justMarkedTimerRef.current[key] = window.setTimeout(() => {
+          setJustMarkedKeys((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+          delete justMarkedTimerRef.current[key];
+        }, 800);
         await refreshState(true);
       } catch (error) {
         notify("error", "标记已读失败");
@@ -384,6 +447,11 @@ export function NotificationCenter() {
   const handleDeleteOne = React.useCallback(
     async (item: NotificationListItem) => {
       if (!ensureSignedIn()) return;
+      if (
+        !window.confirm("确定删除这条通知？删除后将不再显示在列表中。")
+      ) {
+        return;
+      }
       const key = getItemKey(item);
       try {
         setBusyKeys((prev) => ({ ...prev, [key]: true }));
@@ -406,6 +474,15 @@ export function NotificationCenter() {
           delete next[key];
           return next;
         });
+        setJustMarkedKeys((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+        if (justMarkedTimerRef.current[key] !== undefined) {
+          window.clearTimeout(justMarkedTimerRef.current[key]);
+          delete justMarkedTimerRef.current[key];
+        }
         await refreshState(true);
       } catch (error) {
         notify("error", "删除失败");
@@ -419,12 +496,16 @@ export function NotificationCenter() {
   const handleToggleExpand = React.useCallback(
     (item: NotificationListItem) => {
       const key = getItemKey(item);
+      const willExpand = !expandedKeys[key];
       setExpandedKeys((prev) => ({
         ...prev,
         [key]: !prev[key],
       }));
+      if (willExpand && !item.read_at) {
+        void handleMarkOneRead(item);
+      }
     },
-    [getItemKey]
+    [expandedKeys, getItemKey, handleMarkOneRead]
   );
 
   const previewItems = summary.items || [];
@@ -458,7 +539,7 @@ export function NotificationCenter() {
           type="button"
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9 rounded-full border border-zinc-300/80 bg-zinc-100/85 text-zinc-700 hover:bg-zinc-200 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.08]"
+          className="relative h-9 w-9 rounded-full bg-white/42 text-zinc-700 shadow-[0_8px_22px_rgba(15,23,42,0.08)] backdrop-blur-xl hover:bg-white/62 dark:bg-white/[0.06] dark:text-zinc-100 dark:hover:bg-white/[0.11]"
           aria-label="消息中心"
           onClick={() => {
             if (!ensureSignedIn()) return;
@@ -473,19 +554,19 @@ export function NotificationCenter() {
 
         <div
           className={cn(
-            "absolute right-0 top-full z-[116] hidden w-[22rem] pt-3 transition duration-200 lg:block",
+            "absolute right-0 top-full z-[116] hidden w-[30rem] pt-3 transition duration-200 lg:block xl:w-[34rem]",
             previewOpen
               ? "pointer-events-auto translate-y-0 opacity-100"
               : "pointer-events-none translate-y-1 opacity-0"
           )}
         >
-          <div className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white/95 p-3 shadow-2xl shadow-black/10 backdrop-blur dark:border-white/10 dark:bg-[#11131a]/95 dark:shadow-black/40">
-            <div className="flex items-center justify-between px-1 pb-3 pt-1">
+          <div className="overflow-hidden rounded-[30px] bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(248,250,252,0.58))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-[linear-gradient(180deg,rgba(18,20,29,0.82),rgba(20,24,34,0.66))] dark:shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
+            <div className="flex items-center justify-between px-1 pb-4 pt-1">
               <div>
-                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <div className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                   消息中心
                 </div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   {summary.unread_count > 0
                     ? `你有 ${summary.unread_count} 条未读消息`
                     : loadingSummary
@@ -494,13 +575,13 @@ export function NotificationCenter() {
                 </div>
               </div>
               {summary.unread_count > 0 ? (
-                <span className="rounded-full bg-red-50 px-2 py-1 text-[11px] font-medium text-red-600 dark:bg-red-500/12 dark:text-red-300">
+                <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-[11px] font-medium text-red-600 dark:bg-red-500/12 dark:text-red-300">
                   未读 {summary.unread_count}
                 </span>
               ) : null}
             </div>
 
-            <div className="space-y-2">
+            <div className="max-h-[30rem] space-y-2.5 overflow-y-auto pr-1">
               {previewItems.length > 0 ? (
                 previewItems.map((item) => (
                   <NotificationItemButton
@@ -511,18 +592,18 @@ export function NotificationCenter() {
                   />
                 ))
               ) : (
-                <div className="rounded-2xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-400">
+                <div className="rounded-[22px] bg-white/28 px-4 py-10 text-center text-sm text-zinc-500 backdrop-blur-md dark:bg-white/[0.04] dark:text-zinc-400">
                   {user?.uuid ? "最近没有新消息" : "登录后可查看公告、互动和审核通知"}
                 </div>
               )}
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="mt-4 flex items-center justify-between gap-2 pt-3">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 rounded-full px-3 text-xs"
+                className="h-9 rounded-full px-3.5 text-xs"
                 disabled={summary.unread_count === 0 || markingAll}
                 onClick={() => void handleMarkAllRead()}
               >
@@ -533,7 +614,7 @@ export function NotificationCenter() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 rounded-full px-3 text-xs"
+                className="h-9 rounded-full px-3.5 text-xs"
                 onClick={() => {
                   if (!ensureSignedIn()) return;
                   setOpen(true);
@@ -555,22 +636,27 @@ export function NotificationCenter() {
           setOpen(next);
         }}
       >
-        <DialogContent className="max-w-2xl overflow-hidden border-zinc-200/80 p-0 dark:border-white/10">
-          <DialogHeader className="border-b border-zinc-200/70 px-6 py-5 dark:border-white/10">
+        <DialogContent className="max-w-2xl overflow-hidden border-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(248,250,252,0.58))] p-0 shadow-[0_28px_72px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:bg-[linear-gradient(180deg,rgba(18,20,29,0.82),rgba(20,24,34,0.66))] dark:shadow-[0_28px_72px_rgba(0,0,0,0.45)] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:bg-black/5 [&>button]:p-1.5 dark:[&>button]:bg-white/10">
+          <DialogHeader className="border-b border-black/5 px-6 py-5 dark:border-white/10">
             <DialogTitle className="text-xl">消息中心</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
               管理员公告、互动提醒、审核结果都会集中显示在这里。
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-wrap gap-2 border-b border-zinc-200/70 px-6 py-4 dark:border-white/10">
+          <div className="flex flex-wrap gap-2 border-b border-black/5 px-6 py-4 dark:border-white/10">
             {TABS.map((item) => (
               <Button
                 key={item.key}
                 type="button"
                 size="sm"
                 variant={tab === item.key ? "default" : "ghost"}
-                className="h-8 rounded-full px-3 text-xs"
+                className={cn(
+                  "h-8 rounded-full px-3 text-xs",
+                  tab === item.key
+                    ? "bg-emerald-500/85 text-white hover:bg-emerald-500"
+                    : "bg-white/20 hover:bg-white/35 dark:bg-white/[0.04] dark:hover:bg-white/[0.1]"
+                )}
                 onClick={() => setTab(item.key)}
               >
                 {item.label}
@@ -581,7 +667,7 @@ export function NotificationCenter() {
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-8 rounded-full px-3 text-xs"
+                className="h-8 rounded-full bg-white/20 px-3 text-xs hover:bg-white/35 dark:bg-white/[0.04] dark:hover:bg-white/[0.1]"
                 disabled={summary.unread_count === 0 || markingAll}
                 onClick={() => void handleMarkAllRead()}
               >
@@ -593,7 +679,7 @@ export function NotificationCenter() {
 
           <div className="max-h-[70vh] overflow-y-auto px-6 py-4">
             {loadingList ? (
-              <div className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+              <div className="rounded-[22px] bg-white/30 py-12 text-center text-sm text-zinc-500 backdrop-blur-md dark:bg-white/[0.04] dark:text-zinc-400">
                 正在加载消息...
               </div>
             ) : items.length > 0 ? (
@@ -605,6 +691,7 @@ export function NotificationCenter() {
                     onOpen={openNotification}
                     expanded={Boolean(expandedKeys[getItemKey(item)])}
                     busy={Boolean(busyKeys[getItemKey(item)])}
+                    justMarkedRead={Boolean(justMarkedKeys[getItemKey(item)])}
                     onToggleExpand={handleToggleExpand}
                     onMarkRead={handleMarkOneRead}
                     onDelete={handleDeleteOne}
@@ -612,7 +699,7 @@ export function NotificationCenter() {
                 ))}
               </div>
             ) : (
-              <div className="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+              <div className="rounded-[22px] bg-white/30 py-12 text-center text-sm text-zinc-500 backdrop-blur-md dark:bg-white/[0.04] dark:text-zinc-400">
                 当前筛选下没有消息
               </div>
             )}
