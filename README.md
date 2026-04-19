@@ -2,8 +2,6 @@
 
 杭艺云展是一个围绕杭州手工艺、线上展览、匠人展示、AI 导览与内容创作流构建的 Next.js 前端项目。
 
-![preview](preview.png)
-
 ## 技术栈
 
 - Next.js 14 App Router
