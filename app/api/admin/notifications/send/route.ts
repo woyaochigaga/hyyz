@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     audience_value?: string;
     action_url?: string;
     priority?: string;
+    expires_at?: string;
   };
 
   const title = String(body?.title || "").trim();
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
       body?.priority === "low" || body?.priority === "high"
         ? body.priority
         : "normal",
+    expires_at: String(body?.expires_at || "").trim() || null,
   });
 
   return respData(notification);

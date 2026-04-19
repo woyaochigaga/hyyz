@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Header from "@/components/dashboard/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,21 +85,6 @@ export default async function AdminArtisanVerificationsPage({
 
   return (
     <>
-      <Header
-        crumb={{
-          items: [
-            {
-              title: "后台管理",
-              url: `/${params.locale}/admin`,
-            },
-            {
-              title: "店铺认证审核",
-              is_active: true,
-            },
-          ],
-        }}
-      />
-
       <div className="space-y-6 px-4 py-8 md:px-8">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">

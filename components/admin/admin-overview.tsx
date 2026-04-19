@@ -1,6 +1,5 @@
 import Link from "next/link";
 import moment from "moment";
-import Header from "@/components/dashboard/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPaiedOrders } from "@/models/order";
 import { getAllPosts } from "@/models/post";
@@ -207,21 +206,6 @@ export async function AdminOverview({
 
   return (
     <>
-      <Header
-        crumb={{
-          items: [
-            {
-              title: "后台管理",
-              url: buildAdminHref(locale, ""),
-            },
-            {
-              title,
-              is_active: true,
-            },
-          ],
-        }}
-      />
-
       <div className="w-full px-4 py-8 md:px-8">
         <div className="mb-8 space-y-2">
           <h1 className="text-2xl font-medium">{title}</h1>

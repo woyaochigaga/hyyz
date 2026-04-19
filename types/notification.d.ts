@@ -34,6 +34,7 @@ export interface NotificationEvent {
   published_at?: string | null;
   expires_at?: string | null;
   dedupe_key?: string;
+  is_expired?: boolean;
 }
 
 export interface NotificationReceipt {

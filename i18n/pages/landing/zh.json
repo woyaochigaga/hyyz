@@ -522,18 +522,18 @@
           "title": "关于",
           "children": [
             {
-              "title": "功能特点",
-              "url": "/#feature",
+              "title": "首页",
+              "url": "/zh",
               "target": "_self"
             },
             {
-              "title": "案例展示",
-              "url": "/#showcase",
+              "title": "展览大厅",
+              "url": "/zh/home/exhibition",
               "target": "_self"
             },
             {
-              "title": "定价",
-              "url": "/#pricing",
+              "title": "社区论坛",
+              "url": "/zh/home/forum",
               "target": "_self"
             }
           ]
@@ -543,7 +543,7 @@
           "children": [
             {
               "title": "云展大厅",
-              "url": "/zh/home/world",
+              "url": "/zh/home/exhibition",
               "target": "_self"
             },
             {
@@ -552,28 +552,28 @@
               "target": "_self"
             },
             {
-              "title": "创作流",
-              "url": "/zh/home/world",
+              "title": "社区动态",
+              "url": "/zh/home/community",
               "target": "_self"
             }
           ]
         },
         {
-          "title": "友情链接",
+          "title": "支持",
           "children": [
             {
-              "title": "隐私政策",
-              "url": "/privacy-policy",
+              "title": "艺术帖子",
+              "url": "/zh/home/post",
               "target": "_self"
             },
             {
-              "title": "服务条款",
-              "url": "/terms-of-service",
+              "title": "云展首页",
+              "url": "/zh/home",
               "target": "_self"
             },
             {
               "title": "申请入驻",
-              "url": "/zh#pricing",
+              "url": "/zh#cta",
               "target": "_self"
             }
           ]
@@ -591,7 +591,7 @@
         {
           "title": "云展大厅",
           "icon": "RiGalleryLine",
-          "url": "/zh/home/world",
+          "url": "/zh/home/exhibition",
           "target": "_self"
         },
         {

@@ -584,18 +584,18 @@
           "title": "About",
           "children": [
             {
-              "title": "Features",
-              "url": "/#feature",
+              "title": "Home",
+              "url": "/",
               "target": "_self"
             },
             {
-              "title": "Showcases",
-              "url": "/#showcase",
+              "title": "Exhibitions",
+              "url": "/home/exhibition",
               "target": "_self"
             },
             {
-              "title": "Pricing",
-              "url": "/#pricing",
+              "title": "Forum",
+              "url": "/home/forum",
               "target": "_self"
             }
           ]
@@ -605,7 +605,7 @@
           "children": [
             {
               "title": "Cloud Exhibition",
-              "url": "/home/world",
+              "url": "/home/exhibition",
               "target": "_self"
             },
             {
@@ -614,8 +614,8 @@
               "target": "_self"
             },
             {
-              "title": "Creative Feed",
-              "url": "/home/world",
+              "title": "Community Feed",
+              "url": "/home/community",
               "target": "_self"
             }
           ]
@@ -624,18 +624,18 @@
           "title": "Support",
           "children": [
             {
-              "title": "Privacy Policy",
-              "url": "/privacy-policy",
+              "title": "Art Posts",
+              "url": "/home/post",
               "target": "_self"
             },
             {
-              "title": "Terms of Service",
-              "url": "/terms-of-service",
+              "title": "Cloud Home",
+              "url": "/home",
               "target": "_self"
             },
             {
               "title": "Artisan Enrollment",
-              "url": "/#pricing",
+              "url": "/#cta",
               "target": "_self"
             }
           ]
@@ -653,7 +653,7 @@
         {
           "title": "Exhibition",
           "icon": "RiGalleryLine",
-          "url": "/home/world",
+          "url": "/home/exhibition",
           "target": "_self"
         },
         {

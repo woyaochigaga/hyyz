@@ -4,9 +4,11 @@ import * as React from "react";
 import {
   Bell,
   CheckCheck,
+  Eye,
   MessageCircleMore,
   Megaphone,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -80,20 +82,56 @@ function NotificationItemButton({
   item,
   compact = false,
   onOpen,
+  expanded = false,
+  busy = false,
+  onToggleExpand,
+  onMarkRead,
+  onDelete,
 }: {
   item: NotificationListItem;
   compact?: boolean;
   onOpen: (item: NotificationListItem) => void;
+  expanded?: boolean;
+  busy?: boolean;
+  onToggleExpand?: (item: NotificationListItem) => void;
+  onMarkRead?: (item: NotificationListItem) => void;
+  onDelete?: (item: NotificationListItem) => void;
 }) {
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => void onOpen(item)}
+        className="w-full rounded-2xl border border-zinc-200/80 bg-white/80 p-3 text-left transition hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.06]"
+      >
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+            <NotificationItemIcon item={item} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+                {getCategoryLabel(item)}
+              </span>
+              {!item.read_at ? <span className="h-2 w-2 rounded-full bg-red-500" /> : null}
+              <span className="ml-auto text-[11px] text-zinc-500 dark:text-zinc-400">
+                {formatTime(item.created_at || item.receipt_created_at)}
+              </span>
+            </div>
+            <div className="mt-2 line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {item.title}
+            </div>
+            <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+              {item.content || "点击查看详情"}
+            </div>
+          </div>
+        </div>
+      </button>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      onClick={() => void onOpen(item)}
-      className={cn(
-        "w-full rounded-2xl border border-zinc-200/80 bg-white/80 text-left transition hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.06]",
-        compact ? "p-3" : "p-4"
-      )}
-    >
+    <div className="w-full rounded-2xl border border-zinc-200/80 bg-white/80 p-4 text-left transition dark:border-white/10 dark:bg-white/[0.04]">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
           <NotificationItemIcon item={item} />
@@ -113,12 +151,47 @@ function NotificationItemButton({
           <div className="mt-2 line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {item.title}
           </div>
-          <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+          <div
+            className={cn(
+              "mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300",
+              expanded ? "whitespace-pre-wrap break-words" : "line-clamp-2"
+            )}
+          >
             {item.content || "点击查看详情"}
+          </div>
+          {expanded && item.action_url ? (
+            <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+              关联页面：{item.action_url}
+            </div>
+          ) : null}
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 rounded-md px-2 text-[11px]"
+              disabled={busy || Boolean(item.read_at)}
+              onClick={() => onMarkRead?.(item)}
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              {item.read_at ? "已读" : "标为已读"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 rounded-md px-2 text-[11px]"
+              disabled={busy}
+              onClick={() => onToggleExpand?.(item)}
+            >
+              <Eye className="h-3.5 w-3.5" />
+              {expanded ? "收起" : "查看"}
+            </Button>
+           
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -136,7 +209,14 @@ export function NotificationCenter() {
   const [loadingSummary, setLoadingSummary] = React.useState(false);
   const [loadingList, setLoadingList] = React.useState(false);
   const [markingAll, setMarkingAll] = React.useState(false);
+  const [expandedKeys, setExpandedKeys] = React.useState<Record<string, boolean>>({});
+  const [busyKeys, setBusyKeys] = React.useState<Record<string, boolean>>({});
   const previewCloseTimerRef = React.useRef<number | null>(null);
+
+  const getItemKey = React.useCallback(
+    (item: NotificationListItem) => `${item.receipt_id}-${item.uuid}`,
+    []
+  );
 
   const fetchSummary = React.useCallback(async () => {
     if (!user?.uuid) {
@@ -270,6 +350,82 @@ export function NotificationCenter() {
       setMarkingAll(false);
     }
   }, [ensureSignedIn, refreshState]);
+
+  const handleMarkOneRead = React.useCallback(
+    async (item: NotificationListItem) => {
+      if (!ensureSignedIn() || item.read_at) return;
+      const key = getItemKey(item);
+      try {
+        setBusyKeys((prev) => ({ ...prev, [key]: true }));
+        const resp = await fetch("/api/notifications/read", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notification_uuids: [item.uuid],
+          }),
+        });
+        const result = await resp.json();
+        if (result?.code !== 0) {
+          notify("error", result?.message || "标记已读失败");
+          return;
+        }
+        await refreshState(true);
+      } catch (error) {
+        notify("error", "标记已读失败");
+      } finally {
+        setBusyKeys((prev) => ({ ...prev, [key]: false }));
+      }
+    },
+    [ensureSignedIn, getItemKey, refreshState]
+  );
+
+  const handleDeleteOne = React.useCallback(
+    async (item: NotificationListItem) => {
+      if (!ensureSignedIn()) return;
+      const key = getItemKey(item);
+      try {
+        setBusyKeys((prev) => ({ ...prev, [key]: true }));
+        const resp = await fetch("/api/notifications/delete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notification_uuids: [item.uuid],
+          }),
+        });
+        const result = await resp.json();
+        if (result?.code !== 0) {
+          notify("error", result?.message || "删除失败");
+          return;
+        }
+        setExpandedKeys((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+        await refreshState(true);
+      } catch (error) {
+        notify("error", "删除失败");
+      } finally {
+        setBusyKeys((prev) => ({ ...prev, [key]: false }));
+      }
+    },
+    [ensureSignedIn, getItemKey, refreshState]
+  );
+
+  const handleToggleExpand = React.useCallback(
+    (item: NotificationListItem) => {
+      const key = getItemKey(item);
+      setExpandedKeys((prev) => ({
+        ...prev,
+        [key]: !prev[key],
+      }));
+    },
+    [getItemKey]
+  );
 
   const previewItems = summary.items || [];
 
@@ -447,6 +603,11 @@ export function NotificationCenter() {
                     key={`${item.receipt_id}-${item.uuid}`}
                     item={item}
                     onOpen={openNotification}
+                    expanded={Boolean(expandedKeys[getItemKey(item)])}
+                    busy={Boolean(busyKeys[getItemKey(item)])}
+                    onToggleExpand={handleToggleExpand}
+                    onMarkRead={handleMarkOneRead}
+                    onDelete={handleDeleteOne}
                   />
                 ))}
               </div>

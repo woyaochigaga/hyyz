@@ -1,4 +1,5 @@
 import DashboardLayout from "@/components/dashboard/layout";
+import AdminBreadcrumbHeader from "@/components/dashboard/admin-breadcrumb-header";
 import Empty from "@/components/blocks/empty";
 import { ReactNode } from "react";
 import { Sidebar } from "@/types/blocks/sidebar";
@@ -119,5 +120,10 @@ export default async function AdminLayout({
     },
   };
 
-  return <DashboardLayout sidebar={sidebar}>{children}</DashboardLayout>;
+  return (
+    <DashboardLayout sidebar={sidebar}>
+      <AdminBreadcrumbHeader />
+      {children}
+    </DashboardLayout>
+  );
 }

@@ -1,72 +1,41 @@
-import moment from "moment";
-
-import TableSlot from "@/components/dashboard/slots/table";
-import { Table as TableSlotType } from "@/types/slots/table";
-import { TableColumn } from "@/types/blocks/table";
-import {
-  describeNotificationAudience,
-  describeNotificationCategory,
-  describeNotificationType,
-  listNotificationEventsForAdmin,
-} from "@/models/notification";
-import type { NotificationEvent } from "@/types/notification";
+import Header from "@/components/dashboard/header";
+import { AdminNotificationsManager } from "@/components/admin/admin-notifications-manager";
+import { listNotificationEventsForAdmin } from "@/models/notification";
 
 export default async function AdminNotificationsPage({
   params: { locale },
 }: {
   params: { locale: string };
 }) {
-  const notifications = await listNotificationEventsForAdmin(100);
+  const notifications = await listNotificationEventsForAdmin(200);
 
-  const columns: TableColumn[] = [
-    {
-      name: "title",
-      title: "标题",
-    },
-    {
-      name: "category",
-      title: "分类",
-      callback: (row: NotificationEvent) => describeNotificationCategory(row.category),
-    },
-    {
-      name: "type",
-      title: "类型",
-      callback: (row: NotificationEvent) => describeNotificationType(row.type),
-    },
-    {
-      title: "发送范围",
-      callback: (row: NotificationEvent) =>
-        describeNotificationAudience(row.audience_type, row.audience_value),
-    },
-    {
-      name: "action_url",
-      title: "跳转",
-      callback: (row: NotificationEvent) => row.action_url || "—",
-    },
-    {
-      name: "created_at",
-      title: "创建时间",
-      callback: (row: NotificationEvent) =>
-        row.created_at ? moment(row.created_at).format("YYYY-MM-DD HH:mm:ss") : "—",
-    },
-  ];
+  return (
+    <>
+      <Header
+        crumb={{
+          items: [
+            {
+              title: "后台管理",
+              url: `/${locale}/admin`,
+            },
+            {
+              title: "消息中心",
+              is_active: true,
+            },
+          ],
+        }}
+      />
 
-  const table: TableSlotType = {
-    title: "消息中心",
-    description: "管理全站系统消息，并查看自动生成的公告、互动和审核通知记录。",
-    toolbar: {
-      items: [
-        {
-          title: "发送消息",
-          icon: "RiAddLine",
-          url: `/${locale}/admin/notifications/add`,
-        },
-      ],
-    },
-    columns,
-    data: notifications,
-    empty_message: "暂无消息记录",
-  };
+      <div className="w-full px-4 py-8 md:px-8">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-2xl font-medium">消息中心</h1>
+          <p className="text-sm text-muted-foreground">
+            创建、查看、延期、提权和清理消息，全部在当前页完成。
+          </p>
+        </div>
 
-  return <TableSlot {...table} />;
+        <AdminNotificationsManager locale={locale} initialNotifications={notifications} />
+      </div>
+    </>
+  );
 }

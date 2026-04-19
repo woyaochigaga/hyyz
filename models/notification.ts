@@ -84,6 +84,13 @@ function normalizePayload(input: unknown): Record<string, unknown> {
 }
 
 function toNotificationEvent(row: NotificationEventRow): NotificationEvent {
+  const expiresAt = row.expires_at || null;
+  const expiresTimestamp = expiresAt ? new Date(expiresAt).getTime() : 0;
+  const isExpired =
+    Boolean(expiresAt) &&
+    !Number.isNaN(expiresTimestamp) &&
+    expiresTimestamp <= Date.now();
+
   return {
     uuid: row.uuid,
     type: row.type || "system_message",
@@ -101,8 +108,9 @@ function toNotificationEvent(row: NotificationEventRow): NotificationEvent {
     status: row.status || "active",
     created_at: row.created_at || "",
     published_at: row.published_at || null,
-    expires_at: row.expires_at || null,
+    expires_at: expiresAt,
     dedupe_key: String(row.dedupe_key || "").trim(),
+    is_expired: isExpired,
   };
 }
 
@@ -270,6 +278,9 @@ export async function listUserNotifications(params: {
     .eq("user_uuid", params.user_uuid)
     .is("deleted_at", null)
     .eq("notification_events.status", "active")
+    .or("expires_at.is.null,expires_at.gt." + getIsoTimestr(), {
+      foreignTable: "notification_events",
+    } as { foreignTable: string })
     .order("created_at", { ascending: false })
     .limit(params.limit && params.limit > 0 ? params.limit : 20);
 
@@ -296,10 +307,14 @@ export async function getNotificationSummary(user_uuid: string): Promise<Notific
   const [{ count }, items] = await Promise.all([
     supabase
       .from("notification_receipts")
-      .select("*", { count: "exact", head: true })
+      .select("id,notification_events!inner(uuid)", { count: "exact", head: true })
       .eq("user_uuid", user_uuid)
       .is("deleted_at", null)
-      .is("read_at", null),
+      .is("read_at", null)
+      .eq("notification_events.status", "active")
+      .or("expires_at.is.null,expires_at.gt." + getIsoTimestr(), {
+        foreignTable: "notification_events",
+      } as { foreignTable: string }),
     listUserNotifications({
       user_uuid,
       limit: 6,
@@ -344,6 +359,23 @@ export async function markAllNotificationsRead(user_uuid: string) {
   if (error) throw error;
 }
 
+export async function markNotificationsDeleted(user_uuid: string, notificationUuids: string[]) {
+  const uuids = Array.from(new Set(notificationUuids.filter(Boolean)));
+  if (uuids.length === 0) return;
+
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("notification_receipts")
+    .update({
+      deleted_at: getIsoTimestr(),
+    })
+    .eq("user_uuid", user_uuid)
+    .in("notification_uuid", uuids)
+    .is("deleted_at", null);
+
+  if (error) throw error;
+}
+
 export async function listNotificationEventsForAdmin(limit: number = 50) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
@@ -354,6 +386,92 @@ export async function listNotificationEventsForAdmin(limit: number = 50) {
 
   if (error || !data) return [];
   return (data as NotificationEventRow[]).map(toNotificationEvent);
+}
+
+export async function updateNotificationEvent(
+  uuid: string,
+  patch: Partial<
+    Pick<
+      NotificationEvent,
+      | "title"
+      | "content"
+      | "category"
+      | "action_url"
+      | "audience_type"
+      | "audience_value"
+      | "priority"
+      | "status"
+      | "expires_at"
+    >
+  >
+) {
+  const supabase = getSupabaseClient();
+  const normalizedPatch: Record<string, unknown> = {};
+
+  if (typeof patch.title === "string") {
+    normalizedPatch.title = patch.title.trim();
+  }
+  if (typeof patch.content === "string") {
+    normalizedPatch.content = patch.content.trim();
+  }
+  if (typeof patch.category !== "undefined") {
+    normalizedPatch.category = normalizeCategory(patch.category);
+  }
+  if (typeof patch.action_url === "string") {
+    normalizedPatch.action_url = patch.action_url.trim();
+  }
+  if (typeof patch.audience_type !== "undefined") {
+    normalizedPatch.audience_type = normalizeAudienceType(patch.audience_type);
+  }
+  if (typeof patch.audience_value === "string") {
+    normalizedPatch.audience_value = patch.audience_value.trim();
+  }
+  if (typeof patch.priority !== "undefined") {
+    normalizedPatch.priority = normalizePriority(patch.priority);
+  }
+  if (typeof patch.status !== "undefined") {
+    normalizedPatch.status = patch.status === "revoked" ? "revoked" : "active";
+  }
+  if (typeof patch.expires_at !== "undefined") {
+    normalizedPatch.expires_at = patch.expires_at || null;
+  }
+
+  const { error } = await supabase
+    .from("notification_events")
+    .update(normalizedPatch)
+    .eq("uuid", uuid);
+
+  if (error) throw error;
+
+  return findNotificationEventByUuid(uuid);
+}
+
+export async function revokeNotificationEvent(uuid: string) {
+  return updateNotificationEvent(uuid, {
+    status: "revoked",
+  });
+}
+
+export async function deleteNotificationEvent(uuid: string) {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("notification_events").delete().eq("uuid", uuid);
+  if (error) throw error;
+}
+
+export async function extendNotificationExpiry(uuid: string, hours: number) {
+  const event = await findNotificationEventByUuid(uuid);
+  if (!event) {
+    throw new Error("消息不存在");
+  }
+
+  const base = event.expires_at ? new Date(event.expires_at) : new Date();
+  const timestamp = Number.isNaN(base.getTime()) ? Date.now() : base.getTime();
+  const next = new Date(timestamp + Math.max(1, hours) * 60 * 60 * 1000).toISOString();
+
+  return updateNotificationEvent(uuid, {
+    expires_at: next,
+    status: "active",
+  });
 }
 
 export async function sendAnnouncementPublishedNotification(post: Post) {
@@ -559,6 +677,7 @@ export async function sendSystemMessage(params: {
   audience_type: NotificationAudienceType;
   audience_value?: string;
   priority?: NotificationPriority;
+  expires_at?: string | null;
 }) {
   return createAndDeliverNotification({
     type: "system_message",
@@ -570,6 +689,7 @@ export async function sendSystemMessage(params: {
     audience_type: params.audience_type,
     audience_value: params.audience_value,
     priority: params.priority,
+    expires_at: params.expires_at || null,
   });
 }
 

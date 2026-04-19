@@ -97,6 +97,12 @@ export default async function AdminNotificationAddPage({
           { title: "低", value: "low" },
         ],
       },
+      {
+        name: "expires_at",
+        title: "过期时间",
+        type: "text",
+        placeholder: "例如：2026-04-30T18:00",
+      },
     ],
     submit: {
       button: {
@@ -112,6 +118,7 @@ export default async function AdminNotificationAddPage({
         const audience_value = String(data.get("audience_value") || "").trim();
         const action_url = String(data.get("action_url") || "").trim();
         const priority = String(data.get("priority") || "normal").trim();
+        const expires_at = String(data.get("expires_at") || "").trim();
 
         if (!title) {
           throw new Error("标题不能为空");
@@ -138,6 +145,7 @@ export default async function AdminNotificationAddPage({
           audience_value,
           priority:
             priority === "high" || priority === "low" ? priority : "normal",
+          expires_at: expires_at ? new Date(expires_at).toISOString() : null,
         });
 
         return {
