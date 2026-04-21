@@ -54,11 +54,19 @@ export function ForumPostCard({
     ? proxifyAvatarUrl(post.bar.cover_image) || post.bar.cover_image
     : "";
   const nextHref =
-    href === undefined ? `/${locale}/home/forum?post=${encodeURIComponent(post.id)}` : href;
+    href === undefined
+      ? `/${locale}/home/forum/post/${encodeURIComponent(post.id)}`
+      : href;
   const handleOpen = () => {
     onOpenPost?.(post);
     onPostChange?.(post);
   };
+
+  React.useEffect(() => {
+    if (nextHref) {
+      router.prefetch(nextHref);
+    }
+  }, [nextHref, router]);
 
   const isSplit = layout === "split" && Boolean(post.bar);
 
@@ -281,6 +289,9 @@ export function ForumPostCard({
         event.preventDefault();
         handleOpen();
         router.push(nextHref);
+      }}
+      onMouseEnter={() => {
+        router.prefetch(nextHref);
       }}
       className={cn(cardClass, "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30")}
     >

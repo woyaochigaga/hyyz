@@ -123,10 +123,6 @@ export function ForumPostDetailSection({
     resetReplyDraft();
   }, [postId, resetReplyDraft]);
 
-  React.useEffect(() => {
-    void loadDetail();
-  }, [loadDetail]);
-
   const handleReply = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!activeReplyTarget || replying) return;
@@ -249,7 +245,11 @@ export function ForumPostDetailSection({
           </button>
         ) : (
           <Link
-            href={post.bar ? `/${locale}/home/forum?bar=${encodeURIComponent(post.bar.id)}` : `/${locale}/home/forum`}
+            href={
+              post.bar
+                ? `/${locale}/home/forum/bar/${encodeURIComponent(post.bar.id)}`
+                : `/${locale}/home/forum`
+            }
             className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.12] px-3.5 py-2 text-sm font-medium text-primary transition hover:bg-primary/[0.18] dark:border-primary/25 dark:bg-primary/[0.16] dark:text-primary dark:hover:bg-primary/[0.22]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -281,7 +281,7 @@ export function ForumPostDetailSection({
               </button>
             ) : (
               <Link
-                href={`/${locale}/home/forum?bar=${encodeURIComponent(post.bar.id)}`}
+                href={`/${locale}/home/forum/bar/${encodeURIComponent(post.bar.id)}`}
                 className="rounded-full bg-primary/[0.12] px-2.5 py-1 text-xs font-medium text-primary dark:bg-primary/[0.18] dark:text-primary"
               >
                 {post.bar.name}

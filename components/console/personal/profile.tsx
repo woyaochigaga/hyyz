@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { User, UserGender } from "@/types/user";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,8 +50,6 @@ import {
   UserRound,
 } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
-
-const USER_ROLE_STORAGE_KEY = "user_role";
 
 type UserRole = "user" | "artisan" | "admin";
 
@@ -255,67 +253,6 @@ export function PersonalProfile({ user }: { user: User }) {
   const hasShopVerificationDraft = hasArtisanShopVerificationDraft(
     savedShopVerificationForm
   );
-
-  useEffect(() => {
-    try {
-      const storedRole = window.localStorage.getItem(USER_ROLE_STORAGE_KEY);
-      if (storedRole) {
-        setRole(normalizeRole(storedRole));
-      }
-    } catch {
-      // ignore localStorage errors
-    }
-
-    let cancelled = false;
-
-    const syncUserRole = async () => {
-      try {
-        const resp = await fetch("/api/get-user-info", { method: "POST" });
-        const result = await resp.json();
-        const dbRole = normalizeRole(result?.data?.role);
-
-        try {
-          window.localStorage.setItem(USER_ROLE_STORAGE_KEY, dbRole);
-        } catch {
-          // ignore localStorage errors
-        }
-
-        if (!cancelled) {
-          setRole(dbRole);
-          const verificationForm = createArtisanShopVerificationForm(
-            result?.data || user
-          );
-          setSavedShopVerificationForm(verificationForm);
-          setShopVerificationForm(verificationForm);
-          setShopVerificationStatus(
-            normalizeArtisanShopVerificationStatus(
-              result?.data?.artisan_shop_verification_status
-            )
-          );
-          setShopVerificationNote(
-            String(result?.data?.artisan_shop_verification_note || "")
-          );
-          setShopVerificationSubmittedAt(
-            result?.data?.artisan_shop_verification_submitted_at || null
-          );
-          setShopVerificationReviewedAt(
-            result?.data?.artisan_shop_verification_reviewed_at || null
-          );
-          setShopVerificationReviewer(
-            String(result?.data?.artisan_shop_verification_reviewer || "")
-          );
-        }
-      } catch {
-        // ignore fetch errors and keep current role
-      }
-    };
-
-    void syncUserRole();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const googleAccountText = (() => {
     if (!googleBound) return "";
@@ -593,11 +530,6 @@ export function PersonalProfile({ user }: { user: User }) {
       }
 
       setRole("artisan");
-      try {
-        window.localStorage.setItem(USER_ROLE_STORAGE_KEY, "artisan");
-      } catch {
-        // ignore localStorage errors
-      }
       notify("success", canApplyArtisan ? "匠人资料已提交" : "匠人资料已更新");
       setArtisanDialogOpen(false);
     } catch {

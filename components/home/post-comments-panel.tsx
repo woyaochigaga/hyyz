@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { proxifyAvatarUrl } from "@/lib/avatar";
+import {
+  getCachedResource,
+  invalidateCachedResourcePrefix,
+} from "@/lib/client-request-cache";
 import { EyeOff, MessageCircle, Send, Trash2 } from "lucide-react";
 import { HomePost, HomePostComment } from "@/types/home-post";
 import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
@@ -28,6 +32,69 @@ function formatDate(date?: string, locale = "zh") {
 
 function initials(name?: string) {
   return String(name || "").trim().slice(0, 1).toUpperCase() || "U";
+}
+
+function countActiveComments(items: HomePostComment[]): number {
+  return items.reduce(
+    (sum, item) =>
+      sum +
+      (item.status === "active" ? 1 : 0) +
+      countActiveComments(item.replies || []),
+    0
+  );
+}
+
+function insertCommentIntoTree(
+  items: HomePostComment[],
+  comment: HomePostComment
+): HomePostComment[] {
+  const nextComment = {
+    ...comment,
+    replies: comment.replies || [],
+  };
+
+  if (!comment.parent_uuid) {
+    return [nextComment, ...items];
+  }
+
+  return items.map((item) => {
+    if (item.uuid === comment.parent_uuid) {
+      return {
+        ...item,
+        replies: [...(item.replies || []), nextComment],
+      };
+    }
+
+    if (item.replies?.length) {
+      return {
+        ...item,
+        replies: insertCommentIntoTree(item.replies, comment),
+      };
+    }
+
+    return item;
+  });
+}
+
+function updateCommentInTree(
+  items: HomePostComment[],
+  commentUuid: string,
+  updater: (comment: HomePostComment) => HomePostComment
+): HomePostComment[] {
+  return items.map((item) => {
+    if (item.uuid === commentUuid) {
+      return updater(item);
+    }
+
+    if (item.replies?.length) {
+      return {
+        ...item,
+        replies: updateCommentInTree(item.replies, commentUuid, updater),
+      };
+    }
+
+    return item;
+  });
 }
 
 export function PostCommentsPanel({
@@ -57,6 +124,11 @@ export function PostCommentsPanel({
     onCommentCountChangeRef.current = onCommentCountChange;
   }, [onCommentCountChange]);
 
+  const setCommentsAndCount = React.useCallback((nextComments: HomePostComment[]) => {
+    setComments(nextComments);
+    onCommentCountChangeRef.current?.(countActiveComments(nextComments));
+  }, []);
+
   const loadComments = React.useCallback(async () => {
     if (!post?.uuid) return;
     setLoading(true);
@@ -64,22 +136,20 @@ export function PostCommentsPanel({
       const url = isOwner
         ? `/api/home/post/${post.uuid}/comments?manage=1`
         : `/api/home/post/${post.uuid}/comments`;
-      const resp = await fetch(url);
-      const result = await resp.json();
+      const cacheKey = `post-comments:${post.uuid}:${isOwner ? "manage" : "public"}`;
+      const result = await getCachedResource(
+        cacheKey,
+        async () => {
+          const resp = await fetch(url);
+          return resp.json();
+        },
+        {
+          ttlMs: 15 * 1000,
+        }
+      );
       if (result.code === 0) {
         const list = Array.isArray(result.data) ? result.data : [];
-        setComments(list);
-
-        const countActive = (items: HomePostComment[]): number =>
-          items.reduce(
-            (sum, item) =>
-              sum +
-              (item.status === "active" ? 1 : 0) +
-              countActive(item.replies || []),
-            0
-          );
-
-        onCommentCountChangeRef.current?.(countActive(list));
+        setCommentsAndCount(list);
       } else {
         toast.error(result.message || t("feed.comment_load_failed"));
       }
@@ -88,13 +158,13 @@ export function PostCommentsPanel({
     } finally {
       setLoading(false);
     }
-  }, [isOwner, post?.uuid, t]);
+  }, [isOwner, post?.uuid, setCommentsAndCount, t]);
 
   React.useEffect(() => {
     void loadComments();
   }, [loadComments]);
 
-  const submitComment = async () => {
+  const submitComment = React.useCallback(async () => {
     if (!post?.uuid) return;
     if (!currentUserUuid) {
       toast.error(t("feed.login_required"));
@@ -121,15 +191,18 @@ export function PostCommentsPanel({
       if (result.code !== 0) {
         throw new Error(result.message || t("feed.comment_submit_failed"));
       }
+      invalidateCachedResourcePrefix(`post-comments:${post.uuid}:`);
+      if (result.data?.uuid) {
+        setCommentsAndCount(insertCommentIntoTree(comments, result.data as HomePostComment));
+      }
       setContent("");
       setReplyTo(null);
-      await loadComments();
     } catch (error: any) {
       toast.error(error?.message || t("feed.comment_submit_failed"));
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [comments, content, currentUserUuid, post?.uuid, replyTo, setCommentsAndCount, t]);
 
   const patchComment = async (
     commentUuid: string,
@@ -151,7 +224,15 @@ export function PostCommentsPanel({
       if (result.code !== 0) {
         throw new Error(result.message || t("feed.comment_action_failed"));
       }
-      await loadComments();
+      invalidateCachedResourcePrefix(`post-comments:${post.uuid}:`);
+      setCommentsAndCount(
+        updateCommentInTree(comments, commentUuid, (comment) => ({
+          ...comment,
+          ...result.data,
+          author: comment.author,
+          replies: comment.replies || [],
+        }))
+      );
     } catch (error: any) {
       toast.error(error?.message || t("feed.comment_action_failed"));
     }
@@ -170,7 +251,13 @@ export function PostCommentsPanel({
       if (result.code !== 0) {
         throw new Error(result.message || t("feed.comment_action_failed"));
       }
-      await loadComments();
+      invalidateCachedResourcePrefix(`post-comments:${post.uuid}:`);
+      setCommentsAndCount(
+        updateCommentInTree(comments, commentUuid, (comment) => ({
+          ...comment,
+          status: "deleted",
+        }))
+      );
     } catch (error: any) {
       toast.error(error?.message || t("feed.comment_action_failed"));
     }

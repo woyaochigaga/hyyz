@@ -45,6 +45,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { AiChatConversation } from "@/types/ai-chat";
 
 type Role = "user" | "assistant";
 
@@ -73,15 +74,6 @@ type AssistantStreamResult = {
 
 type AssistantReplyResult =
   AssistantStreamResult;
-
-type UserInfoResponse = {
-  code?: number;
-  data?: {
-    uuid?: string;
-    nickname?: string;
-    avatar_url?: string;
-  };
-};
 
 type ChatProfile = {
   uuid: string;
@@ -189,6 +181,16 @@ function mergeConversations(
   }
 
   return Array.from(map.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+function normalizeRemoteConversations(
+  conversations: AiChatConversation[] | undefined
+): Conversation[] {
+  if (!Array.isArray(conversations)) return [];
+
+  return conversations
+    .map((item) => normalizeConversationRecord(item))
+    .filter(Boolean) as Conversation[];
 }
 
 function HistoryPanel({
@@ -443,7 +445,15 @@ function Composer({
   );
 }
 
-export default function AiChatView({ locale }: { locale: string }) {
+export default function AiChatView({
+  locale,
+  initialUser = null,
+  initialRemoteConversations = [],
+}: {
+  locale: string;
+  initialUser?: ChatProfile | null;
+  initialRemoteConversations?: AiChatConversation[];
+}) {
   const t = useTranslations("home");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [desktopHistoryOpen, setDesktopHistoryOpen] = React.useState(true);
@@ -452,8 +462,10 @@ export default function AiChatView({ locale }: { locale: string }) {
   const [input, setInput] = React.useState("");
   const [deepThinking, setDeepThinking] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
-  const [serverUserUuid, setServerUserUuid] = React.useState<string | null>(null);
-  const [currentUser, setCurrentUser] = React.useState<ChatProfile | null>(null);
+  const [serverUserUuid, setServerUserUuid] = React.useState<string | null>(
+    initialUser?.uuid || null
+  );
+  const [currentUser, setCurrentUser] = React.useState<ChatProfile | null>(initialUser);
   const [selectionMode, setSelectionMode] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [expandedReasoningIds, setExpandedReasoningIds] = React.useState<Record<string, boolean>>({});
@@ -546,59 +558,30 @@ export default function AiChatView({ locale }: { locale: string }) {
       }
 
       if (cancelled) return;
+      const remoteConversations = normalizeRemoteConversations(initialRemoteConversations);
+      const mergedConversations = mergeConversations(
+        localConversations,
+        remoteConversations
+      );
+      const nextActiveId = mergedConversations.some(
+        (item) => item.id === localActiveId
+      )
+        ? localActiveId
+        : mergedConversations[0]?.id || null;
 
-      setConversations(localConversations);
-      setActiveId(localActiveId);
+      setConversations(mergedConversations);
+      setActiveId(nextActiveId);
       hydratedRef.current = true;
 
       try {
-        const userResp = await fetch("/api/get-user-info", {
-          method: "POST",
-        });
-        const userResult = (await userResp.json()) as UserInfoResponse;
-        const userUuid = String(userResult?.data?.uuid || "").trim();
-        const nickname = String(userResult?.data?.nickname || "").trim();
-        const avatarUrl = String(userResult?.data?.avatar_url || "").trim();
-
-        if (!userUuid || cancelled) {
+        if (!initialUser || cancelled) {
           setServerUserUuid(null);
           setCurrentUser(null);
           return;
         }
 
-        setServerUserUuid(userUuid);
-        setCurrentUser({
-          uuid: userUuid,
-          nickname: nickname || "User",
-          avatarUrl,
-        });
-
-        const remoteConversations = preferences.syncHistoryToCloud
-          ? await (async () => {
-              const remoteResp = await fetch("/api/home/ai-chat/conversations");
-              const remoteResult = await remoteResp.json();
-              return Array.isArray(remoteResult?.data)
-                ? remoteResult.data
-                    .map((item: any) => normalizeConversationRecord(item))
-                    .filter(Boolean)
-                : [];
-            })()
-          : [];
-
-        if (cancelled) return;
-
-        const mergedConversations = mergeConversations(
-          localConversations,
-          remoteConversations as Conversation[]
-        );
-        const nextActiveId = mergedConversations.some(
-          (item) => item.id === localActiveId
-        )
-          ? localActiveId
-          : mergedConversations[0]?.id || null;
-
-        setConversations(mergedConversations);
-        setActiveId(nextActiveId);
+        setServerUserUuid(initialUser.uuid);
+        setCurrentUser(initialUser);
 
         if (preferences.syncHistoryToCloud && mergedConversations.length > 0) {
           await fetch("/api/home/ai-chat/conversations", {
@@ -638,7 +621,7 @@ export default function AiChatView({ locale }: { locale: string }) {
     return () => {
       cancelled = true;
     };
-  }, [locale, preferences.syncHistoryToCloud, storageKey]);
+  }, [initialRemoteConversations, initialUser, locale, preferences.syncHistoryToCloud, storageKey]);
 
   const persistConversation = React.useCallback(
     async (conversation: Conversation) => {

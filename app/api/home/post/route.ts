@@ -12,21 +12,44 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const mine = searchParams.get("mine") === "1";
+    const includeDeleted = searchParams.get("includeDeleted") === "1";
     const locale = String(searchParams.get("locale") || "").trim();
     const limit = Number.parseInt(String(searchParams.get("limit") || "18"), 10);
+    const offset = Number.parseInt(String(searchParams.get("offset") || "0"), 10);
     const currentUserUuid = mine ? await getUserUuid() : "";
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 18;
+    const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : 0;
 
     if (mine && !currentUserUuid) {
       return respJson(-2, "no auth");
     }
 
-    if (!mine) {
+    if (!mine && safeOffset === 0) {
       const posts = await listPublicHomePostsCached(
         locale,
-        Number.isFinite(limit) && limit > 0 ? limit : 18
+        safeLimit
       );
 
-      return respData(posts);
+      return respData({
+        items: posts,
+        has_more: posts.length >= safeLimit,
+        next_offset: posts.length,
+      });
+    }
+
+    if (!mine) {
+      const posts = await listHomePosts({
+        locale,
+        offset: safeOffset,
+        limit: safeLimit,
+        summaryOnly: true,
+      });
+
+      return respData({
+        items: posts,
+        has_more: posts.length >= safeLimit,
+        next_offset: safeOffset + posts.length,
+      });
     }
 
     const posts = await listHomePosts({
@@ -34,8 +57,9 @@ export async function GET(req: Request) {
       locale,
       user_uuid: mine ? currentUserUuid : undefined,
       includeDraft: mine,
-      includeDeleted: false,
-      limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+      includeDeleted: mine && includeDeleted,
+      limit: safeLimit,
+      offset: safeOffset,
       summaryOnly: !mine,
     });
 

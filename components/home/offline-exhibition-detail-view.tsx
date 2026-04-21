@@ -138,12 +138,14 @@ function Section({
 export function OfflineExhibitionDetailView({
   locale,
   uuid,
+  initialItem = null,
 }: {
   locale: string;
   uuid: string;
+  initialItem?: OfflineExhibition | null;
 }) {
-  const [loading, setLoading] = React.useState(true);
-  const [item, setItem] = React.useState<OfflineExhibition | null>(null);
+  const [loading, setLoading] = React.useState(initialItem === null);
+  const [item, setItem] = React.useState<OfflineExhibition | null>(initialItem);
 
   const loadDetail = React.useCallback(async () => {
     setLoading(true);
@@ -165,8 +167,14 @@ export function OfflineExhibitionDetailView({
   }, [uuid]);
 
   React.useEffect(() => {
+    if (initialItem) {
+      setItem(initialItem);
+      setLoading(false);
+      return;
+    }
+
     void loadDetail();
-  }, [loadDetail]);
+  }, [initialItem, loadDetail]);
 
   if (loading) {
     return (

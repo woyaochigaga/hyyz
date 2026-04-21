@@ -43,7 +43,7 @@ export default async function AdminForumPostsPage({
       className: "text-right",
       callback: (row: ForumPost) => (
         <Link
-          href={`/${locale}/home/forum?post=${encodeURIComponent(row.id)}`}
+          href={`/${locale}/home/forum/post/${encodeURIComponent(row.id)}`}
           className="text-sm text-primary hover:underline"
           target="_blank"
           rel="noreferrer"

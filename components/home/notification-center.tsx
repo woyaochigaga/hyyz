@@ -23,6 +23,10 @@ import {
 import { useAppContext } from "@/contexts/app";
 import { notify } from "@/lib/notify";
 import { cn } from "@/lib/utils";
+import {
+  getCachedResource,
+  invalidateCachedResourcePrefix,
+} from "@/lib/client-request-cache";
 import type { NotificationListItem, NotificationSummary } from "@/types/notification";
 
 type NotificationTab = "all" | "unread" | "system" | "interaction" | "review";
@@ -395,10 +399,18 @@ export function NotificationCenter() {
 
     try {
       setLoadingSummary(true);
-      const resp = await fetch("/api/notifications/summary", {
-        cache: "no-store",
-      });
-      const result = await resp.json();
+      const result = await getCachedResource(
+        `notifications:summary:${user.uuid}`,
+        async () => {
+          const resp = await fetch("/api/notifications/summary", {
+            cache: "no-store",
+          });
+          return resp.json();
+        },
+        {
+          ttlMs: 10 * 1000,
+        }
+      );
       if (result?.code !== 0) {
         setSummary({ unread_count: 0, items: [] });
         return;
@@ -420,10 +432,18 @@ export function NotificationCenter() {
 
       try {
         setLoadingList(true);
-        const resp = await fetch(`/api/notifications?tab=${nextTab}&limit=40`, {
-          cache: "no-store",
-        });
-        const result = await resp.json();
+        const result = await getCachedResource(
+          `notifications:list:${user.uuid}:${nextTab}`,
+          async () => {
+            const resp = await fetch(`/api/notifications?tab=${nextTab}&limit=40`, {
+              cache: "no-store",
+            });
+            return resp.json();
+          },
+          {
+            ttlMs: 10 * 1000,
+          }
+        );
         if (result?.code !== 0) {
           setItems([]);
           return;
@@ -467,20 +487,82 @@ export function NotificationCenter() {
 
   const refreshState = React.useCallback(
     async (withList: boolean) => {
+      if (user?.uuid) {
+        invalidateCachedResourcePrefix(`notifications:summary:${user.uuid}`);
+        invalidateCachedResourcePrefix(`notifications:list:${user.uuid}:`);
+      }
       await fetchSummary();
       if (withList) {
         await fetchList(tab);
       }
     },
-    [fetchList, fetchSummary, tab]
+    [fetchList, fetchSummary, tab, user?.uuid]
   );
+
+  const markItemReadLocally = React.useCallback((targetUuid: string) => {
+    const readAt = new Date().toISOString();
+    setSummary((prev) => {
+      const wasUnread = prev.items.some((item) => item.uuid === targetUuid && !item.read_at);
+      return {
+        unread_count: wasUnread ? Math.max(0, prev.unread_count - 1) : prev.unread_count,
+        items: prev.items.map((item) =>
+          item.uuid === targetUuid ? { ...item, read_at: item.read_at || readAt } : item
+        ),
+      };
+    });
+    setItems((prev) =>
+      prev.map((item) =>
+        item.uuid === targetUuid ? { ...item, read_at: item.read_at || readAt } : item
+      )
+    );
+  }, []);
+
+  const markAllReadLocally = React.useCallback(() => {
+    const readAt = new Date().toISOString();
+    setSummary((prev) => ({
+      unread_count: 0,
+      items: prev.items.map((item) => ({
+        ...item,
+        read_at: item.read_at || readAt,
+      })),
+    }));
+    setItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        read_at: item.read_at || readAt,
+      }))
+    );
+  }, []);
+
+  const removeItemLocally = React.useCallback((targetUuid: string) => {
+    setSummary((prev) => {
+      const removed = prev.items.find((item) => item.uuid === targetUuid);
+      return {
+        unread_count:
+          removed && !removed.read_at ? Math.max(0, prev.unread_count - 1) : prev.unread_count,
+        items: prev.items.filter((item) => item.uuid !== targetUuid),
+      };
+    });
+    setItems((prev) => prev.filter((item) => item.uuid !== targetUuid));
+  }, []);
 
   const openNotification = React.useCallback(
     async (item: NotificationListItem) => {
       if (!ensureSignedIn()) return;
 
-      try {
-        if (!item.read_at) {
+      const nextHref = resolveNotificationHref(item.action_url, locale);
+      router.prefetch(nextHref);
+      setOpen(false);
+      router.push(nextHref);
+
+      if (item.read_at) {
+        return;
+      }
+
+      markItemReadLocally(item.uuid);
+
+      void (async () => {
+        try {
           await fetch("/api/notifications/read", {
             method: "POST",
             headers: {
@@ -490,16 +572,16 @@ export function NotificationCenter() {
               notification_uuids: [item.uuid],
             }),
           });
+          if (user?.uuid) {
+            invalidateCachedResourcePrefix(`notifications:summary:${user.uuid}`);
+            invalidateCachedResourcePrefix(`notifications:list:${user.uuid}:`);
+          }
+        } catch (error) {
+          console.error("mark notification read failed:", error);
         }
-      } catch (error) {
-        console.error("mark notification read failed:", error);
-      }
-
-      await fetchSummary();
-      setOpen(false);
-      router.push(resolveNotificationHref(item.action_url, locale));
+      })();
     },
-    [ensureSignedIn, fetchSummary, locale, router]
+    [ensureSignedIn, locale, markItemReadLocally, router, user?.uuid]
   );
 
   const handleMarkAllRead = React.useCallback(async () => {
@@ -515,13 +597,17 @@ export function NotificationCenter() {
         notify("error", result?.message || copy.notifyMarkAllReadFailed);
         return;
       }
-      await refreshState(true);
+      if (user?.uuid) {
+        invalidateCachedResourcePrefix(`notifications:summary:${user.uuid}`);
+        invalidateCachedResourcePrefix(`notifications:list:${user.uuid}:`);
+      }
+      markAllReadLocally();
     } catch (error) {
       notify("error", copy.notifyMarkAllReadFailed);
     } finally {
       setMarkingAll(false);
     }
-  }, [copy.notifyMarkAllReadFailed, ensureSignedIn, refreshState]);
+  }, [copy.notifyMarkAllReadFailed, ensureSignedIn, markAllReadLocally, user?.uuid]);
 
   const handleMarkOneRead = React.useCallback(
     async (item: NotificationListItem) => {
@@ -555,14 +641,18 @@ export function NotificationCenter() {
           });
           delete justMarkedTimerRef.current[key];
         }, 800);
-        await refreshState(true);
+        if (user?.uuid) {
+          invalidateCachedResourcePrefix(`notifications:summary:${user.uuid}`);
+          invalidateCachedResourcePrefix(`notifications:list:${user.uuid}:`);
+        }
+        markItemReadLocally(item.uuid);
       } catch (error) {
         notify("error", copy.notifyMarkReadFailed);
       } finally {
         setBusyKeys((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [copy.notifyMarkReadFailed, ensureSignedIn, getItemKey, refreshState]
+    [copy.notifyMarkReadFailed, ensureSignedIn, getItemKey, markItemReadLocally, user?.uuid]
   );
 
   const handleDeleteOne = React.useCallback(
@@ -602,14 +692,18 @@ export function NotificationCenter() {
           window.clearTimeout(justMarkedTimerRef.current[key]);
           delete justMarkedTimerRef.current[key];
         }
-        await refreshState(true);
+        if (user?.uuid) {
+          invalidateCachedResourcePrefix(`notifications:summary:${user.uuid}`);
+          invalidateCachedResourcePrefix(`notifications:list:${user.uuid}:`);
+        }
+        removeItemLocally(item.uuid);
       } catch (error) {
         notify("error", copy.notifyDeleteFailed);
       } finally {
         setBusyKeys((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [copy.confirmDelete, copy.notifyDeleteFailed, ensureSignedIn, getItemKey, refreshState]
+    [copy.confirmDelete, copy.notifyDeleteFailed, ensureSignedIn, getItemKey, removeItemLocally, user?.uuid]
   );
 
   const handleToggleExpand = React.useCallback(

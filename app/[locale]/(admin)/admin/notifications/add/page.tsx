@@ -2,7 +2,7 @@ import Empty from "@/components/blocks/empty";
 import FormSlot from "@/components/dashboard/slots/form";
 import { sendSystemMessage } from "@/models/notification";
 import { Form as FormSlotType } from "@/types/slots/form";
-import { getUserInfo } from "@/services/user";
+import { getUserInfo, isAdminUser } from "@/services/user";
 
 export default async function AdminNotificationAddPage({
   params: { locale },
@@ -14,8 +14,7 @@ export default async function AdminNotificationAddPage({
     return <Empty message="请先登录" />;
   }
 
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((item) => item.trim());
-  if (!adminEmails?.includes(user.email)) {
+  if (!isAdminUser(user)) {
     return <Empty message="无权限访问" />;
   }
 

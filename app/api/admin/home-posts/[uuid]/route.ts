@@ -5,17 +5,12 @@ import {
   findHomePostRowByUuid,
   validateHomePostPayload,
 } from "@/models/home-post";
-import { getUserInfo } from "@/services/user";
+import { getAdminUserInfo } from "@/services/user";
 
 async function requireAdmin() {
-  const admin = await getUserInfo();
-  if (!admin?.email) {
+  const admin = await getAdminUserInfo();
+  if (!admin?.uuid) {
     return { error: respJson(-2, "no auth") };
-  }
-
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((s) => s.trim());
-  if (!adminEmails?.includes(admin.email)) {
-    return { error: respErr("No access") };
   }
 
   return { admin };

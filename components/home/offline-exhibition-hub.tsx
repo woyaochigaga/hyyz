@@ -289,16 +289,19 @@ function FormField({
 export function OfflineExhibitionHub({
   locale,
   userRole,
+  initialList,
 }: {
   locale: string;
   userRole?: "user" | "artisan" | "admin";
+  initialList?: OfflineExhibition[];
 }) {
+  const hasInitialList = Array.isArray(initialList);
   const [tab, setTab] = React.useState<HubTab>("apply");
-  const [myList, setMyList] = React.useState<OfflineExhibition[]>([]);
-  const [loadingMine, setLoadingMine] = React.useState(false);
+  const [myList, setMyList] = React.useState<OfflineExhibition[]>(initialList || []);
+  const [loadingMine, setLoadingMine] = React.useState(!hasInitialList);
   const [submitting, setSubmitting] = React.useState(false);
   const [editingUuid, setEditingUuid] = React.useState("");
-  const [authed, setAuthed] = React.useState<boolean | null>(null);
+  const [authed, setAuthed] = React.useState<boolean | null>(true);
   const [form, setForm] = React.useState<ExhibitionFormState>(createEmptyForm());
 
   const loadMyList = React.useCallback(async () => {
@@ -326,8 +329,22 @@ export function OfflineExhibitionHub({
   }, [locale]);
 
   React.useEffect(() => {
+    if (!Array.isArray(initialList)) {
+      return;
+    }
+
+    setMyList(initialList);
+    setLoadingMine(false);
+    setAuthed(true);
+  }, [initialList]);
+
+  React.useEffect(() => {
+    if (Array.isArray(initialList)) {
+      return;
+    }
+
     void loadMyList();
-  }, [loadMyList]);
+  }, [initialList, loadMyList]);
 
   const draftCount = React.useMemo(
     () => myList.filter((item) => item.status === "draft").length,
@@ -343,6 +360,14 @@ export function OfflineExhibitionHub({
     setEditingUuid("");
     setForm(createEmptyForm());
   };
+
+  const upsertMyItem = React.useCallback((item: OfflineExhibition) => {
+    setMyList((current) => [item, ...current.filter((entry) => entry.uuid !== item.uuid)]);
+  }, []);
+
+  const removeMyItem = React.useCallback((uuid: string) => {
+    setMyList((current) => current.filter((entry) => entry.uuid !== uuid));
+  }, []);
 
   const updateForm = <K extends keyof ExhibitionFormState>(
     key: K,
@@ -437,9 +462,9 @@ export function OfflineExhibitionHub({
             : "展览已发布"
       );
 
+      upsertMyItem(result.data as OfflineExhibition);
       resetForm();
       setTab("mine");
-      await loadMyList();
     } catch (error: any) {
       toast.error(error?.message || "保存失败");
     } finally {
@@ -471,7 +496,7 @@ export function OfflineExhibitionHub({
       if (editingUuid === item.uuid) {
         resetForm();
       }
-      await loadMyList();
+      removeMyItem(item.uuid);
     } catch (error: any) {
       toast.error(error?.message || "删除失败");
     }

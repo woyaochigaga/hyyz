@@ -18,6 +18,7 @@ type MyPostsViewProps = {
     avatar_url?: string;
     created_at?: string;
   };
+  initialPosts?: HomePost[];
 };
 
 function formatDate(date?: string, locale = "zh") {
@@ -43,10 +44,11 @@ function getPostUrl(locale: string, uuid?: string) {
   return `/${locale}/home/post/${uuid}`;
 }
 
-export function MyPostsView({ locale, user }: MyPostsViewProps) {
+export function MyPostsView({ locale, user, initialPosts }: MyPostsViewProps) {
   const t = useTranslations("my_invites");
-  const [posts, setPosts] = React.useState<HomePost[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const hasInitialPosts = Array.isArray(initialPosts);
+  const [posts, setPosts] = React.useState<HomePost[]>(initialPosts || []);
+  const [loading, setLoading] = React.useState(!hasInitialPosts);
   const [currentView, setCurrentView] = React.useState<"list" | "trash">("list");
   const [restoringUuid, setRestoringUuid] = React.useState<string>("");
 
@@ -71,8 +73,21 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
   }, []);
 
   React.useEffect(() => {
+    if (!Array.isArray(initialPosts)) {
+      return;
+    }
+
+    setPosts(initialPosts);
+    setLoading(false);
+  }, [initialPosts]);
+
+  React.useEffect(() => {
+    if (Array.isArray(initialPosts)) {
+      return;
+    }
+
     void loadPosts();
-  }, [loadPosts]);
+  }, [initialPosts, loadPosts]);
 
   const activePosts = React.useMemo(
     () => posts.filter((item) => item.status !== "deleted"),
@@ -111,7 +126,17 @@ export function MyPostsView({ locale, user }: MyPostsViewProps) {
       }
 
       toast.success(t("restored"));
-      await loadPosts();
+      setPosts((current) =>
+        current.map((item) =>
+          item.uuid === uuid
+            ? {
+                ...item,
+                ...(result.data || {}),
+                status: result.data?.status || "draft",
+              }
+            : item
+        )
+      );
       setCurrentView("list");
     } catch (error: any) {
       toast.error(error?.message || t("restore_failed"));

@@ -158,7 +158,7 @@ export default async function PublicUserProfilePage({
             {forumPosts.map((post) => (
               <Link
                 key={post.id}
-                href={`/${locale}/home/forum?post=${encodeURIComponent(post.id)}`}
+                href={`/${locale}/home/forum/post/${encodeURIComponent(post.id)}`}
                 className="block rounded-[22px] border border-zinc-200/80 bg-zinc-50/75 px-4 py-4 transition hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-white/15 dark:hover:bg-white/[0.05]"
               >
                 <div className="line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">

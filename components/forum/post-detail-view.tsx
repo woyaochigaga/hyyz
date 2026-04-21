@@ -107,10 +107,6 @@ export function ForumPostDetailView({
     resetReplyDraft();
   }, [postId, resetReplyDraft]);
 
-  React.useEffect(() => {
-    void loadDetail();
-  }, [loadDetail]);
-
   const handleReply = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!activeReplyTarget || replying) return;
@@ -170,7 +166,11 @@ export function ForumPostDetailView({
       <div className="relative flex min-h-full w-full flex-col gap-4 px-2 pb-10 pt-3 sm:px-3 lg:px-4">
         <div className="flex items-center justify-between gap-3">
           <Link
-            href={post.bar ? `/${locale}/home/forum?bar=${encodeURIComponent(post.bar.id)}` : `/${locale}/home/forum`}
+            href={
+              post.bar
+                ? `/${locale}/home/forum/bar/${encodeURIComponent(post.bar.id)}`
+                : `/${locale}/home/forum`
+            }
             className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/70 px-3.5 py-2 text-sm font-medium text-zinc-700 transition hover:bg-white dark:border-white/10 dark:bg-white/8 dark:text-zinc-200 dark:hover:bg-white/12"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -192,7 +192,7 @@ export function ForumPostDetailView({
           <div className="flex flex-wrap items-center gap-2">
             {post.bar ? (
               <Link
-                href={`/${locale}/home/forum?bar=${encodeURIComponent(post.bar.id)}`}
+                href={`/${locale}/home/forum/bar/${encodeURIComponent(post.bar.id)}`}
                 className="rounded-full bg-primary/[0.12] px-2.5 py-1 text-xs font-medium text-primary dark:bg-primary/[0.18] dark:text-primary"
               >
                 {post.bar.name}

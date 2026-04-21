@@ -28,6 +28,7 @@ import {
 } from "@/lib/artisan-shop";
 import { proxifyAvatarUrl } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
+import { getCachedResource } from "@/lib/client-request-cache";
 import type { PublicUserProfile } from "@/types/user";
 
 function initials(name?: string) {
@@ -353,10 +354,18 @@ export function UserPublicProfileTrigger({
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const resp = await fetch(`/api/users/${userUuid}/public-profile`, {
-          cache: "no-store",
-        });
-        const result = await resp.json();
+        const result = await getCachedResource(
+          `public-profile:${userUuid}`,
+          async () => {
+            const resp = await fetch(`/api/users/${userUuid}/public-profile`, {
+              cache: "no-store",
+            });
+            return resp.json();
+          },
+          {
+            ttlMs: 60 * 1000,
+          }
+        );
         if (!cancelled) {
           setProfile(result?.code === 0 ? result.data || null : null);
         }

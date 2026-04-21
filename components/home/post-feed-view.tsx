@@ -8,10 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { proxifyAvatarUrl } from "@/lib/avatar";
 import { getHomePostExcerpt } from "@/lib/home-post-content";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   FileImage,
   FileText,
   Heart,
+  Loader2,
   MessageCircle,
   Sparkles,
   Video,
@@ -21,6 +23,15 @@ import { PostMediaGallery } from "@/components/home/post-media-gallery";
 import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
 
 type TypeFilter = "all" | "text" | "image" | "video";
+type FeedResponse = {
+  items?: HomePost[];
+  has_more?: boolean;
+  next_offset?: number;
+};
+
+const PAGE_SIZE = 18;
+const VIRTUAL_ROW_HEIGHT = 332;
+const VIRTUAL_OVERSCAN_ROWS = 2;
 
 function formatDate(date?: string, locale = "zh") {
   if (!date) return "";
@@ -85,6 +96,46 @@ function getTextCardTone(index: number) {
   return tones[index % tones.length];
 }
 
+function splitIntoRows(posts: HomePost[], columns: number) {
+  const rows: HomePost[][] = [];
+
+  for (let index = 0; index < posts.length; index += columns) {
+    rows.push(posts.slice(index, index + columns));
+  }
+
+  return rows;
+}
+
+function parseFeedPayload(payload: unknown): FeedResponse {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      has_more: payload.length >= PAGE_SIZE,
+      next_offset: payload.length,
+    };
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return {
+      items: [],
+      has_more: false,
+      next_offset: 0,
+    };
+  }
+
+  const data = payload as FeedResponse;
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  return {
+    items,
+    has_more: Boolean(data.has_more),
+    next_offset:
+      typeof data.next_offset === "number" && data.next_offset >= 0
+        ? data.next_offset
+        : items.length,
+  };
+}
+
 export function HomePostFeedView({
   locale,
   initialPosts = [],
@@ -94,18 +145,29 @@ export function HomePostFeedView({
 }) {
   const router = useRouter();
   const t = useTranslations("home");
+  const isDesktop = useMediaQuery("(min-width: 1280px)");
+  const isTablet = useMediaQuery("(min-width: 640px)");
   const [posts, setPosts] = React.useState<HomePost[]>(initialPosts);
   const [loading, setLoading] = React.useState(initialPosts.length === 0);
+  const [loadingMore, setLoadingMore] = React.useState(false);
+  const [hasMore, setHasMore] = React.useState(initialPosts.length >= PAGE_SIZE);
+  const [nextOffset, setNextOffset] = React.useState(initialPosts.length);
   const [currentType, setCurrentType] = React.useState<TypeFilter>("all");
   const [currentTag, setCurrentTag] = React.useState("all");
+  const [visibleRange, setVisibleRange] = React.useState({ start: 0, end: 8 });
+  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
+  const listRef = React.useRef<HTMLDivElement | null>(null);
 
   const loadFeed = React.useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await fetch(`/api/home/post?locale=${locale}&limit=18`);
+      const resp = await fetch(`/api/home/post?locale=${locale}&limit=${PAGE_SIZE}`);
       const result = await resp.json();
       if (result.code === 0) {
-        setPosts(Array.isArray(result.data) ? result.data : []);
+        const payload = parseFeedPayload(result.data);
+        setPosts(payload.items || []);
+        setHasMore(Boolean(payload.has_more));
+        setNextOffset(payload.next_offset || 0);
       } else {
         toast.error(result.message || t("feed.load_failed"));
       }
@@ -116,9 +178,51 @@ export function HomePostFeedView({
     }
   }, [locale, t]);
 
+  const loadMore = React.useCallback(async () => {
+    if (loading || loadingMore || !hasMore) {
+      return;
+    }
+
+    setLoadingMore(true);
+    try {
+      const resp = await fetch(
+        `/api/home/post?locale=${locale}&limit=${PAGE_SIZE}&offset=${nextOffset}`
+      );
+      const result = await resp.json();
+      if (result.code !== 0) {
+        toast.error(result.message || t("feed.load_failed"));
+        return;
+      }
+
+      const payload = parseFeedPayload(result.data);
+      const nextItems = payload.items || [];
+      setPosts((current) => {
+        const seen = new Set(current.map((item) => item.uuid));
+        const merged = [...current];
+        for (const item of nextItems) {
+          if (seen.has(item.uuid)) {
+            continue;
+          }
+          seen.add(item.uuid);
+          merged.push(item);
+        }
+        return merged;
+      });
+      setHasMore(Boolean(payload.has_more));
+      setNextOffset(payload.next_offset || nextOffset + nextItems.length);
+    } catch {
+      toast.error(t("feed.load_failed"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loading, loadingMore, locale, nextOffset, t]);
+
   React.useEffect(() => {
     setPosts(initialPosts);
     setLoading(initialPosts.length === 0);
+    setLoadingMore(false);
+    setHasMore(initialPosts.length >= PAGE_SIZE);
+    setNextOffset(initialPosts.length);
   }, [initialPosts]);
 
   React.useEffect(() => {
@@ -167,6 +271,102 @@ export function HomePostFeedView({
         : filteredPosts,
     [featuredIndex, filteredPosts]
   );
+  const columnCount = isDesktop ? 3 : isTablet ? 2 : 1;
+  const visibleRestRows = React.useMemo(
+    () => splitIntoRows(restPosts, columnCount),
+    [columnCount, restPosts]
+  );
+
+  React.useEffect(() => {
+    setVisibleRange({ start: 0, end: 8 });
+  }, [columnCount, currentTag, currentType, featuredIndex, filteredPosts.length]);
+
+  React.useEffect(() => {
+    const node = listRef.current;
+    if (!node || !restPosts.length) {
+      return;
+    }
+
+    const measure = () => {
+      const rect = node.getBoundingClientRect();
+      const viewportTop = window.scrollY;
+      const sectionTop = rect.top + viewportTop;
+      const scrollTop = window.scrollY;
+      const viewportBottom = scrollTop + window.innerHeight;
+      const relativeTop = Math.max(0, scrollTop - sectionTop);
+      const relativeBottom = Math.max(0, viewportBottom - sectionTop);
+      const start = Math.max(
+        0,
+        Math.floor(relativeTop / VIRTUAL_ROW_HEIGHT) - VIRTUAL_OVERSCAN_ROWS
+      );
+      const end = Math.min(
+        visibleRestRows.length,
+        Math.ceil(relativeBottom / VIRTUAL_ROW_HEIGHT) + VIRTUAL_OVERSCAN_ROWS
+      );
+
+      setVisibleRange((current) =>
+        current.start === start && current.end === end ? current : { start, end }
+      );
+    };
+
+    measure();
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
+
+    return () => {
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+    };
+  }, [restPosts.length, visibleRestRows.length]);
+
+  React.useEffect(() => {
+    const observerTarget = loadMoreRef.current;
+    if (!observerTarget || !hasMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMore();
+        }
+      },
+      {
+        rootMargin: "900px 0px",
+      }
+    );
+
+    observer.observe(observerTarget);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
+
+  const visiblePosts = React.useMemo(() => {
+    const items = new Map<string, HomePost>();
+    if (featuredPost) {
+      items.set(featuredPost.uuid, featuredPost);
+    }
+
+    for (const row of visibleRestRows.slice(visibleRange.start, visibleRange.end)) {
+      for (const post of row) {
+        items.set(post.uuid, post);
+      }
+    }
+
+    return Array.from(items.values());
+  }, [featuredPost, visibleRange.end, visibleRange.start, visibleRestRows]);
+
+  React.useEffect(() => {
+    visiblePosts.forEach((post) => {
+      router.prefetch(getPostHref(locale, post.uuid));
+    });
+  }, [locale, router, visiblePosts]);
+
+  const topSpacerHeight = visibleRange.start * VIRTUAL_ROW_HEIGHT;
+  const bottomSpacerHeight = Math.max(
+    0,
+    (visibleRestRows.length - visibleRange.end) * VIRTUAL_ROW_HEIGHT
+  );
+  const visibleRows = visibleRestRows.slice(visibleRange.start, visibleRange.end);
 
   return (
     <>
@@ -247,12 +447,7 @@ export function HomePostFeedView({
             </p>
           </div>
         ) : (
-          <div
-            className={cn(
-              "grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
-              useFeaturedLayout ? "xl:auto-rows-[310px]" : "[grid-auto-rows:1fr]"
-            )}
-          >
+          <div className="space-y-4">
             {useFeaturedLayout && featuredPost ? (
               <article
                 key={`featured-${featuredPost.uuid}`}
@@ -260,6 +455,7 @@ export function HomePostFeedView({
                 role="link"
                 tabIndex={0}
                 onClick={() => router.push(getPostHref(locale, featuredPost.uuid))}
+                onMouseEnter={() => router.prefetch(getPostHref(locale, featuredPost.uuid))}
                 onKeyDown={(event) => {
                   if (event.key !== "Enter" && event.key !== " ") {
                     return;
@@ -303,126 +499,158 @@ export function HomePostFeedView({
                 </div>
               </article>
             ) : null}
+            <div ref={listRef}>
+              {topSpacerHeight > 0 ? (
+                <div style={{ height: topSpacerHeight }} aria-hidden />
+              ) : null}
 
-            {restPosts.map((post, index) => {
-              const shellIndex = index + 1;
-              const cardContent = (
-                <>
-                  {post.type === "text" ? (
-                    <div
-                      className={cn(
-                        "relative flex aspect-[2/1] flex-col overflow-hidden rounded-[18px] px-3 pb-3 pt-2.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] sm:aspect-[16/10] sm:px-4 sm:pb-4 sm:pt-3 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]",
-                        getTextCardTone(shellIndex)
-                      )}
-                    >
-                      <div
-                        className="pointer-events-none absolute inset-y-3 left-0 w-[3px] rounded-full bg-[linear-gradient(180deg,#78716c,#57534e)] opacity-90 dark:opacity-80"
-                        aria-hidden
-                      />
-                      <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-stone-400/[0.08] blur-2xl dark:bg-zinc-500/[0.06]" />
-                      <div className="mb-3 flex items-center gap-2 pl-1">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/96 px-2.5 py-1 text-[11px] font-medium text-stone-800 shadow-[0_2px_6px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:bg-zinc-800/70 dark:text-zinc-200">
-                          <FileText className="h-3.5 w-3.5 shrink-0 opacity-80" />
-                          {t("feed.text_card_badge")}
-                        </span>
-                      </div>
-                      <p className="line-clamp-4 pl-1 text-[14px] font-normal leading-[1.7] tracking-[-0.01em] text-stone-800 dark:text-stone-100">
-                        {post.excerpt || post.title || ""}
-                      </p>
-                    </div>
-                  ) : (
-                    <PostMediaGallery
-                      post={post}
-                      className="overflow-hidden rounded-[18px]"
-                      aspectClassName="aspect-video sm:aspect-[16/10]"
-                      showBadge={false}
-                      preferVideoPlayback={false}
-                      imageFit="contain"
-                    />
-                  )}
-
-                  <article className="flex flex-1 flex-col justify-between px-1 pb-1 pt-2">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2.5">
-                        <UserPublicProfileTrigger userUuid={post.author?.uuid || post.user_uuid}>
-                          <Avatar className="h-8 w-8 shrink-0 border border-black/5 dark:border-white/10">
-                            <AvatarImage
-                              src={proxifyAvatarUrl(post.author?.avatar_url) || undefined}
-                              alt={post.author?.nickname || "User"}
-                            />
-                            <AvatarFallback>{initials(post.author?.nickname)}</AvatarFallback>
-                          </Avatar>
-                        </UserPublicProfileTrigger>
-                        <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                          <UserPublicProfileTrigger userUuid={post.author?.uuid || post.user_uuid}>
-                            <div className="truncate text-[13px] font-semibold text-zinc-900 dark:text-white">
-                              {post.author?.nickname || t("feed.unknown_author")}
-                            </div>
-                          </UserPublicProfileTrigger>
-                          <div className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
-                            <span className="inline-flex items-center gap-1.5">
-                              <Heart className="h-3.5 w-3.5" />
-                              {post.like_count || 0}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5">
-                              <MessageCircle className="h-3.5 w-3.5" />
-                              {post.comment_count || 0}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {post.type === "text" || post.type === "image" ? (
-                        <div>
-                          <h3
-                            className="line-clamp-1 text-[14px] font-semibold leading-5 tracking-[-0.01em] text-stone-900 transition-colors group-hover:text-stone-950 dark:text-stone-50 dark:group-hover:text-white"
-                          >
-                            {post.title || t("feed.untitled")}
-                          </h3>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    {post.type === "text" && (post.tags || []).length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {(post.tags || []).slice(0, 3).map((tag) => (
-                          <span
-                            key={`${post.uuid}-${tag}`}
-                            className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-stone-700 shadow-[0_2px_6px_rgba(15,23,42,0.06)] dark:bg-zinc-800 dark:text-zinc-100"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                  </article>
-                </>
-              );
-
-              return (
-                <article
-                  key={post.uuid}
-                  aria-label={post.title || t("feed.view_detail")}
-                  role="link"
-                  tabIndex={0}
-                  onClick={() => router.push(getPostHref(locale, post.uuid))}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") {
-                      return;
-                    }
-                    event.preventDefault();
-                    router.push(getPostHref(locale, post.uuid));
-                  }}
-                  className={cn(
-                    "group flex min-h-0 flex-col rounded-[20px] p-2 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.075)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 max-sm:min-h-[220px] sm:min-h-[260px] xl:min-h-[300px]",
-                    useFeaturedLayout && "xl:h-full xl:min-h-0",
-                    getWorldCardShell(post)
-                  )}
+              {visibleRows.map((row, rowIndex) => (
+                <div
+                  key={`row-${visibleRange.start + rowIndex}`}
+                  className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
                 >
-                  {cardContent}
-                </article>
-              );
-            })}
+                  {row.map((post, columnIndex) => {
+                    const shellIndex =
+                      (visibleRange.start + rowIndex) * columnCount + columnIndex + 1;
+                    const cardContent = (
+                      <>
+                        {post.type === "text" ? (
+                          <div
+                            className={cn(
+                              "relative flex aspect-[2/1] flex-col overflow-hidden rounded-[18px] px-3 pb-3 pt-2.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] sm:aspect-[16/10] sm:px-4 sm:pb-4 sm:pt-3 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]",
+                              getTextCardTone(shellIndex)
+                            )}
+                          >
+                            <div
+                              className="pointer-events-none absolute inset-y-3 left-0 w-[3px] rounded-full bg-[linear-gradient(180deg,#78716c,#57534e)] opacity-90 dark:opacity-80"
+                              aria-hidden
+                            />
+                            <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-stone-400/[0.08] blur-2xl dark:bg-zinc-500/[0.06]" />
+                            <div className="mb-3 flex items-center gap-2 pl-1">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/96 px-2.5 py-1 text-[11px] font-medium text-stone-800 shadow-[0_2px_6px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:bg-zinc-800/70 dark:text-zinc-200">
+                                <FileText className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                                {t("feed.text_card_badge")}
+                              </span>
+                            </div>
+                            <p className="line-clamp-4 pl-1 text-[14px] font-normal leading-[1.7] tracking-[-0.01em] text-stone-800 dark:text-stone-100">
+                              {post.excerpt || post.title || ""}
+                            </p>
+                          </div>
+                        ) : (
+                          <PostMediaGallery
+                            post={post}
+                            className="overflow-hidden rounded-[18px]"
+                            aspectClassName="aspect-video sm:aspect-[16/10]"
+                            showBadge={false}
+                            preferVideoPlayback={false}
+                            imageFit="contain"
+                          />
+                        )}
+
+                        <article className="flex flex-1 flex-col justify-between px-1 pb-1 pt-2">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2.5">
+                              <UserPublicProfileTrigger
+                                userUuid={post.author?.uuid || post.user_uuid}
+                              >
+                                <Avatar className="h-8 w-8 shrink-0 border border-black/5 dark:border-white/10">
+                                  <AvatarImage
+                                    src={proxifyAvatarUrl(post.author?.avatar_url) || undefined}
+                                    alt={post.author?.nickname || "User"}
+                                  />
+                                  <AvatarFallback>
+                                    {initials(post.author?.nickname)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </UserPublicProfileTrigger>
+                              <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                                <UserPublicProfileTrigger
+                                  userUuid={post.author?.uuid || post.user_uuid}
+                                >
+                                  <div className="truncate text-[13px] font-semibold text-zinc-900 dark:text-white">
+                                    {post.author?.nickname || t("feed.unknown_author")}
+                                  </div>
+                                </UserPublicProfileTrigger>
+                                <div className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <Heart className="h-3.5 w-3.5" />
+                                    {post.like_count || 0}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    {post.comment_count || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {post.type === "text" || post.type === "image" ? (
+                              <div>
+                                <h3
+                                  className="line-clamp-1 text-[14px] font-semibold leading-5 tracking-[-0.01em] text-stone-900 transition-colors group-hover:text-stone-950 dark:text-stone-50 dark:group-hover:text-white"
+                                >
+                                  {post.title || t("feed.untitled")}
+                                </h3>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          {post.type === "text" && (post.tags || []).length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {(post.tags || []).slice(0, 3).map((tag) => (
+                                <span
+                                  key={`${post.uuid}-${tag}`}
+                                  className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-stone-700 shadow-[0_2px_6px_rgba(15,23,42,0.06)] dark:bg-zinc-800 dark:text-zinc-100"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </article>
+                      </>
+                    );
+
+                    return (
+                      <article
+                        key={post.uuid}
+                        aria-label={post.title || t("feed.view_detail")}
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => router.push(getPostHref(locale, post.uuid))}
+                        onMouseEnter={() => router.prefetch(getPostHref(locale, post.uuid))}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" && event.key !== " ") {
+                            return;
+                          }
+                          event.preventDefault();
+                          router.push(getPostHref(locale, post.uuid));
+                        }}
+                        className={cn(
+                          "group mb-4 flex min-h-0 flex-col rounded-[20px] p-2 shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.075)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 max-sm:min-h-[220px] sm:min-h-[260px] xl:min-h-[300px]",
+                          getWorldCardShell(post)
+                        )}
+                      >
+                        {cardContent}
+                      </article>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {bottomSpacerHeight > 0 ? (
+                <div style={{ height: bottomSpacerHeight }} aria-hidden />
+              ) : null}
+            </div>
+
+            <div ref={loadMoreRef} className="flex min-h-10 items-center justify-center">
+              {loadingMore ? (
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs text-zinc-500 shadow-[0_6px_18px_rgba(15,23,42,0.06)] dark:bg-white/[0.05] dark:text-zinc-300">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  正在加载更多内容
+                </div>
+              ) : null}
+            </div>
           </div>
         )}
       </div>

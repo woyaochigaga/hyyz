@@ -89,3 +89,39 @@ export async function getUserInfo() {
 
   return user;
 }
+
+function getAdminEmailWhitelist() {
+  return String(process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isAdminUser(
+  user?: Pick<User, "role" | "email"> | null
+) {
+  if (!user) {
+    return false;
+  }
+
+  if (user.role === "admin") {
+    return true;
+  }
+
+  const currentEmail = String(user.email || "").trim().toLowerCase();
+  if (!currentEmail) {
+    return false;
+  }
+
+  return getAdminEmailWhitelist().includes(currentEmail);
+}
+
+export async function getAdminUserInfo() {
+  const user = await getUserInfo();
+
+  if (!isAdminUser(user)) {
+    return;
+  }
+
+  return user;
+}

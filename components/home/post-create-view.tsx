@@ -48,6 +48,24 @@ type MyPost = {
   created_at?: string;
 };
 
+function normalizeMyPost(input: any): MyPost {
+  return {
+    uuid: String(input?.uuid || ""),
+    type: (input?.type || "text") as CreatorType,
+    title: String(input?.title || ""),
+    excerpt: String(input?.excerpt || ""),
+    content: String(input?.content || ""),
+    cover_url: String(input?.cover_url || ""),
+    images: Array.isArray(input?.images) ? input.images.map((item: any) => String(item || "")) : [],
+    video_url: String(input?.video_url || ""),
+    tags: Array.isArray(input?.tags) ? input.tags.map((item: any) => String(item || "")) : [],
+    like_count: Number(input?.like_count || 0),
+    comment_count: Number(input?.comment_count || 0),
+    status: String(input?.status || ""),
+    created_at: String(input?.created_at || ""),
+  };
+}
+
 const typeOptions: Array<{
   value: CreatorType;
   title: string;
@@ -96,7 +114,13 @@ function AiBeautifyTrigger({
   );
 }
 
-export function PostCreateView({ locale }: { locale: string }) {
+export function PostCreateView({
+  locale,
+  initialPosts = [],
+}: {
+  locale: string;
+  initialPosts?: MyPost[];
+}) {
   const [type, setType] = React.useState<CreatorType>("text");
   const [title, setTitle] = React.useState("");
   const [excerpt, setExcerpt] = React.useState("");
@@ -105,8 +129,8 @@ export function PostCreateView({ locale }: { locale: string }) {
   const [videoUrl, setVideoUrl] = React.useState("");
   const [tagsInput, setTagsInput] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
-  const [posts, setPosts] = React.useState<MyPost[]>([]);
-  const [loadingPosts, setLoadingPosts] = React.useState(true);
+  const [posts, setPosts] = React.useState<MyPost[]>(initialPosts);
+  const [loadingPosts, setLoadingPosts] = React.useState(initialPosts.length === 0);
   const [editingDraftId, setEditingDraftId] = React.useState<string | null>(null);
   const [activeDrawer, setActiveDrawer] = React.useState<DrawerMode | null>(null);
   const [assistField, setAssistField] = React.useState<HomePostAiTargetField>("combined");
@@ -130,8 +154,25 @@ export function PostCreateView({ locale }: { locale: string }) {
   }, [locale]);
 
   React.useEffect(() => {
+    setPosts(initialPosts);
+    setLoadingPosts(initialPosts.length === 0);
+  }, [initialPosts]);
+
+  React.useEffect(() => {
+    if (initialPosts.length > 0) {
+      return;
+    }
+
     void loadMyPosts();
-  }, [loadMyPosts]);
+  }, [initialPosts.length, loadMyPosts]);
+
+  const upsertPostLocally = React.useCallback((nextPost: MyPost) => {
+    setPosts((prev) => [nextPost, ...prev.filter((item) => item.uuid !== nextPost.uuid)]);
+  }, []);
+
+  const removePostLocally = React.useCallback((uuid: string) => {
+    setPosts((prev) => prev.filter((item) => item.uuid !== uuid));
+  }, []);
 
   const resetForm = () => {
     setTitle("");
@@ -219,15 +260,16 @@ export function PostCreateView({ locale }: { locale: string }) {
         );
       }
 
+      const savedPost = normalizeMyPost(result.data || {});
+      upsertPostLocally(savedPost);
+
       if (status === "draft") {
-        setEditingDraftId(result.data?.uuid || editingDraftId);
+        setEditingDraftId(savedPost.uuid || editingDraftId);
         toast.success("草稿已保存");
       } else {
         toast.success("作品已发布");
         resetForm();
       }
-
-      await loadMyPosts();
     } catch (error: any) {
       toast.error(
         error?.message || (status === "draft" ? "保存草稿失败" : "发布失败")
@@ -265,7 +307,7 @@ export function PostCreateView({ locale }: { locale: string }) {
       if (editingDraftId === uuid) {
         resetForm();
       }
-      await loadMyPosts();
+      removePostLocally(uuid);
     } catch (error: any) {
       toast.error(error?.message || "删除失败");
     }

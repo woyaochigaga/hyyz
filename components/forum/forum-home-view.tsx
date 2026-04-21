@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Home, Plus, Users } from "lucide-react";
 import { ForumBar, ForumPost, ForumPostDetail } from "@/types/forum";
@@ -38,6 +39,7 @@ export function ForumHomeView({
   initialBarId?: string;
   initialPostId?: string;
 }) {
+  const router = useRouter();
   const isZh = locale.startsWith("zh");
   const [bars, setBars] = React.useState(initialBars);
   const [posts, setPosts] = React.useState(initialPosts);
@@ -81,6 +83,15 @@ export function ForumHomeView({
   React.useEffect(() => {
     if (!selectedBarId && bars[0]?.id) setSelectedBarId(bars[0].id);
   }, [bars, selectedBarId]);
+
+  React.useEffect(() => {
+    bars.forEach((bar) => {
+      router.prefetch(`/${locale}/home/forum/bar/${encodeURIComponent(bar.id)}`);
+    });
+    posts.forEach((post) => {
+      router.prefetch(`/${locale}/home/forum/post/${encodeURIComponent(post.id)}`);
+    });
+  }, [bars, locale, posts, router]);
 
   React.useEffect(() => {
     const syncSelectedBarFromHash = () => {
@@ -288,6 +299,23 @@ export function ForumHomeView({
     );
   }, []);
 
+  const navigateToBar = React.useCallback(
+    (barId: string) => {
+      if (!barId) return;
+      setSelectedBarId(barId);
+      router.push(`/${locale}/home/forum/bar/${encodeURIComponent(barId)}`);
+    },
+    [locale, router]
+  );
+
+  const navigateToPost = React.useCallback(
+    (postId: string) => {
+      if (!postId) return;
+      router.push(`/${locale}/home/forum/post/${encodeURIComponent(postId)}`);
+    },
+    [locale, router]
+  );
+
   const handleCreatePost = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmittingPost(true);
@@ -313,9 +341,7 @@ export function ForumHomeView({
       setPostDialogOpen(false);
       toast.success(isZh ? "帖子已发布" : "Post published");
       handlePostCreated(result.data as ForumPost);
-      void openPostView(result.data.id, {
-        returnBarId: selectedBarId,
-      });
+      navigateToPost(result.data.id);
     } catch (error: any) {
       toast.error(error?.message || (isZh ? "发帖失败" : "Failed to publish"));
     } finally {
@@ -350,7 +376,7 @@ export function ForumHomeView({
       const createdBar = result.data as ForumBar;
       setBars((current) => [createdBar, ...current.filter((item) => item.id !== createdBar.id)]);
       setSelectedBarId(createdBar.id);
-      void openBarView(createdBar.id);
+      navigateToBar(createdBar.id);
     } catch (error: any) {
       toast.error(error?.message || (isZh ? "创建吧失败" : "Failed to create bar"));
     } finally {
@@ -553,7 +579,7 @@ export function ForumHomeView({
                           leftBarItemRefs.current[bar.id] = node;
                         }}
                         type="button"
-                        onClick={() => void openBarView(bar.id)}
+                        onClick={() => navigateToBar(bar.id)}
                         className={cn(
                           "relative z-10 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-foreground transition",
                           selectedBarId === bar.id
@@ -614,12 +640,12 @@ export function ForumHomeView({
                 initialDetail={activePostDetail}
                 onBack={() => {
                   if (postReturnBarId) {
-                    void openBarView(postReturnBarId);
+                    navigateToBar(postReturnBarId);
                     return;
                   }
                   openHomeView();
                 }}
-                onOpenBar={(barId) => void openBarView(barId)}
+                onOpenBar={navigateToBar}
                 onPostChange={handlePostChange}
               />
             ) : view === "bar" && activeBarDetail ? (
@@ -628,9 +654,7 @@ export function ForumHomeView({
                 initialBar={activeBarDetail.bar}
                 initialPosts={activeBarDetail.posts}
                 onBack={openHomeView}
-                onOpenPost={(post) =>
-                  void openPostView(post.id, { returnBarId: activeBarDetail.bar.id })
-                }
+                onOpenPost={(post) => navigateToPost(post.id)}
                 onPostChange={handlePostChange}
                 onPostCreated={handlePostCreated}
               />
@@ -656,7 +680,7 @@ export function ForumHomeView({
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => void openBarView(item.id)}
+                        onClick={() => navigateToBar(item.id)}
                         className={cn(
                           "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
                           item.followed
@@ -717,7 +741,7 @@ export function ForumHomeView({
                             <div className="min-w-0 flex-1">
                               <button
                                 type="button"
-                                onClick={() => void openBarView(bar.id)}
+                                onClick={() => navigateToBar(bar.id)}
                                 className="block w-full truncate text-left text-sm font-semibold hover:text-primary"
                               >
                                 {bar.name}
@@ -764,7 +788,7 @@ export function ForumHomeView({
 
                             <button
                               type="button"
-                              onClick={() => void openBarView(bar.id)}
+                              onClick={() => navigateToBar(bar.id)}
                               className="inline-flex w-fit items-center text-sm font-medium text-primary hover:underline"
                             >
                               {isZh ? "进入这个吧" : "Enter bar"}
@@ -814,9 +838,7 @@ export function ForumHomeView({
                           featured={index === 0}
                           layout="split"
                           href={null}
-                          onOpenPost={(item) =>
-                            void openPostView(item.id, { returnBarId: item.bar?.id || "" })
-                          }
+                          onOpenPost={(item) => navigateToPost(item.id)}
                           onPostChange={handlePostChange}
                         />
                       ))}
@@ -842,7 +864,7 @@ export function ForumHomeView({
                       <div className="min-w-0">
                         <button
                           type="button"
-                          onClick={() => void openBarView(bar.id)}
+                          onClick={() => navigateToBar(bar.id)}
                           className="truncate text-left text-sm font-semibold hover:underline"
                         >
                           {bar.name}

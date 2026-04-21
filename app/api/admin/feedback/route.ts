@@ -1,16 +1,11 @@
 import { respData, respErr, respJson } from "@/lib/resp";
 import { listFeedbackItemsForAdmin } from "@/models/feedback";
-import { getUserInfo } from "@/services/user";
+import { getAdminUserInfo } from "@/services/user";
 
 async function requireAdmin() {
-  const admin = await getUserInfo();
-  if (!admin?.email) {
+  const admin = await getAdminUserInfo();
+  if (!admin?.uuid) {
     return { error: respJson(-2, "no auth") };
-  }
-
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((item) => item.trim());
-  if (!adminEmails?.includes(admin.email)) {
-    return { error: respErr("No access") };
   }
 
   return { admin };

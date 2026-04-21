@@ -1,4 +1,7 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { ForumBarView } from "@/components/forum/bar-view";
+import { findForumBarById, listForumPostsByBarId } from "@/models/forum";
+import { getUserUuid } from "@/services/user";
 
 export const dynamic = "force-dynamic";
 
@@ -7,5 +10,21 @@ export default async function ForumBarPage({
 }: {
   params: { locale: string; id: string };
 }) {
-  redirect(`/${params.locale}/home/forum?bar=${encodeURIComponent(params.id)}`);
+  const currentUserUuid = await getUserUuid();
+  const [bar, posts] = await Promise.all([
+    findForumBarById(params.id, currentUserUuid),
+    listForumPostsByBarId(params.id, currentUserUuid, 50),
+  ]);
+
+  if (!bar) {
+    notFound();
+  }
+
+  return (
+    <ForumBarView
+      locale={params.locale}
+      initialBar={bar}
+      initialPosts={posts}
+    />
+  );
 }

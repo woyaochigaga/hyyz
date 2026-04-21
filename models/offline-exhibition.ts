@@ -843,6 +843,7 @@ export async function listOfflineExhibitions(params?: {
   city?: string;
   q?: string;
   limit?: number;
+  offset?: number;
   summaryOnly?: boolean;
 }) {
   const searchFields = [
@@ -904,7 +905,14 @@ export async function listOfflineExhibitions(params?: {
     );
   }
 
-  if (typeof params?.limit === "number" && params.limit > 0) {
+  if (typeof params?.offset === "number" && params.offset > 0) {
+    const from = params.offset;
+    const to =
+      typeof params?.limit === "number" && params.limit > 0
+        ? params.offset + params.limit - 1
+        : params.offset + 999;
+    query = query.range(from, to);
+  } else if (typeof params?.limit === "number" && params.limit > 0) {
     query = query.limit(params.limit);
   }
 

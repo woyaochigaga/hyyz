@@ -3,10 +3,12 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
 import { toast } from "sonner";
 import {
   CalendarDays,
+  Loader2,
   LocateFixed,
   MapPin,
   Search,
@@ -23,6 +25,14 @@ import type {
   OfflineExhibitionAdmissionType,
   OfflineExhibitionStatus,
 } from "@/types/offline-exhibition";
+
+const PAGE_SIZE = 18;
+
+type ExhibitionFeedResponse = {
+  items?: OfflineExhibition[];
+  has_more?: boolean;
+  next_offset?: number;
+};
 
 function formatDisplayDate(start?: string, end?: string) {
   if (!start && !end) return "时间待定";
@@ -94,6 +104,36 @@ function buildMapUrl(exhibition: OfflineExhibition) {
   return `https://uri.amap.com/search?keyword=${name}%20${address}&src=hangyi&coordinate=gaode&callnative=0`;
 }
 
+function parseExhibitionPayload(payload: unknown): ExhibitionFeedResponse {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      has_more: payload.length >= PAGE_SIZE,
+      next_offset: payload.length,
+    };
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return {
+      items: [],
+      has_more: false,
+      next_offset: 0,
+    };
+  }
+
+  const data = payload as ExhibitionFeedResponse;
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  return {
+    items,
+    has_more: Boolean(data.has_more),
+    next_offset:
+      typeof data.next_offset === "number" && data.next_offset >= 0
+        ? data.next_offset
+        : items.length,
+  };
+}
+
 export function OfflineExhibitionListView({
   locale,
   initialList = [],
@@ -101,10 +141,15 @@ export function OfflineExhibitionListView({
   locale: string;
   initialList?: OfflineExhibition[];
 }) {
+  const router = useRouter();
   const [keyword, setKeyword] = React.useState("");
   const [cityFilter, setCityFilter] = React.useState("");
   const [loading, setLoading] = React.useState(initialList.length === 0);
+  const [loadingMore, setLoadingMore] = React.useState(false);
+  const [hasMore, setHasMore] = React.useState(initialList.length >= PAGE_SIZE);
+  const [nextOffset, setNextOffset] = React.useState(initialList.length);
   const [list, setList] = React.useState<OfflineExhibition[]>(initialList);
+  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
 
   const loadList = React.useCallback(
     async (options?: { keyword?: string; city?: string }) => {
@@ -115,7 +160,7 @@ export function OfflineExhibitionListView({
       try {
         const params = new URLSearchParams();
         params.set("locale", locale);
-        params.set("limit", "18");
+        params.set("limit", String(PAGE_SIZE));
         if (nextKeyword) {
           params.set("q", nextKeyword);
         }
@@ -127,7 +172,10 @@ export function OfflineExhibitionListView({
         const result = await response.json();
 
         if (result.code === 0) {
-          setList(Array.isArray(result.data) ? result.data : []);
+          const payload = parseExhibitionPayload(result.data);
+          setList(payload.items || []);
+          setHasMore(Boolean(payload.has_more));
+          setNextOffset(payload.next_offset || 0);
         } else {
           toast.error(result.message || "加载展览列表失败");
         }
@@ -140,9 +188,60 @@ export function OfflineExhibitionListView({
     [cityFilter, keyword, locale]
   );
 
+  const loadMore = React.useCallback(async () => {
+    if (loading || loadingMore || !hasMore) {
+      return;
+    }
+
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("locale", locale);
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", String(nextOffset));
+      if (keyword.trim()) {
+        params.set("q", keyword.trim());
+      }
+      if (cityFilter.trim()) {
+        params.set("city", cityFilter.trim());
+      }
+
+      const response = await fetch(`/api/home/exhibition?${params.toString()}`);
+      const result = await response.json();
+      if (result.code !== 0) {
+        toast.error(result.message || "加载展览列表失败");
+        return;
+      }
+
+      const payload = parseExhibitionPayload(result.data);
+      const nextItems = payload.items || [];
+      setList((current) => {
+        const seen = new Set(current.map((item) => item.uuid));
+        const merged = [...current];
+        for (const item of nextItems) {
+          if (seen.has(item.uuid)) {
+            continue;
+          }
+          seen.add(item.uuid);
+          merged.push(item);
+        }
+        return merged;
+      });
+      setHasMore(Boolean(payload.has_more));
+      setNextOffset(payload.next_offset || nextOffset + nextItems.length);
+    } catch {
+      toast.error("加载展览列表失败");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cityFilter, hasMore, keyword, loading, loadingMore, locale, nextOffset]);
+
   React.useEffect(() => {
     setList(initialList);
     setLoading(initialList.length === 0);
+    setLoadingMore(false);
+    setHasMore(initialList.length >= PAGE_SIZE);
+    setNextOffset(initialList.length);
   }, [initialList]);
 
   React.useEffect(() => {
@@ -152,6 +251,33 @@ export function OfflineExhibitionListView({
 
     void loadList();
   }, [initialList.length, loadList]);
+
+  React.useEffect(() => {
+    list.forEach((item) => {
+      router.prefetch(`/${locale}/home/exhibition/${item.uuid}`);
+    });
+  }, [list, locale, router]);
+
+  React.useEffect(() => {
+    const observerTarget = loadMoreRef.current;
+    if (!observerTarget || !hasMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMore();
+        }
+      },
+      {
+        rootMargin: "700px 0px",
+      }
+    );
+
+    observer.observe(observerTarget);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
 
   const handleSearch = React.useCallback(() => {
     void loadList();
@@ -364,6 +490,9 @@ export function OfflineExhibitionListView({
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/${locale}/home/exhibition/${item.uuid}`}
+                            onMouseEnter={() =>
+                              router.prefetch(`/${locale}/home/exhibition/${item.uuid}`)
+                            }
                             className="inline-flex items-center gap-1 rounded-full border border-[#d0dbd6] px-3 py-1.5 text-xs text-[#27453d] transition hover:border-[#9db7b0] hover:bg-[#f4faf7] dark:border-[#31443e] dark:text-[#d7e3de] dark:hover:bg-[#18211f]"
                           >
                             详情
@@ -384,6 +513,14 @@ export function OfflineExhibitionListView({
                 </article>
               );
             })}
+            <div ref={loadMoreRef} className="flex min-h-10 items-center justify-center">
+              {loadingMore ? (
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs text-[#6a7f79] shadow-[0_6px_18px_rgba(15,23,42,0.06)] dark:bg-white/[0.05] dark:text-[#9bb0aa]">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  正在加载更多展览
+                </div>
+              ) : null}
+            </div>
           </div>
         )}
       </div>

@@ -16,13 +16,6 @@ import { ArrowLeft, Heart, MessageCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserPublicProfileTrigger } from "@/components/user/public-profile-dialog";
 
-type UserInfoResponse = {
-  code?: number;
-  data?: {
-    uuid?: string;
-  };
-};
-
 function formatDate(date?: string, locale = "zh") {
   if (!date) return "";
   const value = new Date(date);
@@ -43,15 +36,19 @@ function initials(name?: string) {
 export function PostDetailView({
   locale,
   uuid,
+  initialPost = null,
+  initialCurrentUserUuid = null,
 }: {
   locale: string;
   uuid: string;
+  initialPost?: HomePost | null;
+  initialCurrentUserUuid?: string | null;
 }) {
   const t = useTranslations("home");
   const router = useRouter();
-  const [post, setPost] = React.useState<HomePost | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [currentUserUuid, setCurrentUserUuid] = React.useState<string | null>(null);
+  const [post, setPost] = React.useState<HomePost | null>(initialPost);
+  const [loading, setLoading] = React.useState(initialPost === null);
+  const [currentUserUuid] = React.useState<string | null>(initialCurrentUserUuid);
   const [deleting, setDeleting] = React.useState(false);
 
   const loadPost = React.useCallback(async () => {
@@ -74,27 +71,14 @@ export function PostDetailView({
   }, [t, uuid]);
 
   React.useEffect(() => {
-    void loadPost();
-  }, [loadPost]);
+    if (initialPost) {
+      setPost(initialPost);
+      setLoading(false);
+      return;
+    }
 
-  React.useEffect(() => {
-    let cancelled = false;
-    const loadUser = async () => {
-      try {
-        const resp = await fetch("/api/get-user-info", { method: "POST" });
-        const result = (await resp.json()) as UserInfoResponse;
-        if (!cancelled) {
-          setCurrentUserUuid(String(result?.data?.uuid || "").trim() || null);
-        }
-      } catch {
-        if (!cancelled) setCurrentUserUuid(null);
-      }
-    };
-    void loadUser();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void loadPost();
+  }, [initialPost, loadPost]);
 
   const handleToggleLike = async () => {
     if (!post) return;
@@ -137,7 +121,6 @@ export function PostDetailView({
       }
       toast.success(t("detail.deleted"));
       router.push(`/${locale}/home`);
-      router.refresh();
     } catch (error: any) {
       toast.error(error?.message || t("detail.delete_failed"));
     } finally {

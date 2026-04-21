@@ -3,7 +3,7 @@ import AdminBreadcrumbHeader from "@/components/dashboard/admin-breadcrumb-heade
 import Empty from "@/components/blocks/empty";
 import { ReactNode } from "react";
 import { Sidebar } from "@/types/blocks/sidebar";
-import { getUserInfo } from "@/services/user";
+import { getUserInfo, isAdminUser } from "@/services/user";
 import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
@@ -15,11 +15,10 @@ export default async function AdminLayout({
 }) {
   const userInfo = await getUserInfo();
   if (!userInfo || !userInfo.email) {
-    redirect("/auth/signin");
+    redirect(`/${locale}/auth/signin`);
   }
 
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",");
-  if (!adminEmails?.includes(userInfo?.email)) {
+  if (!isAdminUser(userInfo)) {
     return <Empty message="无权限访问后台" />;
   }
 

@@ -1,5 +1,6 @@
 import { findUserByUuid } from "@/models/user";
 import { getUserUuid } from "@/services/user";
+import { listHomePosts } from "@/models/home-post";
 import { redirect } from "next/navigation";
 import { MyPostsView } from "@/components/console/my-posts-view";
 
@@ -17,6 +18,13 @@ export default async function ({ params }: { params: { locale: string } }) {
     redirect(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
+  const posts = await listHomePosts({
+    currentUserUuid: user_uuid,
+    user_uuid,
+    includeDraft: true,
+    includeDeleted: true,
+  });
+
   return (
     <MyPostsView
       locale={locale}
@@ -25,6 +33,7 @@ export default async function ({ params }: { params: { locale: string } }) {
         avatar_url: user.avatar_url,
         created_at: user.created_at,
       }}
+      initialPosts={posts}
     />
   );
 }

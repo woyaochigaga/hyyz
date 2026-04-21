@@ -1,4 +1,5 @@
 import { OfflineExhibitionHub } from "@/components/home/offline-exhibition-hub";
+import { listOfflineExhibitions } from "@/models/offline-exhibition";
 import { getUserInfo } from "@/services/user";
 import { redirect } from "next/navigation";
 
@@ -17,5 +18,19 @@ export default async function MyExhibitionsPage({
     redirect(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
-  return <OfflineExhibitionHub locale={locale} userRole={user.role || "user"} />;
+  const initialList = await listOfflineExhibitions({
+    currentUserUuid: user.uuid,
+    user_uuid: user.uuid,
+    locale,
+    includeDraft: true,
+    includeDeleted: false,
+  });
+
+  return (
+    <OfflineExhibitionHub
+      locale={locale}
+      userRole={user.role || "user"}
+      initialList={initialList}
+    />
+  );
 }

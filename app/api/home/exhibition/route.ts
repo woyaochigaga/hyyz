@@ -17,19 +17,26 @@ export async function GET(req: Request) {
     const q = String(searchParams.get("q") || "").trim();
     const status = String(searchParams.get("status") || "").trim();
     const limit = Number.parseInt(String(searchParams.get("limit") || "24"), 10);
+    const offset = Number.parseInt(String(searchParams.get("offset") || "0"), 10);
     const currentUserUuid = mine ? await getUserUuid() : "";
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 24;
+    const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : 0;
 
     if (mine && !currentUserUuid) {
       return respJson(-2, "no auth");
     }
 
-    if (!mine && !city && !q && !status) {
+    if (!mine && !city && !q && !status && safeOffset === 0) {
       const exhibitions = await listPublicOfflineExhibitionsCached(
         locale,
-        Number.isFinite(limit) && limit > 0 ? limit : 24
+        safeLimit
       );
 
-      return respData(exhibitions);
+      return respData({
+        items: exhibitions,
+        has_more: exhibitions.length >= safeLimit,
+        next_offset: exhibitions.length,
+      });
     }
 
     const exhibitions = await listOfflineExhibitions({
@@ -48,9 +55,18 @@ export async function GET(req: Request) {
         status === "closed"
           ? status
           : undefined,
-      limit: Number.isFinite(limit) ? limit : 24,
+      limit: safeLimit,
+      offset: safeOffset,
       summaryOnly: !mine,
     });
+
+    if (!mine) {
+      return respData({
+        items: exhibitions,
+        has_more: exhibitions.length >= safeLimit,
+        next_offset: safeOffset + exhibitions.length,
+      });
+    }
 
     return respData(exhibitions);
   } catch (error) {
