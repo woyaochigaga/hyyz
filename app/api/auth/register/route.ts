@@ -44,7 +44,16 @@ export async function POST(req: Request) {
       nickname: user.nickname,
     });
   } catch (e: any) {
-    console.error("register failed:", e);
+    const code = String(e?.code || "").trim();
+    if (code === "42501") {
+      console.error(
+        "register failed: RLS blocked insert into users. " +
+          "Make sure server env SUPABASE_SERVICE_ROLE_KEY is set on Vercel.",
+        e
+      );
+    } else {
+      console.error("register failed:", e);
+    }
     return respErr("register failed");
   }
 }

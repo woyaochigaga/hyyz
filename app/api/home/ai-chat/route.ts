@@ -9,9 +9,18 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type ChatAttachment = {
+  type?: "image" | "video";
+  url?: string;
+  filename?: string;
+  contentType?: string;
+  size?: number;
+};
+
 type ChatMessage = {
   role?: "user" | "assistant";
   content?: string;
+  attachments?: ChatAttachment[];
 };
 
 function getDashScopeConfig() {
@@ -54,13 +63,42 @@ function normalizeMessages(messages: ChatMessage[]) {
     .filter(
       (item) =>
         (item.role === "user" || item.role === "assistant") &&
-        typeof item.content === "string" &&
-        item.content.trim()
+        ((typeof item.content === "string" && item.content.trim()) ||
+          (Array.isArray(item.attachments) && item.attachments.length > 0))
     )
     .slice(-20)
     .map((item) => ({
       role: item.role as "user" | "assistant",
-      content: item.content!.trim(),
+      content: [
+        String(item.content || "").trim(),
+        ...(Array.isArray(item.attachments)
+          ? item.attachments
+              .filter((attachment) => attachment && String(attachment.url || "").trim())
+              .map((attachment, index) => {
+                const attachmentType =
+                  attachment.type === "video" ? "视频" : "图片";
+                const name = String(attachment.filename || "").trim();
+                const contentType = String(attachment.contentType || "").trim();
+                const size =
+                  typeof attachment.size === "number" && Number.isFinite(attachment.size)
+                    ? `${attachment.size} bytes`
+                    : "";
+
+                return [
+                  `[用户上传${attachmentType}${index + 1}]`,
+                  name ? `文件名: ${name}` : "",
+                  contentType ? `类型: ${contentType}` : "",
+                  size ? `大小: ${size}` : "",
+                  `链接: ${String(attachment.url || "").trim()}`,
+                  `请结合这份${attachmentType}素材回答；如果你无法直接读取链接内容，要明确说明，并基于用户文字描述与素材元数据给出分析建议。`,
+                ]
+                  .filter(Boolean)
+                  .join("\n");
+              })
+          : []),
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
     }));
 }
 

@@ -1,6 +1,7 @@
 import { respData, respErr } from "@/lib/resp";
 import { newStorage } from "@/lib/storage";
 import { getUuid } from "@/lib/hash";
+import { getUserUuid } from "@/services/user";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const ALLOWED_TYPES = [
@@ -23,6 +24,11 @@ const EXT_BY_TYPE: Record<string, string> = {
 
 export async function POST(req: Request) {
   try {
+    const user_uuid = await getUserUuid();
+    if (!user_uuid) {
+      return respErr("请先登录后再上传视频");
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -44,7 +50,7 @@ export async function POST(req: Request) {
     const extFromName = file.name.split(".").pop()?.toLowerCase();
     const ext = extFromName || EXT_BY_TYPE[file.type] || "mp4";
     const filename = `${getUuid()}.${ext}`;
-    const key = `video/${filename}`;
+    const key = `ai-chat/${user_uuid}/videos/${filename}`;
 
     const storage = newStorage();
     const result = await storage.uploadFile({

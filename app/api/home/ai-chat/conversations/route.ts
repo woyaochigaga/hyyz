@@ -7,7 +7,50 @@ import {
 import { respData, respErr, respJson } from "@/lib/resp";
 import { getIsoTimestr } from "@/lib/time";
 import { getUserUuid } from "@/services/user";
-import { AiChatConversation } from "@/types/ai-chat";
+import {
+  AiChatAttachment,
+  AiChatConversation,
+  AiChatMessage,
+} from "@/types/ai-chat";
+
+function normalizeAttachments(raw: unknown): AiChatAttachment[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .filter((item) => item && typeof item === "object")
+    .map((item: any): AiChatAttachment => ({
+      type: item.type === "video" ? "video" : "image",
+      url: String(item.url || "").trim(),
+      key: String(item.key || "").trim(),
+      filename: String(item.filename || "").trim(),
+      contentType: String(item.contentType || item.content_type || "").trim(),
+      size:
+        typeof item.size === "number" && Number.isFinite(item.size)
+          ? item.size
+          : undefined,
+    }))
+    .filter((item) => item.url);
+}
+
+function normalizeMessages(raw: unknown): AiChatMessage[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .filter((item) => item && typeof item === "object")
+    .map((item: any): AiChatMessage => ({
+      id: String(item.id || "").trim(),
+      role: item.role === "assistant" ? "assistant" : "user",
+      content: String(item.content || ""),
+      reasoning: String(item.reasoning || ""),
+      model: String(item.model || ""),
+      attachments: normalizeAttachments(item.attachments),
+      error: Boolean(item.error),
+    }))
+    .filter(
+      (item) =>
+        item.id && (item.content.trim() || (item.attachments?.length ?? 0) > 0)
+    );
+}
 
 function normalizeConversation(
   raw: any,
@@ -18,23 +61,7 @@ function normalizeConversation(
   const locale = String(raw?.locale || "").trim();
   const updated_at = String(raw?.updated_at || "").trim() || getIsoTimestr();
   const created_at = String(raw?.created_at || "").trim() || updated_at;
-  const messages = Array.isArray(raw?.messages)
-    ? raw.messages
-        .filter(
-          (item: any) =>
-            item &&
-            (item.role === "user" || item.role === "assistant") &&
-            typeof item.content === "string" &&
-            item.content.trim()
-        )
-        .map((item: any) => ({
-          id: String(item.id || ""),
-          role: item.role === "assistant" ? "assistant" : "user",
-          content: String(item.content || ""),
-          error: Boolean(item.error),
-        }))
-        .filter((item: any) => item.id && item.content.trim())
-    : [];
+  const messages = normalizeMessages(raw?.messages);
 
   if (!uuid || !title || messages.length === 0) {
     return null;

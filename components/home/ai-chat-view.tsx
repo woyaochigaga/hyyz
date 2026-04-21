@@ -45,7 +45,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { AiChatConversation } from "@/types/ai-chat";
+import type {
+  AiChatAttachment,
+  AiChatConversation,
+} from "@/types/ai-chat";
 
 type Role = "user" | "assistant";
 
@@ -55,6 +58,7 @@ export type ChatMessage = {
   content: string;
   reasoning?: string;
   model?: string;
+  attachments?: AiChatAttachment[];
   pending?: boolean;
   error?: boolean;
 };
@@ -142,9 +146,31 @@ function normalizeStoredMessages(messages: unknown): ChatMessage[] {
       content: String(item.content || ""),
       reasoning: String(item.reasoning || ""),
       model: String(item.model || ""),
+      attachments: Array.isArray(item.attachments)
+        ? item.attachments
+            .filter((attachment: any) => attachment && typeof attachment === "object")
+            .map((attachment: any) => ({
+              type: attachment.type === "video" ? "video" : "image",
+              url: String(attachment.url || ""),
+              key: String(attachment.key || ""),
+              filename: String(attachment.filename || ""),
+              contentType: String(
+                attachment.contentType || attachment.content_type || ""
+              ),
+              size:
+                typeof attachment.size === "number" &&
+                Number.isFinite(attachment.size)
+                  ? attachment.size
+                  : undefined,
+            }))
+            .filter((attachment: AiChatAttachment) => attachment.url.trim())
+        : [],
       error: Boolean(item.error),
     }))
-    .filter((item) => item.id && item.content.trim());
+    .filter(
+      (item) =>
+        item.id && (item.content.trim() || (item.attachments?.length ?? 0) > 0)
+    );
 }
 
 function normalizeConversationRecord(input: any): Conversation | null {
@@ -181,6 +207,47 @@ function mergeConversations(
   }
 
   return Array.from(map.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+function formatFileSize(size?: number) {
+  if (!size || !Number.isFinite(size)) return "";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function attachmentsEqual(
+  left: AiChatAttachment[] | undefined,
+  right: AiChatAttachment[] | undefined
+) {
+  const a = left || [];
+  const b = right || [];
+
+  if (a.length !== b.length) return false;
+
+  return a.every((item, index) => {
+    const other = b[index];
+    return (
+      item.type === other?.type &&
+      item.url === other?.url &&
+      item.key === other?.key &&
+      item.filename === other?.filename &&
+      item.contentType === other?.contentType &&
+      item.size === other?.size
+    );
+  });
+}
+
+function messageEqual(left: ChatMessage, right: ChatMessage) {
+  return (
+    left.id === right.id &&
+    left.role === right.role &&
+    left.content === right.content &&
+    left.reasoning === right.reasoning &&
+    left.model === right.model &&
+    left.error === right.error &&
+    attachmentsEqual(left.attachments, right.attachments)
+  );
 }
 
 function normalizeRemoteConversations(
@@ -344,10 +411,16 @@ function Composer({
   value,
   onChange,
   onSend,
+  attachments,
+  onUploadImage,
+  onUploadVideo,
+  onRemoveAttachment,
   deepThinking,
   onToggleDeep,
   placeholder,
   deepLabel,
+  uploadImageLabel,
+  uploadVideoLabel,
   compact,
   sending,
   enterBehavior = "send",
@@ -355,19 +428,48 @@ function Composer({
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
+  attachments: AiChatAttachment[];
+  onUploadImage: (file: File) => Promise<void>;
+  onUploadVideo: (file: File) => Promise<void>;
+  onRemoveAttachment: (index: number) => void;
   deepThinking: boolean;
   onToggleDeep: () => void;
   placeholder: string;
   deepLabel: string;
+  uploadImageLabel: string;
+  uploadVideoLabel: string;
   compact?: boolean;
   sending?: boolean;
   enterBehavior?: "send" | "newline";
 }) {
   const taRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const imageInputRef = React.useRef<HTMLInputElement | null>(null);
+  const videoInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = React.useState<null | "image" | "video">(null);
 
   const submit = () => {
     onSend();
     requestAnimationFrame(() => taRef.current?.focus());
+  };
+
+  const handleSelectFile = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: "image" | "video"
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      setUploading(type);
+      if (type === "image") {
+        await onUploadImage(file);
+      } else {
+        await onUploadVideo(file);
+      }
+    } finally {
+      setUploading(null);
+    }
   };
 
   return (
@@ -377,6 +479,66 @@ function Composer({
         compact ? "max-w-3xl" : "max-w-2xl w-full"
       )}
     >
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => void handleSelectFile(event, "image")}
+      />
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,video/x-msvideo"
+        className="hidden"
+        onChange={(event) => void handleSelectFile(event, "video")}
+      />
+      {attachments.length > 0 ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {attachments.map((attachment, index) => (
+            <div
+              key={`${attachment.url}-${index}`}
+              className="relative w-[112px] overflow-hidden rounded-2xl border border-black/8 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.04]"
+            >
+              {attachment.type === "video" ? (
+                <div className="aspect-[4/3] w-full bg-black">
+                  <video
+                    src={attachment.url}
+                    className="h-full w-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                </div>
+              ) : (
+                <img
+                  src={attachment.url}
+                  alt={attachment.filename || "upload"}
+                  className="aspect-[4/3] w-full object-cover"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => onRemoveAttachment(index)}
+                disabled={sending}
+                className="absolute right-1.5 top-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black/80 disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <div className="space-y-1 px-2 py-2">
+                <p className="truncate text-xs font-medium text-zinc-700 dark:text-zinc-100">
+                  {attachment.filename ||
+                    (attachment.type === "video" ? "视频素材" : "图片素材")}
+                </p>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  {attachment.type === "video" ? "视频" : "图片"}
+                  {attachment.size ? ` · ${formatFileSize(attachment.size)}` : ""}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="flex gap-2">
         <Search className="mt-1.5 h-5 w-5 shrink-0 text-[#7f9790] dark:text-zinc-500" />
         <Textarea
@@ -421,16 +583,35 @@ function Composer({
             size="icon"
             variant="ghost"
             className="rounded-full text-zinc-600 hover:bg-black/[0.04] hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
-            onClick={() => toast.message("图片上传待接入")}
-            disabled={sending}
+            onClick={() => imageInputRef.current?.click()}
+            disabled={sending || uploading !== null}
+            title={uploadImageLabel}
           >
-            <ImagePlus className="h-5 w-5" />
+            {uploading === "image" ? (
+              <LoaderCircle className="h-5 w-5 animate-spin" />
+            ) : (
+              <ImagePlus className="h-5 w-5" />
+            )}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="rounded-full px-3 text-zinc-600 hover:bg-black/[0.04] hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+            onClick={() => videoInputRef.current?.click()}
+            disabled={sending || uploading !== null}
+          >
+            {uploading === "video" ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <span className="text-xs font-medium">{uploadVideoLabel}</span>
+            )}
           </Button>
           <Button
             type="button"
             size="icon"
             className="h-10 w-10 rounded-full bg-[linear-gradient(135deg,#203b35,#31524a)] text-white shadow-[0_14px_30px_rgba(32,59,53,0.22)] hover:opacity-95 dark:bg-[linear-gradient(135deg,#4f7b6f,#6a988c)] dark:text-[#f5fbf8]"
-            disabled={!value.trim() || sending}
+            disabled={(!value.trim() && attachments.length === 0) || sending || uploading !== null}
             onClick={submit}
           >
             {sending ? (
@@ -460,6 +641,7 @@ export default function AiChatView({
   const [conversations, setConversations] = React.useState<Conversation[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [input, setInput] = React.useState("");
+  const [attachments, setAttachments] = React.useState<AiChatAttachment[]>([]);
   const [deepThinking, setDeepThinking] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
   const [serverUserUuid, setServerUserUuid] = React.useState<string | null>(
@@ -598,12 +780,13 @@ export default function AiChatView({
                 created_at: new Date(item.updatedAt).toISOString(),
                 messages: item.messages
                   .filter((msg) => !msg.pending)
-                  .map(({ id, role, content, reasoning, model, error }) => ({
+                  .map(({ id, role, content, reasoning, model, attachments, error }) => ({
                     id,
                     role,
                     content,
                     reasoning,
                     model,
+                    attachments,
                     error,
                   })),
               })),
@@ -628,13 +811,18 @@ export default function AiChatView({
       if (!serverUserUuid || !preferences.syncHistoryToCloud) return;
 
       const normalizedMessages = conversation.messages
-        .filter((msg) => !msg.pending && msg.content.trim())
-        .map(({ id, role, content, reasoning, model, error }) => ({
+        .filter(
+          (msg) =>
+            !msg.pending &&
+            (msg.content.trim() || (msg.attachments?.length ?? 0) > 0)
+        )
+        .map(({ id, role, content, reasoning, model, attachments, error }) => ({
           id,
           role,
           content,
           reasoning,
           model,
+          attachments,
           error,
         }));
 
@@ -700,11 +888,12 @@ export default function AiChatView({
           (item) =>
             !item.pending &&
             (item.role === "user" || item.role === "assistant") &&
-            item.content.trim()
+            (item.content.trim() || (item.attachments?.length ?? 0) > 0)
         )
         .map((item) => ({
           role: item.role,
           content: item.content,
+          attachments: item.attachments,
         })),
     []
   );
@@ -817,15 +1006,17 @@ export default function AiChatView({
     (convId: string, messageId: string, updater: (msg: ChatMessage) => ChatMessage) => {
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === convId
-            ? {
-                ...c,
-                updatedAt: Date.now(),
-                messages: c.messages.map((m) =>
-                  m.id === messageId ? updater(m) : m
-                ),
-              }
-            : c
+              c.id === convId
+                ? {
+                    ...c,
+                    updatedAt: Date.now(),
+                    messages: c.messages.map((m) => {
+                      if (m.id !== messageId) return m;
+                      const next = updater(m);
+                      return messageEqual(m, next) ? m : next;
+                    }),
+                }
+                : c
         )
       );
     },
@@ -862,6 +1053,7 @@ export default function AiChatView({
     });
     setActiveId(newId);
     setInput("");
+    setAttachments([]);
     setDrawerOpen(false);
   };
 
@@ -924,10 +1116,16 @@ export default function AiChatView({
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || isSending) return;
+    if ((!text && attachments.length === 0) || isSending) return;
 
     const convId = ensureActiveConversation();
-    const userMsg: ChatMessage = { id: id(), role: "user", content: text };
+    const currentAttachments = attachments.map((attachment) => ({ ...attachment }));
+    const userMsg: ChatMessage = {
+      id: id(),
+      role: "user",
+      content: text,
+      attachments: currentAttachments,
+    };
     const assistantId = id();
     const assistantMsg: ChatMessage = {
       id: assistantId,
@@ -935,8 +1133,13 @@ export default function AiChatView({
       content: "",
       pending: true,
     };
+    const fallbackTitle =
+      currentAttachments[0]?.filename ||
+      (currentAttachments.length > 0
+        ? t("ai_chat.attachment_chat_title")
+        : t("ai_chat.new_chat"));
     const title =
-      text.length > 28 ? `${text.slice(0, 28)}…` : text || t("ai_chat.new_chat");
+      text.length > 28 ? `${text.slice(0, 28)}…` : text || fallbackTitle;
 
     setConversations((prev) =>
       prev.map((c) =>
@@ -951,6 +1154,7 @@ export default function AiChatView({
       )
     );
     setInput("");
+    setAttachments([]);
     setIsSending(true);
 
     const requestMessages = [...messages, userMsg];
@@ -1081,6 +1285,7 @@ export default function AiChatView({
                 content: msg.content,
                 reasoning: msg.reasoning,
                 model: msg.model,
+                attachments: msg.attachments,
                 error: msg.error,
               }
         ),
@@ -1115,6 +1320,7 @@ export default function AiChatView({
                 content: msg.content,
                 reasoning: msg.reasoning,
                 model: msg.model,
+                attachments: msg.attachments,
                 error: msg.error,
               }
         ),
@@ -1170,6 +1376,63 @@ export default function AiChatView({
     onToggleSelect: handleToggleSelect,
     t,
   };
+
+  const uploadAttachment = React.useCallback(
+    async (file: File, type: "image" | "video") => {
+      const maxImageSize = 10 * 1024 * 1024;
+      const maxVideoSize = 100 * 1024 * 1024;
+
+      if (type === "image" && !file.type.startsWith("image/")) {
+        throw new Error(t("ai_chat.invalid_image"));
+      }
+
+      if (type === "video" && !file.type.startsWith("video/")) {
+        throw new Error(t("ai_chat.invalid_video"));
+      }
+
+      if (type === "image" && file.size > maxImageSize) {
+        throw new Error(t("ai_chat.image_too_large"));
+      }
+
+      if (type === "video" && file.size > maxVideoSize) {
+        throw new Error(t("ai_chat.video_too_large"));
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(
+        type === "image" ? "/api/upload/image" : "/api/upload/video",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      const result = await response.json();
+
+      if (result.code !== 0 || !result.data?.url) {
+        throw new Error(result.message || t("ai_chat.upload_failed"));
+      }
+
+      const nextAttachment: AiChatAttachment = {
+        type,
+        url: String(result.data.url || ""),
+        key: String(result.data.key || ""),
+        filename: String(result.data.filename || file.name || ""),
+        contentType: String(result.data.contentType || file.type || ""),
+        size:
+          typeof result.data.size === "number" && Number.isFinite(result.data.size)
+            ? result.data.size
+            : file.size,
+      };
+
+      setAttachments((prev) => [...prev, nextAttachment]);
+      toast.success(
+        type === "image" ? t("ai_chat.upload_image_success") : t("ai_chat.upload_video_success")
+      );
+    },
+    [t]
+  );
 
   return (
     <div
@@ -1254,10 +1517,18 @@ export default function AiChatView({
                 value={input}
                 onChange={setInput}
                 onSend={sendMessage}
+                attachments={attachments}
+                onUploadImage={(file) => uploadAttachment(file, "image")}
+                onUploadVideo={(file) => uploadAttachment(file, "video")}
+                onRemoveAttachment={(index) =>
+                  setAttachments((prev) => prev.filter((_, i) => i !== index))
+                }
                 deepThinking={deepThinking}
                 onToggleDeep={() => setDeepThinking((v) => !v)}
                 placeholder={t("ai_chat.placeholder")}
                 deepLabel={t("ai_chat.deep_thinking")}
+                uploadImageLabel={t("ai_chat.upload_image")}
+                uploadVideoLabel={t("ai_chat.upload_video")}
                 sending={isSending}
                 enterBehavior={preferences.enterBehavior}
               />
@@ -1322,6 +1593,42 @@ export default function AiChatView({
 
                           return (
                         <div className="space-y-3">
+                          {m.attachments && m.attachments.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              {m.attachments.map((attachment, index) => (
+                                <div
+                                  key={`${attachment.url}-${index}`}
+                                  className="overflow-hidden rounded-2xl border border-black/6 bg-black/5 dark:border-white/10 dark:bg-white/[0.04]"
+                                >
+                                  {attachment.type === "video" ? (
+                                    <video
+                                      src={attachment.url}
+                                      controls
+                                      className="aspect-video w-full bg-black"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={attachment.url}
+                                      alt={attachment.filename || "attachment"}
+                                      className="max-h-72 w-full object-cover"
+                                    />
+                                  )}
+                                  <div className="space-y-1 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                    <p className="truncate text-zinc-700 dark:text-zinc-200">
+                                      {attachment.filename ||
+                                        (attachment.type === "video" ? "视频素材" : "图片素材")}
+                                    </p>
+                                    <p>
+                                      {attachment.type === "video" ? t("ai_chat.upload_video") : t("ai_chat.upload_image")}
+                                      {attachment.size
+                                        ? ` · ${formatFileSize(attachment.size)}`
+                                        : ""}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                           {hasReasoning ? (
                             <div className="rounded-xl border border-black/5 bg-black/[0.025] text-xs text-zinc-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">
                               <button
@@ -1478,10 +1785,18 @@ export default function AiChatView({
                     value={input}
                     onChange={setInput}
                     onSend={sendMessage}
+                    attachments={attachments}
+                    onUploadImage={(file) => uploadAttachment(file, "image")}
+                    onUploadVideo={(file) => uploadAttachment(file, "video")}
+                    onRemoveAttachment={(index) =>
+                      setAttachments((prev) => prev.filter((_, i) => i !== index))
+                    }
                     deepThinking={deepThinking}
                     onToggleDeep={() => setDeepThinking((v) => !v)}
                     placeholder={t("ai_chat.placeholder")}
                     deepLabel={t("ai_chat.deep_thinking")}
+                    uploadImageLabel={t("ai_chat.upload_image")}
+                    uploadVideoLabel={t("ai_chat.upload_video")}
                     sending={isSending}
                     enterBehavior={preferences.enterBehavior}
                   />

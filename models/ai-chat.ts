@@ -1,5 +1,28 @@
 import { getSupabaseClient } from "@/models/db";
-import { AiChatConversation, AiChatMessage } from "@/types/ai-chat";
+import {
+  AiChatAttachment,
+  AiChatConversation,
+  AiChatMessage,
+} from "@/types/ai-chat";
+
+function normalizeAttachments(attachments: unknown): AiChatAttachment[] {
+  if (!Array.isArray(attachments)) return [];
+
+  return attachments
+    .filter((item) => item && typeof item === "object")
+    .map((item: any): AiChatAttachment => ({
+      type: item.type === "video" ? "video" : "image",
+      url: String(item.url || "").trim(),
+      key: String(item.key || "").trim(),
+      filename: String(item.filename || "").trim(),
+      contentType: String(item.contentType || item.content_type || "").trim(),
+      size:
+        typeof item.size === "number" && Number.isFinite(item.size)
+          ? item.size
+          : undefined,
+    }))
+    .filter((item) => item.url);
+}
 
 function normalizeMessages(messages: unknown): AiChatMessage[] {
   if (!Array.isArray(messages)) return [];
@@ -12,9 +35,15 @@ function normalizeMessages(messages: unknown): AiChatMessage[] {
         | "assistant"
         | "user",
       content: String(item.content || ""),
+      reasoning: String(item.reasoning || ""),
+      model: String(item.model || ""),
+      attachments: normalizeAttachments(item.attachments),
       error: Boolean(item.error),
     }))
-    .filter((item) => item.id && item.content.trim());
+    .filter(
+      (item) =>
+        item.id && (item.content.trim() || (item.attachments?.length ?? 0) > 0)
+    );
 }
 
 function serializeConversation(conversation: AiChatConversation) {
