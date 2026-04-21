@@ -78,6 +78,7 @@ pnpm cf:deploy
 
 - Vercel：配置 `.env` 后直接部署
 - Cloudflare Pages：复制 `wrangler.toml.example` 为 `wrangler.toml` 后执行 `pnpm cf:deploy`
+- 如需启用图片/视频直传对象存储，请确保存储桶已允许浏览器对 `PUT` 请求的 CORS，且 `STORAGE_DOMAIN` 指向可公开访问的对象域名
 
 ## 说明
 

@@ -7,6 +7,13 @@ import { kling } from "@/aisdk/kling";
 import { newStorage } from "@/lib/storage";
 import { openai } from "@ai-sdk/openai";
 import { replicate } from "@ai-sdk/replicate";
+import {
+  isServerTimeoutError,
+  withServerTimeout,
+} from "@/lib/server-timeout";
+
+const DEMO_GEN_IMAGE_TIMEOUT_MS = 45_000;
+const DEMO_IMAGE_UPLOAD_TIMEOUT_MS = 20_000;
 
 export async function POST(req: Request) {
   try {
@@ -46,12 +53,16 @@ export async function POST(req: Request) {
         return respErr("invalid provider");
     }
 
-    const { images, warnings } = await generateImage({
-      model: imageModel,
-      prompt: prompt,
-      n: 1,
-      providerOptions,
-    });
+    const { images, warnings } = await withServerTimeout(
+      generateImage({
+        model: imageModel,
+        prompt: prompt,
+        n: 1,
+        providerOptions,
+      }),
+      DEMO_GEN_IMAGE_TIMEOUT_MS,
+      "图片生成超时，请稍后重试"
+    );
 
     if (warnings.length > 0) {
       console.log("gen images warnings:", provider, warnings);
@@ -69,12 +80,16 @@ export async function POST(req: Request) {
         const body = Buffer.from(image.base64, "base64");
 
         try {
-          const res = await storage.uploadFile({
-            body,
-            key,
-            contentType: "image/png",
-            disposition: "inline",
-          });
+          const res = await withServerTimeout(
+            storage.uploadFile({
+              body,
+              key,
+              contentType: "image/png",
+              disposition: "inline",
+            }),
+            DEMO_IMAGE_UPLOAD_TIMEOUT_MS,
+            "图片上传超时，请稍后重试"
+          );
 
           return {
             ...res,
@@ -94,6 +109,8 @@ export async function POST(req: Request) {
     return respData(processedImages);
   } catch (err) {
     console.log("gen image failed:", err);
-    return respErr("gen image failed");
+    return respErr(
+      isServerTimeoutError(err) ? err.message : "gen image failed"
+    );
   }
 }

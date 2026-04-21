@@ -11,6 +11,8 @@ import { deepseek } from "@ai-sdk/deepseek";
 import { openai } from "@ai-sdk/openai";
 import { respErr } from "@/lib/resp";
 
+const DEMO_STREAM_TEXT_TIMEOUT_MS = 55_000;
+
 export async function POST(req: Request) {
   try {
     const { prompt, provider, model } = await req.json();
@@ -63,14 +65,21 @@ export async function POST(req: Request) {
         return respErr("invalid provider");
     }
 
-    const result = await streamText({
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, DEMO_STREAM_TEXT_TIMEOUT_MS);
+
+    const result = streamText({
       model: textModel,
       prompt: prompt,
+      abortSignal: abortController.signal,
       onChunk: async (chunk) => {
         console.log("chunk", chunk);
       },
       onFinish: async () => {
         console.log("finish", await result.text);
+        clearTimeout(timeoutId);
       },
     });
 

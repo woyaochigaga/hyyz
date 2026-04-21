@@ -5,9 +5,11 @@ import {
   AI_CHAT_SYSTEM_PROMPT_EN,
   AI_CHAT_SYSTEM_PROMPT_ZH,
 } from "@/lib/ai/prompts";
+import { isServerTimeoutError } from "@/lib/server-timeout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const AI_CHAT_TIMEOUT_MS = 55_000;
 
 type ChatAttachment = {
   type?: "image" | "video";
@@ -137,9 +139,17 @@ export async function POST(req: Request) {
         }) as any)
       : baseModel;
 
-    const result = await streamText({
+    const abortController = new AbortController();
+    let didTimeout = false;
+    const timeoutId = setTimeout(() => {
+      didTimeout = true;
+      abortController.abort();
+    }, AI_CHAT_TIMEOUT_MS);
+
+    const result = streamText({
       model,
       temperature: deepThinking ? 0.3 : 0.7,
+      abortSignal: abortController.signal,
       messages: [
         {
           role: "system",
@@ -176,9 +186,12 @@ export async function POST(req: Request) {
         } catch (error: any) {
           console.error("home ai chat stream failed:", error);
           send("error", {
-            message: error?.message || "ai chat failed",
+            message: didTimeout || isServerTimeoutError(error)
+              ? "AI 对话处理超时，请缩短输入内容后重试"
+              : error?.message || "ai chat failed",
           });
         } finally {
+          clearTimeout(timeoutId);
           controller.close();
         }
       },
@@ -194,6 +207,10 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("home ai chat failed:", err);
-    return respErr(err?.message || "ai chat failed");
+    return respErr(
+      isServerTimeoutError(err)
+        ? "AI 对话处理超时，请缩短输入内容后重试"
+        : err?.message || "ai chat failed"
+    );
   }
 }

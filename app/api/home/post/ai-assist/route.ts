@@ -6,9 +6,14 @@ import {
   AI_POST_ASSIST_SYSTEM_PROMPT_ZH,
 } from "@/lib/ai/prompts";
 import { HomePostAiPatch, HomePostAiTargetField } from "@/types/home-post-ai-assist";
+import {
+  isServerTimeoutError,
+  withServerTimeout,
+} from "@/lib/server-timeout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const AI_ASSIST_TIMEOUT_MS = 50_000;
 
 type AssistFieldSnapshot = {
   title?: string;
@@ -385,26 +390,34 @@ export async function POST(req: Request) {
       history: safeHistory,
     });
 
-    const { text } = await generateText({
-      model: dashscope(modelName),
-      temperature: 0.5,
-      messages: [
-        {
-          role: "system",
-          content: buildSystemPrompt(locale),
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
+    const { text } = await withServerTimeout(
+      generateText({
+        model: dashscope(modelName),
+        temperature: 0.5,
+        messages: [
+          {
+            role: "system",
+            content: buildSystemPrompt(locale),
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      }),
+      AI_ASSIST_TIMEOUT_MS,
+      "AI 改写超时，请缩短要求或拆分后重试"
+    );
 
     return respData(
       normalizeResult(text, safeTargetField, safeType, safeFields)
     );
   } catch (error: any) {
     console.error("home post ai assist failed:", error);
-    return respErr(error?.message || "ai assist failed");
+    return respErr(
+      isServerTimeoutError(error)
+        ? "AI 改写超时，请缩短要求或拆分后重试"
+        : error?.message || "ai assist failed"
+    );
   }
 }

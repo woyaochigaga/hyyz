@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Loader, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { uploadAsset } from "@/lib/client-upload";
 
 interface ImageUploadProps {
   value?: string;
@@ -40,23 +41,10 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
     setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload/image", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.code === 0 && result.data?.url) {
-        setPreview(result.data.url);
-        onChange?.(result.data.url);
-        toast.success("上传成功");
-      } else {
-        throw new Error(result.message || "上传失败");
-      }
+      const result = await uploadAsset(file, "image");
+      setPreview(result.url);
+      onChange?.(result.url);
+      toast.success("上传成功");
     } catch (error: any) {
       toast.error(error.message || "上传失败");
     } finally {

@@ -10,6 +10,12 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { deepseek } from "@ai-sdk/deepseek";
 import { openai } from "@ai-sdk/openai";
+import {
+  isServerTimeoutError,
+  withServerTimeout,
+} from "@/lib/server-timeout";
+
+const DEMO_GEN_TEXT_TIMEOUT_MS = 50_000;
 
 export async function POST(req: Request) {
   try {
@@ -66,10 +72,14 @@ export async function POST(req: Request) {
         return respErr("invalid provider");
     }
 
-    const { reasoning, text, warnings } = await generateText({
-      model: textModel,
-      prompt: prompt,
-    });
+    const { reasoning, text, warnings } = await withServerTimeout(
+      generateText({
+        model: textModel,
+        prompt: prompt,
+      }),
+      DEMO_GEN_TEXT_TIMEOUT_MS,
+      "文本生成超时，请稍后重试"
+    );
 
     if (warnings && warnings.length > 0) {
       console.log("gen text warnings:", provider, warnings);
@@ -82,6 +92,8 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.log("gen text failed:", err);
-    return respErr("gen text failed");
+    return respErr(
+      isServerTimeoutError(err) ? "文本生成超时，请稍后重试" : "gen text failed"
+    );
   }
 }

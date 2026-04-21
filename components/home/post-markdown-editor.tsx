@@ -22,6 +22,7 @@ import {
 import Markdown from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadAsset } from "@/lib/client-upload";
 import { cn } from "@/lib/utils";
 
 type PostMarkdownEditorProps = {
@@ -316,21 +317,10 @@ export function PostMarkdownEditor({
 
       setUploading(true);
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch("/api/upload/image", {
-          method: "POST",
-          body: formData,
-        });
-        const result = await response.json();
-
-        if (result.code !== 0 || !result.data?.url) {
-          throw new Error(result.message || "上传失败");
-        }
+        const result = await uploadAsset(file, "image");
 
         const altText = file.name.replace(/\.[^.]+$/, "") || "图片";
-        insertTemplate(`![${altText}](${result.data.url})`);
+        insertTemplate(`![${altText}](${result.url})`);
         toast.success("图片已插入正文");
       } catch (error: any) {
         toast.error(error?.message || "上传失败");

@@ -24,6 +24,7 @@ import {
   type HomePreferences,
   loadHomePreferences,
 } from "@/lib/home-preferences";
+import { uploadAsset } from "@/lib/client-upload";
 import { cn } from "@/lib/utils";
 import {
   ArrowUp,
@@ -1380,7 +1381,7 @@ export default function AiChatView({
   const uploadAttachment = React.useCallback(
     async (file: File, type: "image" | "video") => {
       const maxImageSize = 10 * 1024 * 1024;
-      const maxVideoSize = 100 * 1024 * 1024;
+      const maxVideoSize = 40 * 1024 * 1024;
 
       if (type === "image" && !file.type.startsWith("image/")) {
         throw new Error(t("ai_chat.invalid_image"));
@@ -1398,32 +1399,15 @@ export default function AiChatView({
         throw new Error(t("ai_chat.video_too_large"));
       }
 
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch(
-        type === "image" ? "/api/upload/image" : "/api/upload/video",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-      const result = await response.json();
-
-      if (result.code !== 0 || !result.data?.url) {
-        throw new Error(result.message || t("ai_chat.upload_failed"));
-      }
+      const result = await uploadAsset(file, type);
 
       const nextAttachment: AiChatAttachment = {
         type,
-        url: String(result.data.url || ""),
-        key: String(result.data.key || ""),
-        filename: String(result.data.filename || file.name || ""),
-        contentType: String(result.data.contentType || file.type || ""),
-        size:
-          typeof result.data.size === "number" && Number.isFinite(result.data.size)
-            ? result.data.size
-            : file.size,
+        url: String(result.url || ""),
+        key: String(result.key || ""),
+        filename: String(result.filename || file.name || ""),
+        contentType: String(result.contentType || file.type || ""),
+        size: result.size,
       };
 
       setAttachments((prev) => [...prev, nextAttachment]);

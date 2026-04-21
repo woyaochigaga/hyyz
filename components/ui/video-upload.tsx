@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader, X } from "lucide-react";
 import { toast } from "sonner";
+import { uploadAsset } from "@/lib/client-upload";
 
 interface VideoUploadProps {
   value?: string;
@@ -12,7 +13,7 @@ interface VideoUploadProps {
   disabled?: boolean;
 }
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_FILE_SIZE = 40 * 1024 * 1024;
 
 export function VideoUpload({
   value,
@@ -36,30 +37,17 @@ export function VideoUpload({
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      toast.error("视频大小不能超过 100MB");
+      toast.error("视频大小不能超过 40MB");
       return;
     }
 
     setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload/video", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.code === 0 && result.data?.url) {
-        setPreview(result.data.url);
-        onChange?.(result.data.url);
-        toast.success("视频上传成功");
-      } else {
-        throw new Error(result.message || "视频上传失败");
-      }
+      const result = await uploadAsset(file, "video");
+      setPreview(result.url);
+      onChange?.(result.url);
+      toast.success("视频上传成功");
     } catch (error: any) {
       toast.error(error.message || "视频上传失败");
     } finally {

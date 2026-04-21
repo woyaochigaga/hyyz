@@ -2,9 +2,14 @@ import { respData, respErr } from "@/lib/resp";
 import { newStorage } from "@/lib/storage";
 import { getUuid } from "@/lib/hash";
 import { getUserUuid } from "@/services/user";
+import {
+  isServerTimeoutError,
+  withServerTimeout,
+} from "@/lib/server-timeout";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+const IMAGE_UPLOAD_TIMEOUT_MS = 20_000;
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +36,11 @@ export async function POST(req: Request) {
     }
 
     // 读取文件内容
-    const arrayBuffer = await file.arrayBuffer();
+    const arrayBuffer = await withServerTimeout(
+      file.arrayBuffer(),
+      IMAGE_UPLOAD_TIMEOUT_MS,
+      "图片读取超时，请稍后重试"
+    );
     const buffer = Buffer.from(arrayBuffer);
 
     // 生成文件名
@@ -41,12 +50,16 @@ export async function POST(req: Request) {
 
     // 上传到云存储
     const storage = newStorage();
-    const result = await storage.uploadFile({
-      body: buffer,
-      key,
-      contentType: file.type,
-      disposition: "inline",
-    });
+    const result = await withServerTimeout(
+      storage.uploadFile({
+        body: buffer,
+        key,
+        contentType: file.type,
+        disposition: "inline",
+      }),
+      IMAGE_UPLOAD_TIMEOUT_MS,
+      "图片上传超时，请稍后重试"
+    );
 
     return respData({
       url: result.url,
@@ -57,6 +70,8 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("Upload image failed:", err);
-    return respErr(err.message || "Upload failed");
+    return respErr(
+      isServerTimeoutError(err) ? err.message : err.message || "Upload failed"
+    );
   }
 }

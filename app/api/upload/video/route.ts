@@ -2,8 +2,13 @@ import { respData, respErr } from "@/lib/resp";
 import { newStorage } from "@/lib/storage";
 import { getUuid } from "@/lib/hash";
 import { getUserUuid } from "@/services/user";
+import {
+  isServerTimeoutError,
+  withServerTimeout,
+} from "@/lib/server-timeout";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 40 * 1024 * 1024; // 40MB
+const VIDEO_UPLOAD_TIMEOUT_MS = 45_000;
 const ALLOWED_TYPES = [
   "video/mp4",
   "video/webm",
@@ -41,10 +46,14 @@ export async function POST(req: Request) {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return respErr("File size exceeds 100MB limit");
+      return respErr("视频文件不能超过 40MB，当前上传链路超过该大小容易在 Vercel 超时");
     }
 
-    const arrayBuffer = await file.arrayBuffer();
+    const arrayBuffer = await withServerTimeout(
+      file.arrayBuffer(),
+      VIDEO_UPLOAD_TIMEOUT_MS,
+      "视频读取超时，请压缩后重试"
+    );
     const buffer = Buffer.from(arrayBuffer);
 
     const extFromName = file.name.split(".").pop()?.toLowerCase();
@@ -53,12 +62,16 @@ export async function POST(req: Request) {
     const key = `ai-chat/${user_uuid}/videos/${filename}`;
 
     const storage = newStorage();
-    const result = await storage.uploadFile({
-      body: buffer,
-      key,
-      contentType: file.type,
-      disposition: "inline",
-    });
+    const result = await withServerTimeout(
+      storage.uploadFile({
+        body: buffer,
+        key,
+        contentType: file.type,
+        disposition: "inline",
+      }),
+      VIDEO_UPLOAD_TIMEOUT_MS,
+      "视频上传超时，请压缩后重试"
+    );
 
     return respData({
       url: result.url,
@@ -69,6 +82,10 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("Upload video failed:", err);
-    return respErr(err?.message || "Upload failed");
+    return respErr(
+      isServerTimeoutError(err)
+        ? err.message
+        : err?.message || "Upload failed"
+    );
   }
 }
