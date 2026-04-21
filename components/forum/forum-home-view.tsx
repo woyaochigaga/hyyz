@@ -58,6 +58,16 @@ export function ForumHomeView({
   const [detailError, setDetailError] = React.useState("");
   const [postReturnBarId, setPostReturnBarId] = React.useState("");
 
+  const barDetailCacheRef = React.useRef(
+    new Map<string, { bar: ForumBar; posts: ForumPost[]; cachedAt: number }>()
+  );
+  const postDetailCacheRef = React.useRef(
+    new Map<string, { detail: ForumPostDetail; cachedAt: number }>()
+  );
+  const inflightBarRef = React.useRef(new Map<string, Promise<any>>());
+  const inflightPostRef = React.useRef(new Map<string, Promise<any>>());
+  const cacheTtlMs = 2 * 60 * 1000;
+
   const [selectedBarId, setSelectedBarId] = React.useState(
     initialBarId || followingBarIds[0] || initialBars[0]?.id || ""
   );
@@ -189,16 +199,51 @@ export function ForumHomeView({
     async (barId: string) => {
       if (!barId) return;
 
-      setDetailLoading(true);
       setDetailError("");
       setSelectedBarId(barId);
 
+      // Fast path: already on this bar with data.
+      if (activeBarId === barId && activeBarDetail) {
+        setView("bar");
+        syncHistoryState("bar", { barId });
+        return;
+      }
+
+      const cached = barDetailCacheRef.current.get(barId);
+      if (cached && Date.now() - cached.cachedAt < cacheTtlMs) {
+        setActiveBarId(barId);
+        setActivePostId("");
+        setActivePostDetail(null);
+        setActiveBarDetail({ bar: cached.bar, posts: cached.posts });
+        setView("bar");
+        syncHistoryState("bar", { barId });
+        return;
+      }
+
+      setDetailLoading(true);
+
       try {
-        const resp = await fetch(`/api/forum/bar/${barId}/posts`);
-        const result = await resp.json();
+        const existing = inflightBarRef.current.get(barId);
+        const task =
+          existing ||
+          (async () => {
+            const resp = await fetch(`/api/forum/bar/${barId}/posts`, {
+              cache: "no-store",
+            });
+            return resp.json();
+          })();
+        inflightBarRef.current.set(barId, task);
+
+        const result = await task;
         if (result.code !== 0 || !result.data?.bar) {
           throw new Error(result.message || (isZh ? "加载吧详情失败" : "Failed to load bar"));
         }
+
+        barDetailCacheRef.current.set(barId, {
+          bar: result.data.bar as ForumBar,
+          posts: Array.isArray(result.data.posts) ? (result.data.posts as ForumPost[]) : [],
+          cachedAt: Date.now(),
+        });
 
         setActiveBarId(barId);
         setActivePostId("");
@@ -212,27 +257,56 @@ export function ForumHomeView({
       } catch (error: any) {
         setDetailError(error?.message || (isZh ? "加载吧详情失败" : "Failed to load bar"));
       } finally {
+        inflightBarRef.current.delete(barId);
         setDetailLoading(false);
       }
     },
-    [isZh, syncHistoryState]
+    [activeBarDetail, activeBarId, cacheTtlMs, isZh, syncHistoryState]
   );
 
   const openPostView = React.useCallback(
     async (postId: string, options?: { returnBarId?: string }) => {
       if (!postId) return;
 
-      setDetailLoading(true);
       setDetailError("");
 
+      if (activePostId === postId && activePostDetail) {
+        setView("post");
+        syncHistoryState("post", { postId });
+        return;
+      }
+
+      const cached = postDetailCacheRef.current.get(postId);
+      if (cached && Date.now() - cached.cachedAt < cacheTtlMs) {
+        const nextDetail = cached.detail;
+        const nextReturnBarId =
+          options?.returnBarId || nextDetail.post.bar?.id || activeBarId || "";
+        setActivePostId(postId);
+        setActivePostDetail(nextDetail);
+        setPostReturnBarId(nextReturnBarId);
+        setView("post");
+        syncHistoryState("post", { postId });
+        return;
+      }
+
+      setDetailLoading(true);
       try {
-        const resp = await fetch(`/api/forum/post/${postId}`);
-        const result = await resp.json();
+        const existing = inflightPostRef.current.get(postId);
+        const task =
+          existing ||
+          (async () => {
+            const resp = await fetch(`/api/forum/post/${postId}`, { cache: "no-store" });
+            return resp.json();
+          })();
+        inflightPostRef.current.set(postId, task);
+
+        const result = await task;
         if (result.code !== 0 || !result.data?.post) {
           throw new Error(result.message || (isZh ? "加载讨论失败" : "Failed to load post"));
         }
 
         const nextDetail = result.data as ForumPostDetail;
+        postDetailCacheRef.current.set(postId, { detail: nextDetail, cachedAt: Date.now() });
         const nextReturnBarId =
           options?.returnBarId || nextDetail.post.bar?.id || activeBarId || "";
 
@@ -244,11 +318,46 @@ export function ForumHomeView({
       } catch (error: any) {
         setDetailError(error?.message || (isZh ? "加载讨论失败" : "Failed to load post"));
       } finally {
+        inflightPostRef.current.delete(postId);
         setDetailLoading(false);
       }
     },
-    [activeBarId, isZh, syncHistoryState]
+    [activeBarId, activePostDetail, activePostId, cacheTtlMs, isZh, syncHistoryState]
   );
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const barsToPrefetch = bars.slice(0, 3).map((b) => b.id).filter(Boolean);
+    const idle = (window as any).requestIdleCallback as
+      | ((cb: () => void) => number)
+      | undefined;
+
+    const runner = () => {
+      barsToPrefetch.forEach((barId) => {
+        if (barDetailCacheRef.current.has(barId) || inflightBarRef.current.has(barId)) return;
+        const task = fetch(`/api/forum/bar/${barId}/posts`, { cache: "no-store" })
+          .then((r) => r.json())
+          .then((result) => {
+            if (result?.code === 0 && result?.data?.bar) {
+              barDetailCacheRef.current.set(barId, {
+                bar: result.data.bar as ForumBar,
+                posts: Array.isArray(result.data.posts) ? (result.data.posts as ForumPost[]) : [],
+                cachedAt: Date.now(),
+              });
+            }
+          })
+          .finally(() => {
+            inflightBarRef.current.delete(barId);
+          });
+        inflightBarRef.current.set(barId, task);
+      });
+    };
+
+    const timerId = idle ? idle(runner) : window.setTimeout(runner, 800);
+    return () => {
+      if (!idle) window.clearTimeout(timerId as any);
+    };
+  }, [bars]);
 
   React.useEffect(() => {
     if (initialPostId) {
@@ -302,18 +411,17 @@ export function ForumHomeView({
   const navigateToBar = React.useCallback(
     (barId: string) => {
       if (!barId) return;
-      setSelectedBarId(barId);
-      router.push(`/${locale}/home/forum/bar/${encodeURIComponent(barId)}`);
+      void openBarView(barId);
     },
-    [locale, router]
+    [openBarView]
   );
 
   const navigateToPost = React.useCallback(
-    (postId: string) => {
+    (postId: string, options?: { returnBarId?: string }) => {
       if (!postId) return;
-      router.push(`/${locale}/home/forum/post/${encodeURIComponent(postId)}`);
+      void openPostView(postId, options);
     },
-    [locale, router]
+    [openPostView]
   );
 
   const handleCreatePost = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -341,7 +449,7 @@ export function ForumHomeView({
       setPostDialogOpen(false);
       toast.success(isZh ? "帖子已发布" : "Post published");
       handlePostCreated(result.data as ForumPost);
-      navigateToPost(result.data.id);
+      navigateToPost(result.data.id, { returnBarId: selectedBarId });
     } catch (error: any) {
       toast.error(error?.message || (isZh ? "发帖失败" : "Failed to publish"));
     } finally {
@@ -654,7 +762,9 @@ export function ForumHomeView({
                 initialBar={activeBarDetail.bar}
                 initialPosts={activeBarDetail.posts}
                 onBack={openHomeView}
-                onOpenPost={(post) => navigateToPost(post.id)}
+                onOpenPost={(post) =>
+                  navigateToPost(post.id, { returnBarId: activeBarId })
+                }
                 onPostChange={handlePostChange}
                 onPostCreated={handlePostCreated}
               />
@@ -838,7 +948,9 @@ export function ForumHomeView({
                           featured={index === 0}
                           layout="split"
                           href={null}
-                          onOpenPost={(item) => navigateToPost(item.id)}
+                          onOpenPost={(item) =>
+                            navigateToPost(item.id, { returnBarId: item.bar_id })
+                          }
                           onPostChange={handlePostChange}
                         />
                       ))}

@@ -63,10 +63,11 @@ export function ForumPostCard({
   };
 
   React.useEffect(() => {
-    if (nextHref) {
+    // When embedded in forum shell (onOpenPost provided), we don't navigate.
+    if (nextHref && !onOpenPost) {
       router.prefetch(nextHref);
     }
-  }, [nextHref, router]);
+  }, [nextHref, onOpenPost, router]);
 
   const isSplit = layout === "split" && Boolean(post.bar);
 
@@ -266,7 +267,7 @@ export function ForumPostCard({
 
   const cardClass = isSplit ? splitCardClass : stackCardClass;
 
-  if (nextHref === null) {
+  if (nextHref === null || onOpenPost) {
     return (
       <button type="button" onClick={handleOpen} className={cardClass}>
         {inner}
