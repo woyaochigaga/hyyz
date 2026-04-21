@@ -27,13 +27,131 @@ import type { NotificationListItem, NotificationSummary } from "@/types/notifica
 
 type NotificationTab = "all" | "unread" | "system" | "interaction" | "review";
 
-const TABS: { key: NotificationTab; label: string }[] = [
-  { key: "all", label: "全部" },
-  { key: "unread", label: "未读" },
-  { key: "system", label: "系统" },
-  { key: "interaction", label: "互动" },
-  { key: "review", label: "审核" },
-];
+type NotificationCopy = {
+  title: string;
+  dialogDescription: string;
+  tabs: Record<NotificationTab, string>;
+  unreadCountLabel: string;
+  unreadSummary: (count: number) => string;
+  syncing: string;
+  emptyUnread: string;
+  noRecent: string;
+  signInHint: string;
+  noItems: string;
+  loading: string;
+  viewAll: string;
+  markAllRead: string;
+  markRead: string;
+  read: string;
+  done: string;
+  view: string;
+  collapse: string;
+  delete: string;
+  confirmDelete: string;
+  contentFallback: string;
+  linkedPageLabel: string;
+  notifySignIn: string;
+  notifyMarkAllReadFailed: string;
+  notifyMarkReadFailed: string;
+  notifyDeleteFailed: string;
+  minutesAgo: (n: number) => string;
+  hoursAgo: (n: number) => string;
+  toLocale: string;
+  categories: {
+    system: string;
+    interaction: string;
+    review: string;
+  };
+};
+
+const COPY_ZH: NotificationCopy = {
+  title: "消息中心",
+  dialogDescription: "管理员公告、互动提醒、审核结果都会集中显示在这里。",
+  tabs: {
+    all: "全部",
+    unread: "未读",
+    system: "系统",
+    interaction: "互动",
+    review: "审核",
+  },
+  unreadCountLabel: "未读",
+  unreadSummary: (count) => `你有 ${count} 条未读消息`,
+  syncing: "正在同步消息",
+  emptyUnread: "暂无未读消息",
+  noRecent: "最近没有新消息",
+  signInHint: "登录后可查看公告、互动和审核通知",
+  noItems: "当前筛选下没有消息",
+  loading: "正在加载消息...",
+  viewAll: "查看全部",
+  markAllRead: "全部已读",
+  markRead: "标为已读",
+  read: "已读",
+  done: "已完成",
+  view: "查看",
+  collapse: "收起",
+  delete: "删除",
+  confirmDelete: "确定删除这条通知？删除后将不再显示在列表中。",
+  contentFallback: "点击查看详情",
+  linkedPageLabel: "关联页面",
+  notifySignIn: "请先登录后查看消息",
+  notifyMarkAllReadFailed: "全部已读失败",
+  notifyMarkReadFailed: "标记已读失败",
+  notifyDeleteFailed: "删除失败",
+  minutesAgo: (n) => `${n} 分钟前`,
+  hoursAgo: (n) => `${n} 小时前`,
+  toLocale: "zh-CN",
+  categories: {
+    system: "系统",
+    interaction: "互动",
+    review: "审核",
+  },
+};
+
+const COPY_EN: NotificationCopy = {
+  title: "Notification Center",
+  dialogDescription:
+    "Admin announcements, interaction alerts, and review results are shown here.",
+  tabs: {
+    all: "All",
+    unread: "Unread",
+    system: "System",
+    interaction: "Interaction",
+    review: "Review",
+  },
+  unreadCountLabel: "Unread",
+  unreadSummary: (count) => `You have ${count} unread notifications`,
+  syncing: "Syncing notifications",
+  emptyUnread: "No unread notifications",
+  noRecent: "No recent notifications",
+  signInHint: "Sign in to view announcements, interactions, and reviews",
+  noItems: "No notifications in this filter",
+  loading: "Loading notifications...",
+  viewAll: "View all",
+  markAllRead: "Mark all read",
+  markRead: "Mark read",
+  read: "Read",
+  done: "Done",
+  view: "View",
+  collapse: "Collapse",
+  delete: "Delete",
+  confirmDelete: "Delete this notification? It will be removed from your list.",
+  contentFallback: "Click to view details",
+  linkedPageLabel: "Linked page",
+  notifySignIn: "Please sign in to view notifications",
+  notifyMarkAllReadFailed: "Failed to mark all as read",
+  notifyMarkReadFailed: "Failed to mark as read",
+  notifyDeleteFailed: "Failed to delete",
+  minutesAgo: (n) => `${n} min ago`,
+  hoursAgo: (n) => `${n} hr ago`,
+  toLocale: "en-US",
+  categories: {
+    system: "System",
+    interaction: "Interaction",
+    review: "Review",
+  },
+};
+
+const TAB_KEYS: NotificationTab[] = ["all", "unread", "system", "interaction", "review"];
 
 /** 通知跳转：无 action_url 时落到当前语言的个人中心；相对路径补全 locale 前缀 */
 function resolveNotificationHref(
@@ -56,7 +174,7 @@ function resolveNotificationHref(
   return `/${locale}/${raw}`;
 }
 
-function formatTime(value?: string | null) {
+function formatTime(copy: NotificationCopy, value?: string | null) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -68,14 +186,14 @@ function formatTime(value?: string | null) {
   const day = 24 * hour;
 
   if (diff < hour) {
-    return `${Math.max(1, Math.floor(diff / minute) || 1)} 分钟前`;
+    return copy.minutesAgo(Math.max(1, Math.floor(diff / minute) || 1));
   }
 
   if (diff < day) {
-    return `${Math.floor(diff / hour)} 小时前`;
+    return copy.hoursAgo(Math.floor(diff / hour));
   }
 
-  return date.toLocaleString("zh-CN", {
+  return date.toLocaleString(copy.toLocale, {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -83,10 +201,10 @@ function formatTime(value?: string | null) {
   });
 }
 
-function getCategoryLabel(item: NotificationListItem) {
-  if (item.category === "interaction") return "互动";
-  if (item.category === "review") return "审核";
-  return "系统";
+function getCategoryLabel(copy: NotificationCopy, item: NotificationListItem) {
+  if (item.category === "interaction") return copy.categories.interaction;
+  if (item.category === "review") return copy.categories.review;
+  return copy.categories.system;
 }
 
 function NotificationItemIcon({ item }: { item: NotificationListItem }) {
@@ -101,6 +219,7 @@ function NotificationItemIcon({ item }: { item: NotificationListItem }) {
 
 function NotificationItemButton({
   item,
+  copy,
   compact = false,
   onOpen,
   expanded = false,
@@ -111,6 +230,7 @@ function NotificationItemButton({
   onDelete,
 }: {
   item: NotificationListItem;
+  copy: NotificationCopy;
   compact?: boolean;
   onOpen: (item: NotificationListItem) => void;
   expanded?: boolean;
@@ -134,7 +254,7 @@ function NotificationItemButton({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-black/[0.04] px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
-                {getCategoryLabel(item)}
+                {getCategoryLabel(copy, item)}
               </span>
               <span
                 aria-hidden="true"
@@ -144,14 +264,14 @@ function NotificationItemButton({
                 )}
               />
               <span className="ml-auto text-[11px] text-zinc-500 dark:text-zinc-400">
-                {formatTime(item.created_at || item.receipt_created_at)}
+                {formatTime(copy, item.created_at || item.receipt_created_at)}
               </span>
             </div>
             <div className="mt-2 line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               {item.title}
             </div>
             <div className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
-              {item.content || "点击查看详情"}
+              {item.content || copy.contentFallback}
             </div>
           </div>
         </div>
@@ -168,7 +288,7 @@ function NotificationItemButton({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-black/[0.04] px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
-              {getCategoryLabel(item)}
+              {getCategoryLabel(copy, item)}
             </span>
             <span
               aria-hidden="true"
@@ -178,7 +298,7 @@ function NotificationItemButton({
               )}
             />
             <span className="ml-auto text-[11px] text-zinc-500 dark:text-zinc-400">
-              {formatTime(item.created_at || item.receipt_created_at)}
+              {formatTime(copy, item.created_at || item.receipt_created_at)}
             </span>
           </div>
           <div className="mt-2 line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -190,11 +310,11 @@ function NotificationItemButton({
               expanded ? "whitespace-pre-wrap break-words" : "line-clamp-2"
             )}
           >
-            {item.content || "点击查看详情"}
+            {item.content || copy.contentFallback}
           </div>
           {expanded && item.action_url ? (
             <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-              关联页面：{item.action_url}
+              {copy.linkedPageLabel}: {item.action_url}
             </div>
           ) : null}
           <div className="mt-3 flex items-center justify-end gap-2">
@@ -207,7 +327,7 @@ function NotificationItemButton({
               onClick={() => onMarkRead?.(item)}
             >
               <CheckCheck className="h-3.5 w-3.5" />
-              {justMarkedRead ? "已完成" : item.read_at ? "已读" : "标为已读"}
+              {justMarkedRead ? copy.done : item.read_at ? copy.read : copy.markRead}
             </Button>
             <Button
               type="button"
@@ -218,7 +338,7 @@ function NotificationItemButton({
               onClick={() => onToggleExpand?.(item)}
             >
               <Eye className="h-3.5 w-3.5" />
-              {expanded ? "收起" : "查看"}
+              {expanded ? copy.collapse : copy.view}
             </Button>
             <Button
               type="button"
@@ -229,7 +349,7 @@ function NotificationItemButton({
               onClick={() => onDelete?.(item)}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              删除
+              {copy.delete}
             </Button>
           </div>
         </div>
@@ -243,6 +363,7 @@ export function NotificationCenter() {
   const params = useParams<{ locale?: string }>();
   const locale =
     typeof params?.locale === "string" && params.locale ? params.locale : "zh";
+  const copy = locale === "en" ? COPY_EN : COPY_ZH;
   const { user, setShowSignModal } = useAppContext();
   const [open, setOpen] = React.useState(false);
   const [previewOpen, setPreviewOpen] = React.useState(false);
@@ -340,9 +461,9 @@ export function NotificationCenter() {
   const ensureSignedIn = React.useCallback(() => {
     if (user?.uuid) return true;
     setShowSignModal(true);
-    notify("info", "请先登录后查看消息");
+    notify("info", copy.notifySignIn);
     return false;
-  }, [setShowSignModal, user?.uuid]);
+  }, [copy.notifySignIn, setShowSignModal, user?.uuid]);
 
   const refreshState = React.useCallback(
     async (withList: boolean) => {
@@ -391,16 +512,16 @@ export function NotificationCenter() {
       });
       const result = await resp.json();
       if (result?.code !== 0) {
-        notify("error", result?.message || "全部已读失败");
+        notify("error", result?.message || copy.notifyMarkAllReadFailed);
         return;
       }
       await refreshState(true);
     } catch (error) {
-      notify("error", "全部已读失败");
+      notify("error", copy.notifyMarkAllReadFailed);
     } finally {
       setMarkingAll(false);
     }
-  }, [ensureSignedIn, refreshState]);
+  }, [copy.notifyMarkAllReadFailed, ensureSignedIn, refreshState]);
 
   const handleMarkOneRead = React.useCallback(
     async (item: NotificationListItem) => {
@@ -419,7 +540,7 @@ export function NotificationCenter() {
         });
         const result = await resp.json();
         if (result?.code !== 0) {
-          notify("error", result?.message || "标记已读失败");
+          notify("error", result?.message || copy.notifyMarkReadFailed);
           return;
         }
         setJustMarkedKeys((prev) => ({ ...prev, [key]: true }));
@@ -436,20 +557,18 @@ export function NotificationCenter() {
         }, 800);
         await refreshState(true);
       } catch (error) {
-        notify("error", "标记已读失败");
+        notify("error", copy.notifyMarkReadFailed);
       } finally {
         setBusyKeys((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [ensureSignedIn, getItemKey, refreshState]
+    [copy.notifyMarkReadFailed, ensureSignedIn, getItemKey, refreshState]
   );
 
   const handleDeleteOne = React.useCallback(
     async (item: NotificationListItem) => {
       if (!ensureSignedIn()) return;
-      if (
-        !window.confirm("确定删除这条通知？删除后将不再显示在列表中。")
-      ) {
+      if (!window.confirm(copy.confirmDelete)) {
         return;
       }
       const key = getItemKey(item);
@@ -466,7 +585,7 @@ export function NotificationCenter() {
         });
         const result = await resp.json();
         if (result?.code !== 0) {
-          notify("error", result?.message || "删除失败");
+          notify("error", result?.message || copy.notifyDeleteFailed);
           return;
         }
         setExpandedKeys((prev) => {
@@ -485,12 +604,12 @@ export function NotificationCenter() {
         }
         await refreshState(true);
       } catch (error) {
-        notify("error", "删除失败");
+        notify("error", copy.notifyDeleteFailed);
       } finally {
         setBusyKeys((prev) => ({ ...prev, [key]: false }));
       }
     },
-    [ensureSignedIn, getItemKey, refreshState]
+    [copy.confirmDelete, copy.notifyDeleteFailed, ensureSignedIn, getItemKey, refreshState]
   );
 
   const handleToggleExpand = React.useCallback(
@@ -540,7 +659,7 @@ export function NotificationCenter() {
           variant="ghost"
           size="icon"
           className="relative h-9 w-9 rounded-full bg-white/42 text-zinc-700 shadow-[0_8px_22px_rgba(15,23,42,0.08)] backdrop-blur-xl hover:bg-white/62 dark:bg-white/[0.06] dark:text-zinc-100 dark:hover:bg-white/[0.11]"
-          aria-label="消息中心"
+          aria-label={copy.title}
           onClick={() => {
             if (!ensureSignedIn()) return;
             setOpen(true);
@@ -564,19 +683,19 @@ export function NotificationCenter() {
             <div className="flex items-center justify-between px-1 pb-4 pt-1">
               <div>
                 <div className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                  消息中心
+                  {copy.title}
                 </div>
                 <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   {summary.unread_count > 0
-                    ? `你有 ${summary.unread_count} 条未读消息`
+                    ? copy.unreadSummary(summary.unread_count)
                     : loadingSummary
-                      ? "正在同步消息"
-                      : "暂无未读消息"}
+                      ? copy.syncing
+                      : copy.emptyUnread}
                 </div>
               </div>
               {summary.unread_count > 0 ? (
                 <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-[11px] font-medium text-red-600 dark:bg-red-500/12 dark:text-red-300">
-                  未读 {summary.unread_count}
+                  {copy.unreadCountLabel} {summary.unread_count}
                 </span>
               ) : null}
             </div>
@@ -587,13 +706,14 @@ export function NotificationCenter() {
                   <NotificationItemButton
                     key={`${item.receipt_id}-${item.uuid}`}
                     item={item}
+                    copy={copy}
                     compact
                     onOpen={openNotification}
                   />
                 ))
               ) : (
                 <div className="rounded-[22px] bg-white/28 px-4 py-10 text-center text-sm text-zinc-500 backdrop-blur-md dark:bg-white/[0.04] dark:text-zinc-400">
-                  {user?.uuid ? "最近没有新消息" : "登录后可查看公告、互动和审核通知"}
+                  {user?.uuid ? copy.noRecent : copy.signInHint}
                 </div>
               )}
             </div>
@@ -608,7 +728,7 @@ export function NotificationCenter() {
                 onClick={() => void handleMarkAllRead()}
               >
                 <CheckCheck className="h-4 w-4" />
-                全部已读
+                {copy.markAllRead}
               </Button>
               <Button
                 type="button"
@@ -620,7 +740,7 @@ export function NotificationCenter() {
                   setOpen(true);
                 }}
               >
-                查看全部
+                {copy.viewAll}
               </Button>
             </div>
           </div>
@@ -638,28 +758,28 @@ export function NotificationCenter() {
       >
         <DialogContent className="max-w-2xl overflow-hidden border-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(248,250,252,0.58))] p-0 shadow-[0_28px_72px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:bg-[linear-gradient(180deg,rgba(18,20,29,0.82),rgba(20,24,34,0.66))] dark:shadow-[0_28px_72px_rgba(0,0,0,0.45)] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:bg-black/5 [&>button]:p-1.5 dark:[&>button]:bg-white/10">
           <DialogHeader className="border-b border-black/5 px-6 py-5 dark:border-white/10">
-            <DialogTitle className="text-xl">消息中心</DialogTitle>
+            <DialogTitle className="text-xl">{copy.title}</DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400">
-              管理员公告、互动提醒、审核结果都会集中显示在这里。
+              {copy.dialogDescription}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-wrap gap-2 border-b border-black/5 px-6 py-4 dark:border-white/10">
-            {TABS.map((item) => (
+            {TAB_KEYS.map((key) => (
               <Button
-                key={item.key}
+                key={key}
                 type="button"
                 size="sm"
-                variant={tab === item.key ? "default" : "ghost"}
+                variant={tab === key ? "default" : "ghost"}
                 className={cn(
                   "h-8 rounded-full px-3 text-xs",
-                  tab === item.key
+                  tab === key
                     ? "bg-emerald-500/85 text-white hover:bg-emerald-500"
                     : "bg-white/20 hover:bg-white/35 dark:bg-white/[0.04] dark:hover:bg-white/[0.1]"
                 )}
-                onClick={() => setTab(item.key)}
+                onClick={() => setTab(key)}
               >
-                {item.label}
+                {copy.tabs[key]}
               </Button>
             ))}
             <div className="ml-auto">
@@ -672,7 +792,7 @@ export function NotificationCenter() {
                 onClick={() => void handleMarkAllRead()}
               >
                 <CheckCheck className="h-4 w-4" />
-                全部已读
+                {copy.markAllRead}
               </Button>
             </div>
           </div>
@@ -680,7 +800,7 @@ export function NotificationCenter() {
           <div className="max-h-[70vh] overflow-y-auto px-6 py-4">
             {loadingList ? (
               <div className="rounded-[22px] bg-white/30 py-12 text-center text-sm text-zinc-500 backdrop-blur-md dark:bg-white/[0.04] dark:text-zinc-400">
-                正在加载消息...
+                {copy.loading}
               </div>
             ) : items.length > 0 ? (
               <div className="space-y-3">
@@ -688,6 +808,7 @@ export function NotificationCenter() {
                   <NotificationItemButton
                     key={`${item.receipt_id}-${item.uuid}`}
                     item={item}
+                    copy={copy}
                     onOpen={openNotification}
                     expanded={Boolean(expandedKeys[getItemKey(item)])}
                     busy={Boolean(busyKeys[getItemKey(item)])}
@@ -700,7 +821,7 @@ export function NotificationCenter() {
               </div>
             ) : (
               <div className="rounded-[22px] bg-white/30 py-12 text-center text-sm text-zinc-500 backdrop-blur-md dark:bg-white/[0.04] dark:text-zinc-400">
-                当前筛选下没有消息
+                {copy.noItems}
               </div>
             )}
           </div>

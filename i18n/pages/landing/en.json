@@ -30,15 +30,7 @@
         }
       ]
     },
-    "buttons": [
-      {
-        "title": "Enter Exhibition",
-        "url": "/home/world",
-        "target": "_self",
-        "variant": "link",
-        "icon": "RiArrowRightUpLine"
-      }
-    ],
+   
     "show_sign": true,
     "show_theme": true,
     "show_locale": true
@@ -60,13 +52,6 @@
         "url": "/home/world",
         "target": "_self",
         "variant": "default"
-      },
-      {
-        "title": "Ask AI Guide",
-        "icon": "RiRobot2Line",
-        "url": "/home/ai-chat",
-        "target": "_self",
-        "variant": "outline"
       }
     ],
     "show_happy_users": true,

@@ -1,7 +1,84 @@
-<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Base -->
   <url>
     <loc>https://hyyz.vercel.app/</loc>
-    <lastmod>2026-03-31T00:00:00+00:00</lastmod>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <!-- Landing (localized) -->
+  <url>
+    <loc>https://hyyz.vercel.app/zh</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <!-- Home hub -->
+  <url>
+    <loc>https://hyyz.vercel.app/zh/home</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en/home</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <!-- Main experiences -->
+  <url>
+    <loc>https://hyyz.vercel.app/zh/home/exhibition</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en/home/exhibition</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <url>
+    <loc>https://hyyz.vercel.app/zh/home/community</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en/home/community</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <url>
+    <loc>https://hyyz.vercel.app/zh/home/forum</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en/home/forum</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <url>
+    <loc>https://hyyz.vercel.app/zh/home/post</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en/home/post</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <url>
+    <loc>https://hyyz.vercel.app/zh/home/ai-chat</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en/home/ai-chat</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
+  <!-- Announcements -->
+  <url>
+    <loc>https://hyyz.vercel.app/zh/posts</loc>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+  <url>
+    <loc>https://hyyz.vercel.app/en/posts</loc>
+    <lastmod>2026-04-21</lastmod>
   </url>
 </urlset>
