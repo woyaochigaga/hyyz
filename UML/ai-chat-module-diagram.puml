@@ -1,0 +1,61 @@
+@startuml
+title 杭艺云展 AI 对话模块图
+scale max 700 width
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam dpi 150
+skinparam wrapWidth 160
+skinparam maxMessageSize 160
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+
+rectangle "AI 对话模块\nAiChatView" as ai_module
+
+package "交互层" {
+  rectangle "消息输入区\n文本输入 / 发送控制" as input_area
+  rectangle "会话历史区\n新建 / 选择 / 删除" as history
+  rectangle "消息展示区\n用户消息 / AI 回复 / 推理内容" as message_view
+  rectangle "设置面板\n深度思考 / 主题 / 选项" as settings
+}
+
+package "素材与会话" {
+  rectangle "附件上传\n图片 / 视频" as attachment
+  rectangle "本地会话缓存" as local_cache
+  rectangle "远端会话同步\nSupabase 会话记录" as remote_sync
+}
+
+package "服务接口" {
+  rectangle "AI 对话接口\n/api/home/ai-chat" as ai_api
+  rectangle "会话接口\n/api/home/ai-chat/conversations" as conv_api
+  rectangle "上传签名 / 上传接口" as upload_api
+}
+
+ai_module --> input_area
+ai_module --> history
+ai_module --> message_view
+ai_module --> settings
+ai_module --> attachment
+ai_module --> local_cache
+ai_module --> remote_sync
+
+input_area --> ai_api
+history --> conv_api
+remote_sync --> conv_api
+attachment --> upload_api
+
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+title 杭艺云展 AI SDK 架构图
+scale max 700 width
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam dpi 150
+skinparam wrapWidth 160
+skinparam maxMessageSize 160
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+
+rectangle "调用入口\naisdk/index.ts" as sdk_entry
+
+package "能力层" {
+  rectangle "generateVideo\n统一生成入口" as generate_video
+  rectangle "GenerateVideoResult\n结果封装" as result_model
+}
+
+package "抽象层" {
+  rectangle "provider/index.ts" as provider_entry
+  rectangle "VideoModelV1\n视频模型抽象接口" as video_model
+  rectangle "Call Options / Warning\n调用参数与告警" as call_meta
+}
+
+package "实现层" {
+  rectangle "Kling Provider\nkling-provider" as kling_provider
+  rectangle "Text2Video / ImageGeneration\n业务实现" as kling_impl
+  rectangle "Kling Client\n鉴权与请求封装" as kling_client
+}
+
+package "外部服务" {
+  rectangle "Kling API\n视频生成服务" as kling_api
+}
+
+sdk_entry --> generate_video
+generate_video --> result_model
+generate_video --> provider_entry
+provider_entry --> video_model
+video_model --> call_meta
+video_model --> kling_provider
+kling_provider --> kling_impl
+kling_impl --> kling_client
+kling_client --> kling_api
+
+@enduml

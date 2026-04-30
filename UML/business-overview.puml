@@ -1,0 +1,106 @@
+@startuml
+title 杭艺云展业务流程图
+scale 760 width
+scale 570 height
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 13
+skinparam dpi 150
+skinparam wrapWidth 110
+skinparam maxMessageSize 110
+skinparam ActivityBorderThickness 1
+skinparam PartitionBorderColor #8A8A8A
+skinparam PartitionBackgroundColor #FCFCFC
+skinparam PartitionFontStyle bold
+skinparam PartitionFontSize 13
+skinparam ArrowColor #666666
+skinparam activity {
+  BackgroundColor #F8F8F8
+  BorderColor #333333
+  DiamondBackgroundColor #FFF4D6
+  DiamondBorderColor #C98F00
+  ArrowColor #555555
+  StartColor #3A7A3A
+  EndColor #9A2D2D
+  BarColor #555555
+  FontSize 13
+  FontName PingFang SC
+}
+
+start
+
+partition "用户 / 创作者" {
+  :进入平台;
+  :浏览首页与业务入口;
+}
+
+partition "平台" {
+  :加载公开内容\n或个性化内容;
+}
+
+if (选择业务模块?) then (社区)
+  partition "用户" {
+    :浏览社区内容;
+    :点赞 / 评论 / 通知查看;
+  }
+  partition "平台" {
+    :更新帖子热度与通知数据;
+  }
+
+elseif (云创)
+  partition "创作者" {
+    :创建内容;
+    :编辑标题、正文、素材;
+  }
+  partition "AI 服务" {
+    :生成创作建议;
+  }
+  partition "平台" {
+    :保存草稿或发布到社区;
+  }
+
+elseif (AI 对话)
+  partition "用户" {
+    :发起 AI 对话;
+  }
+  partition "AI 服务" {
+    :生成回答结果;
+  }
+  partition "用户" {
+    :继续追问或结束会话;
+  }
+
+elseif (线下展览)
+  partition "用户 / 申请人" {
+    :浏览展览信息;
+    :提交展览申请;
+  }
+  partition "后台管理员" {
+    :审核展览内容;
+  }
+  partition "平台" {
+    :发布展览或退回修改;
+  }
+
+else (论坛)
+  partition "用户" {
+    :浏览论坛吧与帖子;
+    :关注 / 发帖 / 回复 / 点赞;
+  }
+  partition "平台" {
+    :更新论坛数据并发送通知;
+  }
+endif
+
+partition "后台管理员" {
+  :统一管理内容、展览、论坛、通知与用户;
+}
+
+partition "平台" {
+  :记录运营结果与业务状态;
+}
+
+stop
+@enduml

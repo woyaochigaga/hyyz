@@ -1,0 +1,62 @@
+@startuml
+title 杭艺云展首页模块图
+scale max 700 width
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam dpi 150
+skinparam wrapWidth 160
+skinparam maxMessageSize 160
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+
+rectangle "首页入口\nHomePageView" as home_entry
+
+package "界面框架" {
+  rectangle "首页视觉区\n标题动画 / 入口菜单" as hero
+  rectangle "HomeLayout\n头部 + 侧边栏 + 内容区" as layout
+  rectangle "HomeSidebarShell\n导航与快捷入口" as sidebar
+}
+
+package "核心功能入口" {
+  rectangle "社区入口\n/home/community" as community
+  rectangle "云创入口\n/home/post" as create
+  rectangle "AI 对话入口\n/home/ai-chat" as ai_chat
+  rectangle "线下展览入口\n/home/exhibition" as exhibition
+  rectangle "论坛入口\n/home/forum" as forum
+}
+
+package "支撑能力" {
+  rectangle "国际化\nnext-intl" as i18n
+  rectangle "路由预取\nrouter.prefetch" as prefetch
+  rectangle "动效系统\nGSAP" as gsap
+}
+
+home_entry --> hero
+home_entry --> layout
+layout --> sidebar
+hero --> community
+hero --> create
+hero --> ai_chat
+hero --> exhibition
+hero --> forum
+
+home_entry --> i18n
+home_entry --> prefetch
+home_entry --> gsap
+
+@enduml

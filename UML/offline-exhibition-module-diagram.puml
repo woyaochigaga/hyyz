@@ -1,0 +1,69 @@
+@startuml
+title 杭艺云展线下展览模块图
+scale max 700 width
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam dpi 150
+skinparam wrapWidth 160
+skinparam maxMessageSize 160
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+
+rectangle "线下展览模块\nOfflineExhibitionHub" as exhibition_module
+
+package "前台展示" {
+  rectangle "展览列表\n公开浏览" as exhibition_list
+  rectangle "展览详情\n时间 / 场地 / 票务" as exhibition_detail
+  rectangle "地图面板\n地址解析 / 位置展示" as map_panel
+}
+
+package "申请中心" {
+  rectangle "展览申请表单" as form
+  rectangle "资料管理\n封面 / 海报 / 图库" as exhibition_media
+  rectangle "我的申请\n草稿 / 待审核 / 已发布" as mine
+}
+
+package "业务状态" {
+  rectangle "草稿" as draft
+  rectangle "待审核" as pending
+  rectangle "已发布 / 已驳回 / 已关闭" as status_group
+}
+
+package "后端接口" {
+  rectangle "展览接口\n/api/home/exhibition" as exhibition_api
+  rectangle "展览详情接口\n/api/home/exhibition/[uuid]" as exhibition_detail_api
+  rectangle "高德地图服务" as amap
+}
+
+exhibition_module --> exhibition_list
+exhibition_module --> exhibition_detail
+exhibition_module --> map_panel
+exhibition_module --> form
+exhibition_module --> exhibition_media
+exhibition_module --> mine
+
+form --> draft
+form --> pending
+pending --> status_group
+
+exhibition_list --> exhibition_api
+mine --> exhibition_api
+exhibition_detail --> exhibition_detail_api
+map_panel --> amap
+
+@enduml

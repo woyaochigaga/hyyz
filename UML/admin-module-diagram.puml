@@ -1,0 +1,61 @@
+@startuml
+title 杭艺云展后台功能模块图
+scale max 700 width
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam dpi 150
+skinparam wrapWidth 160
+skinparam maxMessageSize 160
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+
+rectangle "后台管理模块\nAdminOverview" as admin_module
+
+package "总览与快捷入口" {
+  rectangle "数据概览\n用户 / 帖子 / 展览 / 订单" as overview
+  rectangle "快捷入口\n前台 / 后台跳转" as shortcut
+}
+
+package "内容管理" {
+  rectangle "社区帖子管理" as community_admin
+  rectangle "论坛帖子管理" as forum_admin
+  rectangle "线下展览管理" as exhibition_admin
+  rectangle "公告管理" as announcement_admin
+}
+
+package "平台运营" {
+  rectangle "用户管理" as user_admin
+  rectangle "匠人认证审核" as artisan_review
+  rectangle "通知管理" as notification_admin
+  rectangle "反馈处理" as feedback_admin
+  rectangle "已支付订单管理" as order_admin
+}
+
+admin_module --> overview
+admin_module --> shortcut
+admin_module --> community_admin
+admin_module --> forum_admin
+admin_module --> exhibition_admin
+admin_module --> announcement_admin
+admin_module --> user_admin
+admin_module --> artisan_review
+admin_module --> notification_admin
+admin_module --> feedback_admin
+admin_module --> order_admin
+
+@enduml

@@ -1,0 +1,258 @@
+@startuml
+title 杭艺云展项目 E-R 图（精简版）
+left to right direction
+scale max 920 width
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam linetype ortho
+skinparam packageStyle rectangle
+hide methods
+hide stereotypes
+
+entity "users" as users {
+  * uuid <<PK>>
+  --
+  email
+  nickname
+  role
+  invited_by <<FK>>
+  created_at
+}
+
+package "支付与账户" {
+  entity "orders" as orders {
+    * order_no <<PK>>
+    --
+    user_uuid <<FK>>
+    product_id
+    amount
+    status
+    stripe_session_id
+  }
+
+  entity "credits" as credits {
+    * trans_no <<PK>>
+    --
+    user_uuid <<FK>>
+    order_no <<FK>>
+    trans_type
+    credits
+    expired_at
+  }
+
+  entity "affiliates" as affiliates {
+    * user_uuid <<PK,FK>>
+    --
+    invited_by <<FK>>
+    paid_order_no <<FK>>
+    reward_amount
+    status
+  }
+
+  entity "apikeys" as apikeys {
+    * api_key <<PK>>
+    --
+    user_uuid <<FK>>
+    title
+    status
+  }
+}
+
+package "内容社区" {
+  entity "posts" as posts {
+    * uuid <<PK>>
+    --
+    user_uuid <<FK>>
+    title
+    locale
+    status
+  }
+
+  entity "home_posts" as home_posts {
+    * uuid <<PK>>
+    --
+    user_uuid <<FK>>
+    type
+    title
+    status
+    published_at
+  }
+
+  entity "home_post_tags" as home_post_tags {
+    * post_uuid <<FK>>
+    * tag <<PK>>
+  }
+
+  entity "home_post_likes" as home_post_likes {
+    * post_uuid <<FK>>
+    * user_uuid <<FK>>
+    --
+    created_at
+  }
+
+  entity "home_post_comments" as home_post_comments {
+    * uuid <<PK>>
+    --
+    post_uuid <<FK>>
+    user_uuid <<FK>>
+    parent_uuid <<FK>>
+    status
+  }
+
+  entity "feedback_items" as feedback_items {
+    * uuid <<PK>>
+    --
+    user_uuid <<FK>>
+    source
+    status
+    priority
+  }
+}
+
+package "AI 能力" {
+  entity "ai_chat_conversations" as ai_chat_conversations {
+    * uuid <<PK>>
+    --
+    user_uuid <<FK>>
+    title
+    locale
+    messages : json
+  }
+
+  entity "home_post_ai_assist_conversations" as home_post_ai_assist_conversations {
+    * uuid <<PK>>
+    --
+    user_uuid <<FK>>
+    post_uuid <<FK>>
+    title
+    messages : json
+  }
+}
+
+package "论坛" {
+  entity "bars" as bars {
+    * id <<PK>>
+    --
+    creator_id <<FK>>
+    name
+    post_count
+    follow_count
+  }
+
+  entity "bar_follows" as bar_follows {
+    * user_id <<FK>>
+    * bar_id <<FK>>
+    --
+    followed_at
+  }
+
+  entity "forum_posts" as forum_posts {
+    * id <<PK>>
+    --
+    author_id <<FK>>
+    bar_id <<FK>>
+    title
+    like_count
+    reply_count
+  }
+
+  entity "forum_replies" as forum_replies {
+    * id <<PK>>
+    --
+    post_id <<FK>>
+    author_id <<FK>>
+    reply_to_reply_id <<FK>>
+    floor
+  }
+
+  entity "forum_post_likes" as forum_post_likes {
+    * post_id <<FK>>
+    * user_id <<FK>>
+  }
+}
+
+package "线下展览" {
+  entity "offline_exhibitions" as offline_exhibitions {
+    * uuid <<PK>>
+    --
+    user_uuid <<FK>>
+    title
+    status
+    venue_name
+    start_at
+  }
+
+  entity "offline_exhibition_ticket_types" as offline_exhibition_ticket_types {
+    * uuid <<PK>>
+    --
+    exhibition_uuid <<FK>>
+    name
+    price
+    quantity
+  }
+}
+
+package "通知中心" {
+  entity "notification_events" as notification_events {
+    * uuid <<PK>>
+    --
+    sender_uuid <<FK>>
+    type
+    category
+    audience_type
+    status
+  }
+
+  entity "notification_receipts" as notification_receipts {
+    * id <<PK>>
+    --
+    notification_uuid <<FK>>
+    user_uuid <<FK>>
+    read_at
+    seen_at
+  }
+}
+
+users ||--o{ orders
+users ||--o{ credits
+orders ||--o{ credits
+users ||--o{ affiliates : inviter/invitee
+orders ||--o| affiliates
+users ||--o{ apikeys
+
+users ||--o{ posts
+users ||--o{ home_posts
+home_posts ||--o{ home_post_tags
+home_posts ||--o{ home_post_likes
+users ||--o{ home_post_likes
+home_posts ||--o{ home_post_comments
+users ||--o{ home_post_comments
+home_post_comments ||--o{ home_post_comments
+users ||--o{ feedback_items
+
+users ||--o{ ai_chat_conversations
+users ||--o{ home_post_ai_assist_conversations
+home_posts ||--o{ home_post_ai_assist_conversations
+
+users ||--o{ bars
+users ||--o{ bar_follows
+bars ||--o{ bar_follows
+bars ||--o{ forum_posts
+users ||--o{ forum_posts
+forum_posts ||--o{ forum_replies
+users ||--o{ forum_replies
+forum_replies ||--o{ forum_replies
+forum_posts ||--o{ forum_post_likes
+users ||--o{ forum_post_likes
+
+users ||--o{ offline_exhibitions
+offline_exhibitions ||--o{ offline_exhibition_ticket_types
+
+users ||--o{ notification_events
+notification_events ||--o{ notification_receipts
+users ||--o{ notification_receipts
+
+@enduml

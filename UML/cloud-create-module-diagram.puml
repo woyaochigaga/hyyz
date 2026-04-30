@@ -1,0 +1,69 @@
+@startuml
+title 杭艺云展云创模块图
+scale max 700 width
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam dpi 150
+skinparam wrapWidth 160
+skinparam maxMessageSize 160
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+
+rectangle "云创模块\nPostCreateView" as create_module
+
+package "创作界面" {
+  rectangle "内容类型切换\n文字 / 图文 / 视频" as type_switch
+  rectangle "标题与摘要编辑" as editor_basic
+  rectangle "正文编辑器\nMarkdown / Hybrid" as editor_content
+  rectangle "标签管理" as tags
+}
+
+package "素材能力" {
+  rectangle "图片上传\nImageUpload" as image_upload
+  rectangle "视频上传\nVideoUpload" as video_upload
+  rectangle "封面与素材整理" as media_manage
+}
+
+package "辅助与管理" {
+  rectangle "AI 创作辅助面板\nPostAiAssistPanel" as ai_assist
+  rectangle "草稿列表\n加载 / 继续编辑 / 删除" as drafts
+  rectangle "发布控制\n保存草稿 / 正式发布" as publish
+}
+
+package "后端接口" {
+  rectangle "帖子接口\n/api/home/post" as post_api
+  rectangle "AI 辅助接口\n/api/home/post/ai-assist" as assist_api
+  rectangle "我的作品接口\n/api/home/post/mine" as mine_api
+}
+
+create_module --> type_switch
+create_module --> editor_basic
+create_module --> editor_content
+create_module --> tags
+create_module --> image_upload
+create_module --> video_upload
+create_module --> media_manage
+create_module --> ai_assist
+create_module --> drafts
+create_module --> publish
+
+publish --> post_api
+drafts --> mine_api
+ai_assist --> assist_api
+
+@enduml

@@ -1,0 +1,145 @@
+@startuml
+title 杭艺云展线下展览、论坛与后台运营流程
+scale max 900 width
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 12
+skinparam dpi 150
+skinparam wrapWidth 180
+skinparam maxMessageSize 180
+skinparam ActivityBorderThickness 1
+skinparam PartitionBorderColor #8A8A8A
+skinparam PartitionBackgroundColor #FCFCFC
+skinparam PartitionFontStyle bold
+skinparam PartitionFontSize 13
+skinparam activity {
+  BackgroundColor #F8F8F8
+  BorderColor #333333
+  DiamondBackgroundColor #FDEEDC
+  DiamondBorderColor #B5651D
+  ArrowColor #555555
+  StartColor #3A7A3A
+  EndColor #9A2D2D
+  BarColor #555555
+  FontSize 12
+  FontName PingFang SC
+}
+
+start
+
+partition "访客 / 用户" {
+  :进入线下展览频道;
+  :浏览展览列表与详情;
+  :查看时间、地点、票务、\n地图与主办信息;
+}
+
+if (是否申请创建展览?) then (是)
+  partition "申请人" {
+    :登录后填写展览申请表;
+    :录入标题、简介、策展信息、场地地址、档期、票务、图库;
+  }
+
+  if (先保存草稿?) then (是)
+    partition "平台" {
+      :保存 draft 状态;
+    }
+    partition "申请人" {
+      :后续继续编辑;
+    }
+  else (提交审核)
+    partition "平台" {
+      :保存 pending_review 状态;
+      :进入后台审核队列;
+    }
+
+    partition "后台管理员" {
+      :查看待审核展览;
+      :核对内容完整性与发布条件;
+    }
+
+    if (审核通过?) then (通过)
+      partition "平台" {
+        :更新 published 状态;
+        :记录发布时间;
+        :前台公开展示;
+      }
+    else (驳回)
+      partition "平台" {
+        :更新 rejected 状态;
+        :记录 review_note 驳回意见;
+      }
+      partition "申请人" {
+        :查看驳回原因并修改;
+        :重新提交审核;
+      }
+    endif
+  endif
+endif
+
+partition "论坛用户" {
+  :进入论坛首页;
+  :查看吧列表与推荐帖子流;
+}
+
+if (是否创建新吧?) then (是)
+  partition "论坛用户" {
+    :提交吧名称、简介、封面;
+  }
+  partition "平台" {
+    :创建论坛吧;
+  }
+endif
+
+if (是否关注吧?) then (是)
+  partition "平台" {
+    :记录关注关系;
+    :更新 follow_count;
+  }
+endif
+
+if (是否发帖?) then (是)
+  partition "论坛用户" {
+    :选择所属吧并填写帖子内容;
+  }
+  partition "平台" {
+    :创建论坛帖子;
+    :更新吧内帖子数;
+  }
+endif
+
+if (是否回复帖子?) then (是)
+  partition "论坛用户" {
+    :输入回复内容;
+    :可附带图片;
+  }
+  partition "平台" {
+    :创建回复;
+    :支持回复楼层与指定回复对象;
+    :更新回复数与最后活跃时间;
+  }
+  partition "通知中心" {
+    :向帖子作者或被回复用户发送论坛互动通知;
+  }
+endif
+
+partition "后台管理员" {
+  :进入后台管理台;
+  :查看社区帖子、论坛帖子、线下展览、通知、反馈、用户数据;
+}
+
+if (是否进行内容运营?) then (是)
+  partition "后台管理员" {
+    :处理社区内容与论坛内容;
+    :发送系统通知或运营公告;
+    :处理用户反馈与匠人认证审核;
+  }
+  partition "平台" {
+    :落库运营结果;
+    :影响前台展示和消息中心;
+  }
+endif
+
+stop
+@enduml

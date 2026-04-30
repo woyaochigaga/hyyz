@@ -1,0 +1,147 @@
+@startuml
+title 杭艺云展系统架构图
+scale max 980 width
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 11
+skinparam dpi 150
+skinparam wrapWidth 180
+skinparam maxMessageSize 180
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+skinparam componentStyle rectangle
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #C9B458
+  FontSize 10
+}
+
+rectangle "访客 / 普通用户 / 创作者 / 管理员" as actors
+
+package "客户端层" {
+  rectangle "Web 浏览器\nPC / 移动端" as browser
+  rectangle "前端页面\n首页、社区、云创、AI、论坛、展览、后台" as frontend_pages
+  rectangle "交互组件层\nReact + Tailwind + shadcn/ui + next-intl" as ui_layer
+}
+
+package "Next.js 应用层" {
+  rectangle "App Router 页面层\napp/[locale]/*" as app_router
+  rectangle "API 路由层\napp/api/*" as api_routes
+  rectangle "中间件与国际化\nmiddleware + next-intl" as middleware_i18n
+  rectangle "认证接入\nnext-auth" as auth_layer
+}
+
+package "业务服务层" {
+  rectangle "用户与会话服务\nservices/user + auth/session" as user_service
+  rectangle "订单与积分服务\nservices/order + services/credit" as order_service
+  rectangle "通知与反馈服务\nmodels/notification + models/feedback" as notify_service
+  rectangle "内容业务服务\n帖子、评论、论坛、展览" as content_service
+  rectangle "AI 能力服务\nAI 对话 + AI 创作辅助" as ai_service
+  rectangle "文件上传服务\n普通上传 + 预签名上传" as upload_service
+}
+
+package "数据访问层" {
+  rectangle "模型层\nmodels/*" as model_layer
+  rectangle "Supabase Client\nmodels/db.ts" as supabase_client
+}
+
+package "外部基础设施" {
+  database "Supabase / PostgreSQL\n用户、订单、帖子、论坛、展览、通知" as supabase_db
+  rectangle "对象存储 S3 兼容服务\n图片、视频、头像、附件" as object_storage
+  rectangle "Stripe 支付平台\nCheckout + Webhook" as stripe
+  rectangle "DashScope / Bailian\n大模型推理服务" as dashscope
+  rectangle "Google / GitHub OAuth\nGoogle One Tap" as oauth
+  rectangle "高德地图服务\n地址解析 / 地图展示 / 定位" as amap
+}
+
+package "部署与运行环境" {
+  rectangle "Vercel\nNext.js 生产部署" as vercel
+  rectangle "Cloudflare Pages\n可选部署目标" as cloudflare
+}
+
+actors --> browser
+browser --> frontend_pages
+frontend_pages --> ui_layer
+frontend_pages --> app_router
+browser --> middleware_i18n
+
+app_router --> api_routes
+app_router --> auth_layer
+app_router --> user_service
+app_router --> content_service
+app_router --> ai_service
+
+api_routes --> user_service
+api_routes --> order_service
+api_routes --> notify_service
+api_routes --> content_service
+api_routes --> ai_service
+api_routes --> upload_service
+
+auth_layer --> oauth
+auth_layer --> user_service
+
+user_service --> model_layer
+order_service --> model_layer
+notify_service --> model_layer
+content_service --> model_layer
+ai_service --> model_layer
+upload_service --> model_layer
+
+model_layer --> supabase_client
+supabase_client --> supabase_db
+
+order_service --> stripe
+stripe --> api_routes : Webhook 回调
+
+ai_service --> dashscope
+upload_service --> object_storage
+frontend_pages --> amap
+
+vercel --> app_router
+vercel --> api_routes
+cloudflare --> app_router
+cloudflare --> api_routes
+
+note right of frontend_pages
+  前端采用 Next.js 14 App Router
+  覆盖首页、社区、云创、论坛、
+  线下展览、AI 对话、后台管理
+end note
+
+note right of api_routes
+  API 路由承接
+  内容发布、评论、论坛互动、
+  AI 调用、支付、通知、上传等请求
+end note
+
+note bottom of model_layer
+  模型层统一封装
+  Supabase 数据读写逻辑
+end note
+
+note bottom of object_storage
+  支持服务端上传
+  与预签名直传两种链路
+end note
+
+note bottom of dashscope
+  提供 AI 对话
+  与帖子创作辅助能力
+end note
+
+@enduml

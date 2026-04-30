@@ -1,0 +1,97 @@
+@startuml
+title 杭艺云展系统流程概览（简要方块图）
+
+' 4:3 长方形：宽高比 4:3（近似）
+scale 900 width
+scale 675 height
+top to bottom direction
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 12
+skinparam dpi 150
+
+skinparam linetype ortho
+skinparam ArrowColor #666666
+skinparam ArrowThickness 1
+
+skinparam packageStyle rectangle
+skinparam packageBorderColor #8A8A8A
+skinparam packageBackgroundColor #FCFCFC
+skinparam packageFontStyle bold
+skinparam packageFontSize 13
+
+skinparam rectangle {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+  FontSize 11
+}
+
+skinparam component {
+  BorderColor #444444
+  BackgroundColor #FCFCFC
+}
+
+rectangle "用户\n(访问/登录/注册)" as usr
+
+package "认证与会话" {
+  rectangle "NextAuth v5" as nextauth
+  rectangle "Email/Password" as auth_credentials
+  rectangle "Google OAuth" as auth_google
+  rectangle "GitHub OAuth" as auth_github
+  rectangle "One Tap" as auth_onetap
+
+  rectangle "JWT + Cookie\n(会话持久化)" as jwt_cookie
+}
+
+package "业务模块（示例）" {
+  rectangle "首页 + 社区" as biz_home_comm
+  rectangle "云创（作品发布）" as biz_cloud_create
+  rectangle "小云 AI（对话/创作）" as biz_aix 
+  rectangle "线下展览（申请/审核）" as biz_exhibition
+  rectangle "论坛（发帖/互动）" as biz_forum
+}
+
+package "数据与外部服务" {
+  database "Supabase\nPostgreSQL" as db
+  rectangle "对象存储 S3 兼容\n图片/视频/头像" as obj_store
+  rectangle "Stripe Checkout +\nWebhook" as stripe
+  rectangle "AI 推理\nVercel AI SDK + DashScope" as ai_llm
+  rectangle "高德地图服务" as amap
+}
+
+usr --> nextauth : 登录/注册
+nextauth --> auth_credentials
+nextauth --> auth_google
+nextauth --> auth_github
+nextauth --> auth_onetap
+
+nextauth --> jwt_cookie
+
+jwt_cookie --> biz_home_comm
+jwt_cookie --> biz_cloud_create
+jwt_cookie --> biz_ai
+jwt_cookie --> biz_exhibition
+jwt_cookie --> biz_forum
+
+biz_home_comm --> db
+biz_cloud_create --> db
+biz_ai --> db
+biz_exhibition --> db
+biz_forum --> db
+
+biz_home_comm --> obj_store
+biz_cloud_create --> obj_store
+biz_ai --> obj_store
+biz_exhibition --> obj_store
+
+biz_home_comm --> stripe : 购买/订阅
+biz_cloud_create --> stripe : 购买/订阅
+stripe --> db : Webhook 更新订单/置 paid
+
+biz_ai --> ai_llm
+biz_exhibition --> amap
+
+@enduml
+

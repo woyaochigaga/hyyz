@@ -1,0 +1,160 @@
+@startuml
+title 杭艺云展内容创作、社区互动与 AI 流程
+scale max 900 width
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName PingFang SC
+skinparam defaultFontSize 12
+skinparam dpi 150
+skinparam wrapWidth 180
+skinparam maxMessageSize 180
+skinparam ActivityBorderThickness 1
+skinparam PartitionBorderColor #8A8A8A
+skinparam PartitionBackgroundColor #FCFCFC
+skinparam PartitionFontStyle bold
+skinparam PartitionFontSize 13
+skinparam activity {
+  BackgroundColor #F8F8F8
+  BorderColor #333333
+  DiamondBackgroundColor #E9F5FF
+  DiamondBorderColor #3F7CAC
+  ArrowColor #555555
+  StartColor #3A7A3A
+  EndColor #9A2D2D
+  BarColor #555555
+  FontSize 12
+  FontName PingFang SC
+}
+
+start
+
+partition "创作者 / 普通用户" {
+  :登录平台;
+  :进入云创页面;
+  :创建帖子草稿;
+}
+
+partition "平台" {
+  :初始化个人帖子列表;
+  :允许加载草稿与已发布内容;
+}
+
+partition "创作者 / 普通用户" {
+  :编辑帖子内容;
+  :类型可为 text / image / video;
+  :上传图片、视频或其他附件;
+}
+
+if (是否使用 AI 创作辅助?) then (是)
+  partition "创作者 / 普通用户" {
+    :选择目标字段;
+    :标题 / 摘要 / 正文 / 标签 / 综合优化;
+    :输入创作指令;
+  }
+  partition "AI 创作辅助服务" {
+    :读取当前字段快照与最近对话历史;
+    :生成字段补丁建议;
+  }
+  partition "创作者 / 普通用户" {
+    :预览 AI 建议;
+  }
+  if (采纳建议?) then (是)
+    partition "平台" {
+      :回填标题、摘要、正文或标签;
+    }
+  else (否)
+    partition "创作者 / 普通用户" {
+      :继续手动编辑;
+    }
+  endif
+endif
+
+partition "创作者 / 普通用户" {
+  :选择保存方式;
+}
+
+if (保存为草稿?) then (是)
+  partition "平台" {
+    :校验帖子结构;
+    :写入草稿状态 draft;
+  }
+  partition "创作者 / 普通用户" {
+    :后续继续编辑、更新或删除;
+  }
+else (发布)
+  partition "平台" {
+    :校验帖子结构;
+    :写入 published 状态;
+    :生成公开帖子详情;
+    :加入社区公开内容流;
+  }
+endif
+
+partition "社区浏览用户" {
+  :进入社区页面;
+  :查看公开帖子列表;
+  :打开帖子详情;
+}
+
+if (是否互动?) then (是)
+  partition "平台" {
+    :校验用户登录状态;
+  }
+  if (已登录?) then (是)
+    partition "社区浏览用户" {
+      :执行点赞或发表评论;
+    }
+    if (发表评论?) then (是)
+      partition "平台" {
+        :创建评论;
+        :支持父子评论结构;
+        :更新评论计数;
+      }
+      partition "通知中心" {
+        :向帖子作者、被回复用户发送互动通知;
+      }
+    else (点赞)
+      partition "平台" {
+        :更新点赞状态与计数;
+      }
+    endif
+  else (否)
+    partition "平台" {
+      :提示登录后互动;
+    }
+  endif
+endif
+
+partition "用户" {
+  :进入 AI 对话页面;
+  :选择历史会话或新建会话;
+  :发送文本问题;
+  :可附加图片 / 视频素材;
+}
+
+partition "AI 对话服务" {
+  :整理最近消息与附件元数据;
+  :选择普通模型或深度思考模型;
+  :流式返回推理内容与最终回答;
+}
+
+partition "用户" {
+  :查看回答结果;
+}
+
+if (继续追问?) then (是)
+  partition "用户" {
+    :追加消息进入下一轮对话;
+  }
+  partition "AI 对话服务" {
+    :持续输出回答直至会话结束;
+  }
+else (否)
+  partition "平台" {
+    :保留会话记录供下次继续使用;
+  }
+endif
+
+stop
+@enduml
